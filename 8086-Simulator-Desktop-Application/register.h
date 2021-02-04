@@ -3,6 +3,7 @@ using _16Bit = unsigned short;
 
 class Register
 {
+public:
 	/*
 	<<<<<<<<<<<<<<CS REGISTER>>>>>>>>>>>>>>>>>>>>>
 	[1]CS holds the base address for the Code Segment.
@@ -31,7 +32,7 @@ class Register
 	/*
 	<<<<<<<<<<<<<<<<<<ES REGISTER>>>>>>>>>>>>>>>>>>>>
 	[1]ES holds the base (Segment) address for the Extra Segment.
-[	[2]It is multiplied by 10H (16d), to give the 20-bit physical address of the Extra Segment.
+	[2]It is multiplied by 10H (16d), to give the 20-bit physical address of the Extra Segment.
 	Eg: If ES = 4321H then ES × 10H = 43210H è Starting address of Extra Segment.
 	*/
 	static _16Bit ES;
