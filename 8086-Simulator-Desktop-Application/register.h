@@ -1,6 +1,5 @@
 #pragma once
-using _16Bit = unsigned short;
-
+#include"typedef.h"
 class Register
 {
 public:
