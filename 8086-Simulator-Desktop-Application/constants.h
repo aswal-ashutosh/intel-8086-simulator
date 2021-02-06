@@ -71,7 +71,36 @@ const std::unordered_map<std::string, Byte> REG_CODE =
 	{"DI",	0b111},
 };
 
-const std::unordered_map<std::string, Byte> MNEMONIC = 
+const std::unordered_map<std::string, Byte> MNEMONIC =
 {
 	{"MOV", 0b100010}
-}
+};
+
+namespace REGISTER
+{
+	//Segment Registers
+	const std::string CS = "CS";
+	const std::string DS = "DS";
+	const std::string SS = "SS";
+	const std::string ES = "ES";
+	
+	//General Purpose Registers
+	const std::string AX = "AX";
+	const std::string BX = "BX";
+	const std::string CX = "CX";
+	const std::string DX = "DX";
+	const std::string AL = "AL";
+	const std::string BL = "BL";
+	const std::string CL = "CL";
+	const std::string DL = "DL";
+	const std::string AH = "AH";
+	const std::string BH = "BH";
+	const std::string CH = "CH";
+	const std::string DH = "DH";
+
+	//Sepecial Purpose Registers
+	const std::string SP = "SP";
+	const std::string BP = "BP";
+	const std::string SI = "SI";
+	const std::string DI = "DI";
+};
