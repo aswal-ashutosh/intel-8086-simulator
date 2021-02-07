@@ -1,10 +1,7 @@
-mov [bx + si], al 
-mov [bx + di], bl 
-mov [si], cl 
-mov [di], dl 
-mov [1070h], ah 
-mov [10h], bh 
-mov [105h], ch
-mov [bx + si + 10h], dh 
-mov [bp + di + 1060h], dh     
-mov [si + 010h], ah 
+mov [1234h], 1050h
+mov [12h], 1050h
+mov [1234h], 10h
+mov [12h], 20h
+mov [1234h], 011h
+mov [bx + si], 1050h
+mov [bx + di + 10h], 1050h

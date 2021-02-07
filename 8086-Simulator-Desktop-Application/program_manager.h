@@ -22,12 +22,12 @@ bool ProgramManager::MOV(Operand& operand)
 
 	/*
 		The operands will be of form: 
-			[x]1)MOV reg8/reg16, immd8/immd16 || MOV m, immd8/immd16
+			[OK]1)MOV reg8/reg16, immd8/immd16 || MOV mem, immd8/immd16
 			[OK]2)MOV reg8/reg16, reg8/reg16
-			3)MOV reg8/reg16, mem
-			4)MOV mem, reg8/reg16
-			5)MOV sreg, reg16
-			6)MOV reg16, sreg
+			[OK]3)MOV reg8/reg16, mem
+			[OK]4)MOV mem, reg8/reg16
+			[x]5)MOV sreg, reg16
+			[x]6)MOV reg16, sreg
 			
 	*/
 
@@ -69,7 +69,75 @@ bool ProgramManager::MOV(Operand& operand)
 
 		if (Utility::IsMemory(operand.first)) //Case 1 Part 2
 		{
+			//mem, immd8/16
 
+			/*
+				As there is no register so reg code will be 000
+				If immd8 => 1st Byte C6 else if immd16 then C7
+			*/
+			const std::string& mem = operand.first;
+			std::string immd = operand.second;
+			const std::string& exp = mem.substr(1, mem.length() - 2); //[] removed
+			const std::string& fExp = Converter::ExpressionForModRM(exp); 
+			
+			if (MOD_RM.count(fExp))
+			{
+				const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+				Byte _2ndByte = info.mod << 6;
+				//Reg-Code is 000 already
+				_2ndByte |= info.rm;
+
+				std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+
+				std::string displacement = "";
+				bool onlyDisp = Utility::ExtractHexFromMemExp(exp, displacement);
+
+				if (Utility::HexSize(immd) == "8")//immd8
+				{
+					out << "C6" << ' ' << _2ndByteHex.substr(0, 2);
+				}
+				else//immd16
+				{
+					out << "C7" << ' ' << _2ndByteHex.substr(0, 2);
+				}
+
+				if(!displacement.empty())
+				{
+					Utility::Format16Bit(displacement);
+					if (onlyDisp)
+					{
+						out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+					}
+					else
+					{
+						if (Utility::HexSize(displacement) == "8")
+						{
+							out << ' ' << displacement.substr(2, 2);
+						}
+						else
+						{
+							out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+						}
+					}
+				}
+
+				//Next byte will contain immd
+				Utility::Format16Bit(immd);
+
+				if (Utility::HexSize(immd) == "8")
+				{
+					out << ' ' << immd.substr(2, 2) << '\n';
+				}
+				else
+				{
+					out << ' ' << immd.substr(2, 2) << ' ' << immd.substr(0, 2) << '\n';
+				}
+				
+			}
+			else
+			{
+				Error::LOG("Invalid mem exp r/m, immd @ Mov");
+			}
 		}
 		else if (Utility::IsSegmentRegister(operand.first))
 		{
@@ -125,78 +193,85 @@ bool ProgramManager::MOV(Operand& operand)
 	}
 	else if (Utility::IsMemory(operand.second))
 	{
-		//case 3 reg8/reg16, mem
-
-		if (Utility::Is8BitRegister(operand.first))
+		if (Utility::Is8BitRegister(operand.first) || Utility::Is16BitRegister(operand.first))
 		{
-			//reg8, mem
-			const std::string reg8 = operand.first;
+			//case 3 reg8/reg16, mem
+			const std::string reg = operand.first;
 			const std::string mem = operand.second;
-			//Opcode(6)-d(1)-w(1) => 100010-1-0 => 8A
-			const std::string &opcode = "8A";
-			const std::string& exp = mem.substr(1, mem.length() - 2);
-			const std::string& fExp = Converter::ExpressionForModRM(exp); //[] removed
-			if (MOD_RM.count(fExp))
+			/*
+				For 8Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-1-0 => 8A
+				For 16Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-1-1 => 8B
+				[*]Special Case when reg is AL and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-0-0 => A0, Second byte of opcode will be data directly 
+				[*]Special Case when reg is AX and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-0-1 => A1, Second byte of opcode will be data directly 
+			*/
+
+			const std::string& exp = mem.substr(1, mem.length() - 2);//[] removed
+			const std::string& fExp = Converter::ExpressionForModRM(exp); 
+			
+			std::string displacement = ""; 
+			bool onlyDisp = Utility::ExtractHexFromMemExp(exp, displacement);
+			
+			//Checking for Special Case
+			if (onlyDisp && (reg == REGISTER::AL || reg == REGISTER::AX))
 			{
-				//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
-				const MOD_RM_INFO &info = MOD_RM.find(fExp)->second;
-
-				Byte _2ndByte = info.mod << 6; //mod
-				_2ndByte |= REG_CODE.find(reg8)->second << 3; // reg
-				_2ndByte |= info.rm;
-
-				std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
-
-				out << opcode << ' ' << _2ndByteHex.substr(0, 2);
-				
-				//there may be displacement data in expersion
-				const std::vector<std::string> &afterSplit = Utility::SplitBy(exp, '+');//memory exp without []
-				bool found = false;
-				for (const std::string& s : afterSplit)
+				//Special Cases
+				Utility::Format16Bit(displacement);
+				if (reg == REGISTER::AL)
 				{
-					if (Utility::IsValidHex(s))
-					{
-						
-						found = true;
-						if (Utility::HexSize(s) == "8")
-						{
-							
-							std::string data = s;
-							//may be data is represented using redundatn hex digit eg: 001Ah, 010H
-							Utility::Format16Bit(data);
-							data = data.substr(2); // Truncating redundant digits and formatting it in 8-bit form
-
-							//if mem exp is just containing dispacemnt then it will be considered as 16-bit data
-							if (afterSplit.size() == 1)
-							{
-								out << ' ' << data.substr(0, 2) << ' ' << "00\n";
-							}
-							else
-							{
-								out << ' ' << data.substr(0, 2) << '\n';
-							}
-						}
-						else
-						{
-							std::string data = s;
-							Utility::Format16Bit(data);
-							out << ' ' << data.substr(2, 2) << ' ' << data.substr(0, 2) << '\n';
-						}
-						break;
-					}
+					out << "A0" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
-
-				if (!found) { out << '\n'; }
-				
+				else if(reg == REGISTER::AX)
+				{
+					out << "A1" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
 			}
 			else
 			{
-				Error::LOG("Unexpected expression in []\n");
-			}
-		}
-		else if (Utility::Is16BitRegister(operand.first))
-		{
+				const std::string& opcode = Utility::Is8BitRegister(reg) ? "8A" : "8B";
+				if (MOD_RM.count(fExp))
+				{
+					//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
+					const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 
+					Byte _2ndByte = info.mod << 6; //mod
+					_2ndByte |= REG_CODE.find(reg)->second << 3; // reg
+					_2ndByte |= info.rm;
+
+					std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+
+					out << opcode
+						<< ' ' << _2ndByteHex.substr(0, 2);
+
+					//there may be displacement data/Disp in expersion
+					if (displacement.empty())
+					{
+						out << '\n';
+					}
+					else
+					{
+						Utility::Format16Bit(displacement);
+						if (onlyDisp) //It will considered in 16 bit
+						{
+							out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+						}
+						else
+						{
+							if (Utility::HexSize(displacement) == "8")
+							{
+								out << ' ' << displacement.substr(2, 2) << '\n';
+							}
+							else
+							{
+								out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+							}
+						}
+					}
+				}
+				else
+				{
+					Error::LOG("Unexpected expression in []\n");
+				}
+			}
 		}
 		else
 		{
@@ -206,82 +281,85 @@ bool ProgramManager::MOV(Operand& operand)
 	}
 	else if (Utility::IsMemory(operand.first))
 	{
-		//mem, reg8/reg16
-
-		//Case 4
-		if (Utility::Is8BitRegister(operand.second))
+		if (Utility::Is8BitRegister(operand.second) || Utility::Is16BitRegister(operand.second))
 		{
-			//mem, reg8
-
+			//Case 4: mem, reg8/reg16
 			const std::string& mem = operand.first;
-			const std::string& reg8 = operand.second;
-			//Opcode(6)-d(1)-w(1) => 100010-0-0 => 88
-			const std::string& opcode = "88";
-			const std::string& exp = mem.substr(1, mem.length() - 2);
-			const std::string& fExp = Converter::ExpressionForModRM(exp); //[] removed
-			Error::Debug(exp);
-			if (MOD_RM.count(fExp))
+			const std::string& reg = operand.second;
+
+			/*
+				For 8Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-0-0 => 88
+				For 16Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-0-1 => 89
+				[*]Special Case when reg is AL and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-1-0 => A2, Second byte of opcode will be data directly
+				[*]Special Case when reg is AX and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-1-1 => A3, Second byte of opcode will be data directly
+			*/
+			const std::string& exp = mem.substr(1, mem.length() - 2);//[] removed
+			const std::string& fExp = Converter::ExpressionForModRM(exp); 
+
+			std::string displacement = "";
+			bool onlyDisp = Utility::ExtractHexFromMemExp(exp, displacement);
+
+
+			//Checking for Special Case
+			if (onlyDisp && (reg == REGISTER::AL || reg == REGISTER::AX))
 			{
-				//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
-				const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
-
-				Byte _2ndByte = info.mod << 6; //mod
-				_2ndByte |= REG_CODE.find(reg8)->second << 3; // reg
-				_2ndByte |= info.rm;
-
-				std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
-
-				out << opcode << ' ' << _2ndByteHex.substr(0, 2);
-
-				//there may be displacement data in expersion
-				const std::vector<std::string>& afterSplit = Utility::SplitBy(exp, '+');//memory exp without []
-				bool found = false;
-				for (const std::string& s : afterSplit)
+				//Special Cases
+				Utility::Format16Bit(displacement);
+				if (reg == REGISTER::AL)
 				{
-					if (Utility::IsValidHex(s))
-					{
-
-						found = true;
-						if (Utility::HexSize(s) == "8")
-						{
-
-							std::string data = s;
-							//may be data is represented using redundatn hex digit eg: 001Ah, 010H
-							Utility::Format16Bit(data);
-							data = data.substr(2); // Truncating redundant digits and formatting it in 8-bit form
-
-							//if mem exp is just containing dispacemnt then it will be considered as 16-bit data
-							if (afterSplit.size() == 1)
-							{
-								out << ' ' << data.substr(0, 2) << ' ' << "00\n";
-							}
-							else
-							{
-								out << ' ' << data.substr(0, 2) << '\n';
-							}
-						}
-						else
-						{
-							std::string data = s;
-							Utility::Format16Bit(data);
-							out << ' ' << data.substr(2, 2) << ' ' << data.substr(0, 2) << '\n';
-						}
-						break;
-					}
+					out << "A2" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
-
-				if (!found) { out << '\n'; }
-
+				else if (reg == REGISTER::AX)
+				{
+					out << "A3" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
 			}
 			else
 			{
-				Error::LOG("Unexpected expression in []\n");
+				const std::string& opcode = Utility::Is8BitRegister(reg) ? "88" : "89";
+				if (MOD_RM.count(fExp))
+				{
+					//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
+					const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+
+					Byte _2ndByte = info.mod << 6; //mod
+					_2ndByte |= REG_CODE.find(reg)->second << 3; // reg
+					_2ndByte |= info.rm;
+
+					std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+
+					out << opcode << ' ' << _2ndByteHex.substr(0, 2);
+
+					//there may be displacement data/Disp in expersion
+					if (displacement.empty())
+					{
+						out << '\n';
+					}
+					else
+					{
+						Utility::Format16Bit(displacement);
+						if (onlyDisp) //It will considered in 16 bit
+						{
+							out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+						}
+						else
+						{
+							if (Utility::HexSize(displacement) == "8")
+							{
+								out << ' ' << displacement.substr(2, 2) << '\n';
+							}
+							else
+							{
+								out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+							}
+						}
+					}
+				}
+				else
+				{
+					Error::LOG("Unexpected expression in []\n");
+				}
 			}
-
-		}
-		else if (Utility::Is16BitRegister(operand.second))
-		{
-
 		}
 		else
 		{
@@ -315,6 +393,5 @@ bool ProgramManager::MOV(Operand& operand)
 			Error::LOG("Expected MOV reg16, sreg\n");
 		}
 	}
-
 	return true;
 }

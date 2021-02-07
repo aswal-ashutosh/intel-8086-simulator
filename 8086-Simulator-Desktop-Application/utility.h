@@ -38,6 +38,9 @@ public:
 
 	//Function to check whether the data is 8bit-hex or 16-bitHex
 	static std::string HexSize(const std::string&);
+
+	//Function to extract hex data from memory expression, it will return true if exp only contain hex data
+	static bool ExtractHexFromMemExp(const std::string&, std::string&);
 };
 
 _16Bit Utility::HexToDec(const std::string& data)
@@ -205,4 +208,22 @@ std::string Utility::HexSize(const std::string& hex)
 	}
 
 	Error::LOG("Unexpected Case @HexSize\n");
+}
+
+
+bool Utility::ExtractHexFromMemExp(const std::string& exp, std::string& hex)
+{
+	const std::vector<std::string>& afterSplit = Utility::SplitBy(exp, '+');
+
+	for (const std::string& s : afterSplit)
+	{
+		if (Utility::IsValidHex(s))
+		{
+			hex = s;
+			return afterSplit.size() == 1 ? true : false;
+		}
+	}
+	
+	hex = "";
+	return false;
 }

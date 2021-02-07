@@ -105,7 +105,7 @@ bool ValidateAndFormatExp(std::string& exp)
 		else
 		{
 			//error
-			Error::LOG("Unexpected symbols\\Characters\n");
+			Error::LOG("Unexpected symbols\\Characters\n In [] @ValidateAndFormatExp");
 		}
 	}
 
