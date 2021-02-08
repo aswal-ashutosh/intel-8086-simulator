@@ -21,7 +21,7 @@ public:
 	//To check whether the oeprand is an 8-Bit register
 	static bool Is8BitRegister(const std::string&);
 
-	//To check whether the oeprand is an 16-Bit register
+	//To check whether the oeprand is an 16-Bit register but it will not include segment registers
 	static bool Is16BitRegister(const std::string&);
 
 	//To check whether the oeprand is an Segment register
@@ -110,10 +110,10 @@ bool Utility::Is16BitRegister(const std::string& reg)
 	OK |= reg == REGISTER::CX;
 	OK |= reg == REGISTER::DX;
 
-	OK |= reg == REGISTER::CS;
+	/*OK |= reg == REGISTER::CS;
 	OK |= reg == REGISTER::DS;
 	OK |= reg == REGISTER::SS;
-	OK |= reg == REGISTER::ES;
+	OK |= reg == REGISTER::ES;*/
 
 	OK |= reg == REGISTER::SP;
 	OK |= reg == REGISTER::BP;
@@ -211,8 +211,10 @@ std::string Utility::HexSize(const std::string& hex)
 }
 
 
-bool Utility::ExtractHexFromMemExp(const std::string& exp, std::string& hex)
+bool Utility::ExtractHexFromMemExp(const std::string& mem, std::string& hex)
 {
+	const std::string & exp = mem.substr(1, mem.length() - 2);//Removing []
+
 	const std::vector<std::string>& afterSplit = Utility::SplitBy(exp, '+');
 
 	for (const std::string& s : afterSplit)

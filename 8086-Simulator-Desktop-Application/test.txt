@@ -1,7 +1,14 @@
-mov [1234h], 1050h
-mov [12h], 1050h
-mov [1234h], 10h
-mov [12h], 20h
-mov [1234h], 011h
-mov [bx + si], 1050h
-mov [bx + di + 10h], 1050h
+mov ss, ax 
+mov ds, bx
+mov es, cx
+mov ax, ss
+mov bx, ds
+mov cx, es
+mov dx, cs
+mov ds, [1070h]
+mov es, [bx + si + 5060h]
+mov ss, [bx + di + 10h]
+mov [1070h], ds
+mov [123h], cs
+mov [bx + si + 5060h], es
+mov [bx + di + 10h], ss

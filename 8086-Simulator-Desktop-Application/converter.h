@@ -52,15 +52,17 @@ _16Bit Converter::HexToDec(const std::string& data)
 	return res;
 }
 
-std::string Converter::ExpressionForModRM(const std::string& exp)
+std::string Converter::ExpressionForModRM(const std::string& mem)
 {
+	
+	const std::string& exp = mem.substr(1, mem.length() - 2);//Removing []
 	//split by '+'
 	const std::vector<std::string> &afterSplit = Utility::SplitBy(exp, '+');
 
 	//If there is only data then it will be considered as 16bit displacement even if it is containing 8bit only
 	if (afterSplit.size() == 1 && Utility::IsValidHex(afterSplit.front()))
 	{
-		return "d16";
+		return "[d16]";
 	}
 
 	std::string res;
@@ -77,6 +79,6 @@ std::string Converter::ExpressionForModRM(const std::string& exp)
 		}
 	}
 
-	return res;
+	return '[' + res + ']';
 }
 
