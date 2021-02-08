@@ -6,10 +6,11 @@
 class Error
 {
 public:
-	static void LOG(const std::string& e)
+	static bool LOG(const std::string& e)
 	{
 		std::cout << "ERROR: " + e;
-		exit(0);
+		exit(0);//To be removed
+		return false;
 	}
 
 	static void Debug(const std::string& e)

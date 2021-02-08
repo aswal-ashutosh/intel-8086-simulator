@@ -56,7 +56,7 @@ bool Utility::IsValidHex(const std::string& hex)
 	//If hex value matches registers
 	if (hex == REGISTER::AH || hex == REGISTER::BH || hex == REGISTER::CH || hex == REGISTER::DH)
 	{
-		Error::Debug(hex + "is not hex\n");
+		//Error::Debug(hex + "is not hex\n");
 		return false;
 	}
 
