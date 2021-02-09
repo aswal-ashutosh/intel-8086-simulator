@@ -3,6 +3,7 @@
 #include"typedef.h"
 #include"utility.h"
 #include"register.h"
+#include"memory.h"
 
 class Mnemonic
 {
@@ -18,45 +19,67 @@ public:
 	static bool MOV(const std::string&, const std::string&);
 };
 
+//[TODO] Updating IP
 
 bool Mnemonic::MOV_CASE_1(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:1] MOV REG8, REG8*/
-	Register::
+	Register::REG8(OP1, Register::REG8(OP2));
+	return true;
 }
 
 bool Mnemonic::MOV_CASE_2(const std::string& OP1, const std::string& OP2)
 {
-
+	/*[CASE:2] MOV REG16, REG16*/
+	Register::REG16(OP1, Register::REG16(OP2));
+	return true;
 }
 
 bool Mnemonic::MOV_CASE_3(const std::string& OP1, const std::string& OP2)
 {
+	/*[CASE:3] MOV [MEM], REG8*/
+	std::string dis = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(OP1, dis);
 
+	if (onlyDisp)
+	{
+		int targetLocation = Register::REG16(REGISTER::DS) * 0x10 + Converter::HexToDec(dis);
+		Memory::Set(targetLocation, Register::REG8(OP2));
+	}
+	else
+	{
+
+	}
+	return true;
 }
 
 bool Mnemonic::MOV_CASE_4(const std::string& OP1, const std::string& OP2)
 {
+	return true;
 
 }
 
 bool Mnemonic::MOV_CASE_5(const std::string& OP1, const std::string& OP2)
 {
+	return true;
 
 }
 
 bool Mnemonic::MOV_CASE_6(const std::string& OP1, const std::string& OP2)
 {
+	return true;
 
 }
 
 bool Mnemonic::MOV_CASE_7(const std::string& OP1, const std::string& OP2)
 {
+	return true;
 
 }
 
 bool Mnemonic::MOV_CASE_8(const std::string& OP1, const std::string& OP2)
 {
+	return true;
 
 }
 

@@ -5,6 +5,8 @@
 #include"utility.h"
 #include"operands.h"
 #include"program_manager.h"
+#include"8086.h"
+#include"memory.h"
 
 
 /*
@@ -227,7 +229,30 @@ void Read()
 			std::cout << s << ' ';
 		}
 		std::cout << '\n';
-		Operand op = {tokens[1], tokens[3] };
+		if (tokens.empty())
+		{
+			Error::LOG("Empty Token Error\n");
+		}
+
+		Operand op = { tokens[1], tokens[3] };
+
+
+		//Compile
 		ProgramManager::MOV(op);
+
+		//Data Initialize
+		Register::REG8(REGISTER::AL, 0xAB);
+
+		//Run
+		Mnemonic::MOV(op.first, op.second);
+
+		//View
+		Memory::DebugMem(0x3456, 0x3456);
+
+		/*Memory::SetData(MemData(0x3333, 0x33), MemData(0x3335, 0xff));
+		
+		/*Register::REG16(op.second, 0x1f33);
+		Mnemonic::MOV(op.first, op.second);
+		std::cout << "AL:" << Converter::DecToHex(Register::REG16(op.second), Type::_16) << '\n';*/
 	}
 }

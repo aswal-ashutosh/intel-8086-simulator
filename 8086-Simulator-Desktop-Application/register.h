@@ -15,6 +15,8 @@ class Register
 	static void Sync16BitWith8Bit(_16Bit&, const Byte&, const bool);	//When 8-Bit Get Changed, bool = true -> R8 are Higer 8-Bit else Lower 8-Bit
 	static void Sync8BitWith16Bit(const _16Bit&, Byte&, Byte&);			//When 16-Bit Get Changed
 
+	//Return true if register is a 16Bit General Purposer Register
+	static bool IsGenReg16(const std::string&);
 	//Function to get parent(Register to which they belong) registers of 8-Bit registers
 	static std::string ParentRegister(const std::string&);
 	//Function to get Lower Child of a 16-Bit register
@@ -42,17 +44,19 @@ class Register
 public:
 
 	/*GETTERS*/
-	Byte REG8(const std::string&);
-	_16Bit REG16(const std::string&);
+	static Byte REG8(const std::string&);
+	static _16Bit REG16(const std::string&);
 
 	/*SETTERS*/
-	void REG8(const std::string&, const Byte&);
-	void REG16(const std::string&, const _16Bit&);
+	static void REG8(const std::string&, const Byte&);
+	static void REG16(const std::string&, const _16Bit&);
 
-	void IP_INC(const _16Bit&); /*Function to increment IP*/
-	void IP(const _16Bit&);
+	static void IP_INC(const _16Bit&); /*Function to increment IP*/
+	static void IP(const _16Bit&);
 
 };
+
+_16Bit Register::_IP;
 
 std::unordered_map<std::string, Byte> Register::_REG8 =
 {
@@ -134,6 +138,17 @@ void Register::Sync8BitWith16Bit(const _16Bit& R16, Byte& R8H, Byte& R8L)
 	}
 }
 
+bool Register::IsGenReg16(const std::string& R)
+{
+	bool OK = false;
+	OK |= R == REGISTER::AX;
+	OK |= R == REGISTER::BX;
+	OK |= R == REGISTER::CX;
+	OK |= R == REGISTER::DX;
+	return OK;
+}
+
+
 std::string Register::ParentRegister(const std::string& R)
 {
 	//Replace last character with 'X' 
@@ -204,7 +219,10 @@ void Register::REG16(const std::string& R, const _16Bit& data)
 	if (_REG16.count(R))
 	{
 		_REG16[R] = data;
-		Sync8BitWith16Bit(_REG16[R], _REG8[HigherChild(R)], _REG8[LowerChild(R)]);
+		if (IsGenReg16(R))
+		{
+			Sync8BitWith16Bit(_REG16[R], _REG8[HigherChild(R)], _REG8[LowerChild(R)]);
+		}
 	}
 	else
 	{

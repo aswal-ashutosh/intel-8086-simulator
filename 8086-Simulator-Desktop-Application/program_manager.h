@@ -169,7 +169,6 @@ bool ProgramManager::MOV_CASE_4(std::string& OP1, std::string& OP2)
 	const std::string& _2ndByteHex = Converter::DecToHex(_2ndByte);
 
 	out << opcode << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-
 	return true;
 }
 

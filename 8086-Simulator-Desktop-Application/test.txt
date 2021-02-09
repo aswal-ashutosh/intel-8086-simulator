@@ -1,14 +1,1 @@
-mov ss, ax 
-mov ds, bx
-mov es, cx
-mov ax, ss
-mov bx, ds
-mov cx, es
-mov dx, cs
-mov ds, [1070h]
-mov es, [bx + si + 5060h]
-mov ss, [bx + di + 10h]
-mov [1070h], ds
-mov [123h], cs
-mov [bx + si + 5060h], es
-mov [bx + di + 10h], ss
+mov [3456h], al
