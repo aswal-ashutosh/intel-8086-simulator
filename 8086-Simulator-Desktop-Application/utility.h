@@ -4,6 +4,7 @@
 #include"constants.h"
 #include"error_handler.h"
 #include<sstream>
+#include"operands.h"
 
 class Utility
 {
@@ -41,6 +42,9 @@ public:
 
 	//Function to extract hex data from memory expression, it will return true if exp only contain hex data
 	static bool ExtractHexFromMemExp(const std::string&, std::string&);
+
+	//Function to check whether the operand count is equal to expected count or not
+	static bool IsValidOperandCount(const Operand&, int);
 };
 
 _16Bit Utility::HexToDec(const std::string& data)
@@ -228,4 +232,12 @@ bool Utility::ExtractHexFromMemExp(const std::string& mem, std::string& hex)
 	
 	hex = "";
 	return false;
+}
+
+
+bool Utility::IsValidOperandCount(const Operand& op, int expected_count)
+{
+	int count = !op.first.empty();
+	count += !op.second.empty();
+	return count == expected_count;
 }

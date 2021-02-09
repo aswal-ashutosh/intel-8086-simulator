@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="8086.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="converter.h" />
     <ClInclude Include="error_handler.h" />

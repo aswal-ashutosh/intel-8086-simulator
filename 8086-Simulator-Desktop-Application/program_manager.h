@@ -403,7 +403,7 @@ bool ProgramManager::MOV_CASE_7(std::string& OP1, std::string& OP2)
 	else
 	{
 		//error
-		return Error::LOG("Expected MOV sreg, reg16\n");
+		return Error::LOG("Expected MOV sreg, r/m16\n");
 	}
 
 	return true;
@@ -479,7 +479,7 @@ bool ProgramManager::MOV_CASE_8(std::string& OP1, std::string& OP2)
 	else
 	{
 		//error
-		return Error::LOG("Expected MOV sreg, reg16\n");
+		return Error::LOG("Expected MOV r/m16, sreg\n");
 	}
 
 	return true;
@@ -489,65 +489,55 @@ bool ProgramManager::MOV(const Operand& operand)
 {
 	//TODO:: Check Whether we have two operands or not
 
+	if (!Utility::IsValidOperandCount(operand, 2))
+	{
+		return Error::LOG("Expected 2 Operands @MOV\n");
+	}
+
 	std::string OP1 = operand.first;
 	std::string OP2 = operand.second;
-
-	Byte CASE = 0;
 
 	if ((Utility::Is16BitRegister(OP1) || Utility::Is8BitRegister(OP1)) && Utility::IsValidHex(OP2))
 	{
 		/*[CASE:1] MOV reg8/reg16, immd8/immd16*/
-		CASE = 1;
+		return MOV_CASE_1(OP1, OP2);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2))
 	{
 		/*[CASE:2] MOV mem, immd8/immd16*/
-		CASE = 2;
+		return MOV_CASE_2(OP1, OP2);
 	}
 	else if ((Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2)))
 	{
 		/*[CASE:3]MOV reg8, reg8*/
-		CASE = 3;
+		return MOV_CASE_3(OP1, OP2);
 
 	}
 	else if ((Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2)))
 	{
 		/*[CASE:4]MOV reg16, reg16*/
-		CASE = 4;
+		return MOV_CASE_4(OP1, OP2);
 	}
 	else if ((Utility::Is8BitRegister(OP1) || Utility::Is16BitRegister(OP1)) && Utility::IsMemory(OP2))
 	{
 		/*[CASE:5]MOV reg8/reg16, mem*/
-		CASE = 5;
+		return MOV_CASE_5(OP1, OP2);
 	}
 	else if (Utility::IsMemory(OP1) && (Utility::Is8BitRegister(OP2) || Utility::Is16BitRegister(OP2)))
 	{
 		/*[CASE:6]MOV mem, reg8/reg16*/
-		CASE = 6;
+		return MOV_CASE_6(OP1, OP2);
 	}
 	else if (Utility::IsSegmentRegister(OP1))
 	{
 		/*[CASE:7]MOV sreg, r/m16*/
-		CASE = 7;
+		return MOV_CASE_7(OP1, OP2);
 	}
 	else if (Utility::IsSegmentRegister(OP2))
 	{
 		/*[CASE:8]MOV r/m16, sreg*/
-		CASE = 8;
+		return MOV_CASE_8(OP1, OP2);
 	}
 
-	switch (CASE)
-	{
-		case 1:  return MOV_CASE_1(OP1, OP2);
-		case 2:  return MOV_CASE_2(OP1, OP2);
-		case 3:  return MOV_CASE_3(OP1, OP2);
-		case 5:  return MOV_CASE_5(OP1, OP2);
-		case 6:  return MOV_CASE_6(OP1, OP2);
-		case 7:  return MOV_CASE_7(OP1, OP2);
-		case 4:  return MOV_CASE_4(OP1, OP2);
-		case 8:	 return MOV_CASE_8(OP1, OP2);
-		default: return Error::LOG("Syntax Error @ MOV\n");
-	}
-
-	return true;
+	return Error::LOG("Syntax Error @ MOV\n");
 }
