@@ -16,6 +16,7 @@ public:
 	static void Debug(const std::string& e)
 	{
 		std::cout << e << '\n';
+		std::cin.get();
 	}
 
 	static void DebugBit(std::bitset<8> b)

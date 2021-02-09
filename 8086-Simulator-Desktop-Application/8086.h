@@ -22,7 +22,7 @@ public:
 bool Mnemonic::MOV_CASE_1(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:1] MOV REG8, REG8*/
-
+	Register::
 }
 
 bool Mnemonic::MOV_CASE_2(const std::string& OP1, const std::string& OP2)
