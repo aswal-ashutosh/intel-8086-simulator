@@ -1,6 +1,7 @@
 #pragma once
 #include"typedef.h"
 #include<unordered_map>
+#include"converter.h"
 
 class Register
 {
@@ -54,6 +55,9 @@ public:
 	static void IP_INC(const _16Bit&); /*Function to increment IP*/
 	static void IP(const _16Bit&);
 
+	//Testing Functions
+	static void PrintAll();
+
 };
 
 _16Bit Register::_IP;
@@ -88,6 +92,20 @@ std::unordered_map<std::string, _16Bit> Register::_REG16 =
 	{REGISTER::SI, 0},
 };
 
+void Register::PrintAll()
+{
+	for (const std::pair<const std::string, Byte>& R : _REG8)
+	{
+		const std::string& data = Converter::DecToHex(R.second);
+		std::cout << R.first << ":[" << data << "]\n";
+	}
+
+	for (const std::pair<const std::string, _16Bit>& R : _REG16)
+	{
+		const std::string& data = Converter::DecToHex(R.second, Type::_16);
+		std::cout << R.first << ":[" << data << "]\n";
+	}
+}
 
 void Register::Sync16BitWith8Bit(_16Bit& R16, const Byte& R8, const bool high)
 {
@@ -183,7 +201,7 @@ Byte Register::REG8(const std::string& R)
 	}
 	else
 	{
-		Error::Debug(R + "is not 8-Bit Register @ Getter\n");
+		Error::Debug(R + " is not 8-Bit Register @ Getter\n");
 	}
 }
 
@@ -195,7 +213,7 @@ _16Bit Register::REG16(const std::string& R)
 	}
 	else
 	{
-		Error::Debug(R + "is not 16-Bit Register @ Getter\n");
+		Error::Debug(R + " is not 16-Bit Register @ Getter\n");
 	}
 }
 

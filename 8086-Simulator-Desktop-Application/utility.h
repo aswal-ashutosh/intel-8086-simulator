@@ -57,6 +57,10 @@ _16Bit Utility::HexToDec(const std::string& data)
 
 bool Utility::IsValidHex(const std::string& hex)
 {
+	if (hex.size() > 5)
+	{
+		return Error::LOG("Don't Represent Hex in more than 4 digits\n");
+	}
 	//If hex value matches registers
 	if (hex == REGISTER::AH || hex == REGISTER::BH || hex == REGISTER::CH || hex == REGISTER::DH)
 	{
@@ -241,3 +245,4 @@ bool Utility::IsValidOperandCount(const Operand& op, int expected_count)
 	count += !op.second.empty();
 	return count == expected_count;
 }
+

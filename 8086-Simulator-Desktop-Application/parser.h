@@ -8,19 +8,6 @@
 #include"8086.h"
 #include"memory.h"
 
-
-/*
-	1)Both operands can't be memory => mov [],[] =>wrong.
-	2)If first operand is reg then d = 1 else if second operand is reg then d = 0.When both are reg then also d=1.
-	3)If Data is word(16-bits) then w = 1 else if data is byte(8-bits) then w = 0.
-	4)[50h] =>No displacement but data will be considered as (16-bit)
-*/
-
-
-
-
-
-
 bool ValidateAndFormatExp(std::string& exp)
 {
 	//Remove spaces
@@ -241,13 +228,15 @@ void Read()
 		ProgramManager::MOV(op);
 
 		//Data Initialize
-		Register::REG8(REGISTER::AL, 0xAB);
+		/*Register::REG16(REGISTER::DS, 0x1000);
+		Register::REG16(REGISTER::DI, 0x0100);
+		Register::REG16(REGISTER::AX, 0xABCD);*/
+
 
 		//Run
 		Mnemonic::MOV(op.first, op.second);
 
-		//View
-		Memory::DebugMem(0x3456, 0x3456);
+		
 
 		/*Memory::SetData(MemData(0x3333, 0x33), MemData(0x3335, 0xff));
 		
@@ -255,4 +244,8 @@ void Read()
 		Mnemonic::MOV(op.first, op.second);
 		std::cout << "AL:" << Converter::DecToHex(Register::REG16(op.second), Type::_16) << '\n';*/
 	}
+
+	//View
+	Memory::DebugMem(0x1000, 0x01ff, 2);
+	Register::PrintAll();
 }

@@ -1,1 +1,4 @@
-mov [3456h], al
+mov ax, 1000h
+mov ds, ax    
+mov di, 100h
+mov [di + ffh], 33h
