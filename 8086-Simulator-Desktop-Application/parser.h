@@ -225,7 +225,7 @@ void Read()
 
 
 		//Compile
-		ProgramManager::MOV(op);
+		ProgramManager::ADD(op);
 
 		//Data Initialize
 		/*Register::REG16(REGISTER::DS, 0x1000);
@@ -234,7 +234,7 @@ void Read()
 
 
 		//Run
-		Mnemonic::MOV(op.first, op.second);
+		//Mnemonic::MOV(op.first, op.second);
 
 		
 
@@ -246,6 +246,6 @@ void Read()
 	}
 
 	//View
-	Memory::DebugMem(0x1000, 0x01ff, 2);
-	Register::PrintAll();
+	/*Memory::DebugMem(0x1000, 0x01ff, 2);
+	Register::PrintAll();*/
 }
