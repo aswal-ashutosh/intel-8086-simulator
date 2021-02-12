@@ -1,3 +1,2 @@
-add [bx + si], 033h
-add ax, 033h
-add bx, 033h
+mov ax, 1234h
+mov ax, 0f0h
