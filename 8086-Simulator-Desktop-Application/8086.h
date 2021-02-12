@@ -189,11 +189,13 @@ bool Mnemonic::MOV(const std::string& OP1, const std::string& OP2)
 bool Mnemonic::ADD_CASE_1(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE-1] REG8, REG8*/
-	_16Bit REG1 = Register::REG8(OP1);
-	_16Bit REG2 = Register::REG8(OP2);
+	Byte X = Register::REG8(OP1);
+	Byte Y = Register::REG8(OP2);
+	_16Bit REG1 = X;
+	_16Bit REG2 = Y;
 	REG1 += REG2;
-	//[TODO: FLAG CHECKS]
 	Register::REG8(OP1, REG1);
+	Register::UpdateFlags8Bit(X, Y, REG1);
 	return true;
 }
 
@@ -223,11 +225,13 @@ bool Mnemonic::ADD_CASE_3(const std::string& OP1, const std::string& OP2)
 bool Mnemonic::ADD_CASE_4(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE-4] REG16, REG16*/
-	int REG1 = Register::REG16(OP1);
-	int REG2 = Register::REG16(OP2);
+	_16Bit X = Register::REG16(OP1);
+	_16Bit Y = Register::REG16(OP2);
+	int REG1 = X;
+	int REG2 = Y;
 	REG1 += REG2;
-	//[TODO: FLAG CHECKS]
 	Register::REG16(OP1, REG1);
+	Register::UpdateFlags16Bit(X, Y, REG1);
 	return true;
 }
 

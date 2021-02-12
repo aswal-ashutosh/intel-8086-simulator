@@ -35,7 +35,6 @@ class Register
 	*/
 	
 	static _16Bit Flag;
-	
 
 public:
 
@@ -68,6 +67,9 @@ public:
 	
 	static void SetFlag(const FLAG&, const bool&);
 	static bool GetFlag(const FLAG&);
+
+	static void UpdateFlags8Bit(const Byte, const Byte, const _16Bit);
+	static void UpdateFlags16Bit(const _16Bit, const _16Bit, const int);
 
 };
 
@@ -122,6 +124,61 @@ bool Register::GetFlag(const FLAG& X)
 	return Flag & _16Bit(X);
 }
 
+void Register::UpdateFlags8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
+{
+	Register::SetFlag(FLAG::CF, Result > 0x00ff); //Carry Flag
+	Register::SetFlag(FLAG::AF, (OP1 & 0x0f) + (OP2 & 0x0f) > 0x0f); //Auxillary Carry Flag
+	Byte Result8Bit = Result; //Truncating Extra Bits
+
+	//Over Flow Flag
+	if ((OP1 & (1 << 7)) ^ (OP2 & (1 << 7)))
+	{
+		//Different Sign
+		Register::SetFlag(FLAG::OF, false);
+	}
+	else
+	{
+		//Same Sign
+		Register::SetFlag(FLAG::OF, (Result8Bit & (1 << 7)) ^ (OP1 & (1 << 7)));
+	}
+
+	
+	Register::SetFlag(FLAG::PF, !(Utility::SetBitCount(Result8Bit) & 1)); //Parity Flag
+
+	Register::SetFlag(FLAG::SF, Result8Bit & (1 << 7)); //Sign Flag
+
+	Register::SetFlag(FLAG::ZF, Result8Bit == 0x00);
+
+	/*[TODO][DF]*/
+}
+
+void Register::UpdateFlags16Bit(const _16Bit OP1, const _16Bit OP2, const int Result)
+{
+	Register::SetFlag(FLAG::CF, Result > 0xffff); //Carry Flag
+	_16Bit Result16Bit = Result; //Truncating Extra Bits
+
+	//Over Flow Flag
+	if ((OP1 & (1 << 15)) ^ (OP2 & (1 << 15)))
+	{
+		//Different Sign
+		Register::SetFlag(FLAG::OF, false);
+	}
+	else
+	{
+		//Same Sign
+		Register::SetFlag(FLAG::OF, (Result16Bit & (1 << 15)) ^ (OP1 & (1 << 15)));
+	}
+
+
+	Register::SetFlag(FLAG::PF, !(Utility::SetBitCount(Result16Bit) & 1)); //Parity Flag
+
+	Register::SetFlag(FLAG::SF, Result16Bit & (1 << 15)); //Sign Flag
+
+	Register::SetFlag(FLAG::ZF, Result16Bit == 0x0000);
+
+	/*[TODO][DF]*/
+}
+
 void Register::PrintAll()
 {
 	for (const std::pair<const std::string, Byte>& R : _REG8)
@@ -137,7 +194,7 @@ void Register::PrintAll()
 	}
 
 	std::cout << "OF:[" << (GetFlag(FLAG::OF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
-	std::cout << "DF:[" << (GetFlag(FLAG::SF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
+	std::cout << "DF:[" << (GetFlag(FLAG::DF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
 	std::cout << "SF:[" << (GetFlag(FLAG::SF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
 	std::cout << "ZF:[" << (GetFlag(FLAG::ZF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
 	std::cout << "AF:[" << (GetFlag(FLAG::AF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
