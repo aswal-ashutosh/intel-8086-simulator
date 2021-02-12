@@ -184,7 +184,6 @@ bool Mnemonic::MOV(const std::string& OP1, const std::string& OP2)
 	return Error::LOG("Executon Failed @ MOV\n");
 }
 
-
 /*<-----------------------------------------ADD------------------------------------------>*/
 
 bool Mnemonic::ADD_CASE_1(const std::string& OP1, const std::string& OP2)
@@ -220,7 +219,6 @@ bool Mnemonic::ADD_CASE_3(const std::string& OP1, const std::string& OP2)
 	Memory::Set8Bit(PAdd, MEM);
 	return true;
 }
-
 
 bool Mnemonic::ADD_CASE_4(const std::string& OP1, const std::string& OP2)
 {

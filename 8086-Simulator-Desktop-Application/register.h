@@ -27,20 +27,15 @@ class Register
 	//Function to check whether the 8-Bit register Higher or Lower
 	static bool Order(const std::string&); // true => Hihger, false => Lower
 
-	//Flag Registers
-	class Flag
-	{
-		static bool _OF;//Overflow Flag
-		static bool _DF;//Direction Flag
-		static bool _IF;//Interrupt Flag
-		static bool _TF;//Trap Flag
-		static bool _SF;//Sign Flag
-		static bool _ZF;//Zero Flag
-		static bool _AF;//Auxilary Carry Flag
-		static bool _PF;//Parity Flag
-		static bool _CF;//Carry Flag
-	public:
-	};
+
+	/*<<<<<<<<<<<<<<<<<<<<<<<<<<FLAG REGISTER>>>>>>>>>>>>>>>>>>>>>>>>>*/
+	/*
+		Flag Register Structure
+		[][][][][OF][DF][IF][TF][SF][ZF][][AF][][PF][][CF]
+	*/
+	
+	static _16Bit Flag;
+	
 
 public:
 
@@ -58,9 +53,26 @@ public:
 	//Testing Functions
 	static void PrintAll();
 
+	/*<<<<<<<<<<<<<<<<<<<<<<<<<<FLAG REGISTER>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+	enum class FLAG
+	{
+		CF = 1 << 0,
+		PF = 1 << 2,
+		AF = 1 << 4,
+		ZF = 1 << 6,
+		SF = 1 << 7,
+		DF = 1 << 10,
+		OF = 1 << 11,
+	};
+	
+	static void SetFlag(const FLAG&, const bool&);
+	static bool GetFlag(const FLAG&);
+
 };
 
 _16Bit Register::_IP;
+_16Bit Register::Flag;
 
 std::unordered_map<std::string, Byte> Register::_REG8 =
 {
@@ -92,6 +104,24 @@ std::unordered_map<std::string, _16Bit> Register::_REG16 =
 	{REGISTER::SI, 0},
 };
 
+//Flag Register//
+void Register::SetFlag(const FLAG& X, const bool& state)
+{
+	if (state)
+	{
+		Flag |= _16Bit(X);
+	}
+	else
+	{
+		Flag &= ~_16Bit(X);
+	}
+}
+
+bool Register::GetFlag(const FLAG& X)
+{
+	return Flag & _16Bit(X);
+}
+
 void Register::PrintAll()
 {
 	for (const std::pair<const std::string, Byte>& R : _REG8)
@@ -105,6 +135,14 @@ void Register::PrintAll()
 		const std::string& data = Converter::DecToHex(R.second, HexSize::_16Bit);
 		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
 	}
+
+	std::cout << "OF:[" << (GetFlag(FLAG::OF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
+	std::cout << "DF:[" << (GetFlag(FLAG::SF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
+	std::cout << "SF:[" << (GetFlag(FLAG::SF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
+	std::cout << "ZF:[" << (GetFlag(FLAG::ZF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
+	std::cout << "AF:[" << (GetFlag(FLAG::AF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
+	std::cout << "PF:[" << (GetFlag(FLAG::PF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
+	std::cout << "CF:[" << (GetFlag(FLAG::CF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "]\n";
 }
 
 void Register::Sync16BitWith8Bit(_16Bit& R16, const Byte& R8, const bool high)
