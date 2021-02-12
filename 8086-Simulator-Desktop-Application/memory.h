@@ -3,31 +3,62 @@
 #include"converter.h"
 #include"utility.h"
 #include"error_handler.h"
-#include"hex_size.h"
 
+struct MemData
+{
+	int loc;
+	int val;
+	MemData(int _loc, int _val) :loc(_loc), val(_val)
+	{
+
+	}
+};
 
 class Memory
 {
 	static Byte mem[1 << 20];
 public:
+	static void SetData()
+	{
 
-	//Setters
-	static void Set8Bit(const int, const Byte);
-	static void Set16Bit(const int, const _16Bit);
+	}
 
-	//Getters
-	static Byte Get8Bit(const int);
-	static _16Bit Get16Bit(const int);
-	
+	template<typename HEAD, typename... TAIL>
+	static void SetData(HEAD H, TAIL... T)
+	{
+		mem[H.loc] = H.val;
+		SetData(T...);
+	}
+
+	static void Set(int loc, Byte val)
+	{
+		mem[loc] = val;
+	}
+
+	static Byte Get(int physicalAddress)
+	{
+		return mem[physicalAddress];
+	}
+
+
+	static Byte Get(int address, int offset)
+	{
+		if (address * 0x10 + offset > 0xfffff)
+		{
+			Error::Debug("Note valid Address+offset\n");
+		}
+		return mem[address * 0x10 + offset];
+	}
+
 	static void DebugMem(int s, int offset, int cnt)
 	{
-		std::string address = Converter::DecToHex(s, HexSize::_16Bit);
+		std::string address = Converter::DecToHex(s, Type::_16);
 
 		for (int i = 0; i < cnt; ++i)
 		{
 			int physcialAddress = s * 0x10 + (offset + i);
-			std::string off = Converter::DecToHex(offset + i, HexSize::_16Bit);
-			std::cout << address << '-' << off << ":[" << "\x1B[32m" + Converter::DecToHex(mem[physcialAddress]) + "\x1B[0m]" << '\n';
+			std::string off = Converter::DecToHex(offset + i, Type::_16);
+			std::cout << address << '-' << off << ": " << Converter::DecToHex(mem[physcialAddress]) << '\n';
 		}
 	}
 
@@ -36,39 +67,6 @@ public:
 };
 
 Byte Memory::mem[1 << 20] = { 0 };
-
-void Memory::Set8Bit(const int loc, const Byte data)
-{
-	if (loc < 0x00000 || loc > 0xfffff){ Error::Debug("Address out of range @Set8Bit\n"); }
-	mem[loc] = data;
-}
-
-void Memory::Set16Bit(const int loc, const _16Bit data)
-{
-	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Set16Bit\n"); }
-	Byte Lbyte = data & 0x00ff;
-	Byte Hbyte = (data & 0xff00) >> 8;
-	int pAddressL = loc;
-	int pAddressH = loc + 1 > 0xfffff ? 0x00000 : loc + 1;	//Address should be in range[00000H-FFFFFH]
-	mem[pAddressL] = Lbyte;
-	mem[pAddressH] = Hbyte;
-}
-
-Byte Memory::Get8Bit(const int loc)
-{
-	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Get8Bit\n"); }
-	return mem[loc];
-}
-
-_16Bit Memory::Get16Bit(const int loc)
-{
-	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Get8Bit\n"); }
-	int pAddressL = loc;
-	int pAddressH = loc + 1 > 0xfffff ? 0x00000 : loc + 1;	//Address should be in range[00000H-FFFFFH]
-	_16Bit HigherData = mem[pAddressH];
-	_16Bit LowerData = mem[pAddressL];
-	return (HigherData << 8) | LowerData;
-}
 
 int Memory::PhysicalAddress(const std::string& mem)
 {

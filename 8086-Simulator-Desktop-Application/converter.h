@@ -4,14 +4,19 @@
 #include<sstream>
 #include"error_handler.h"
 #include"utility.h"
-#include"hex_size.h"
+
+enum class Type
+{
+	_8,
+	_16,
+};
 
 class Converter
 {
 public:
 
 	//To convert Dec to Hex
-	static std::string DecToHex(const _16Bit&, const HexSize&);
+	static std::string DecToHex(const _16Bit&, const Type&);
 	
 	//To convert Hex to Dec
 	static _16Bit HexToDec(const std::string&);
@@ -24,14 +29,14 @@ public:
 	static std::string ExpressionForModRM(const std::string&);
 };
 
-std::string Converter::DecToHex(const _16Bit& data, const HexSize& hexSize = HexSize::_8Bit)
+std::string Converter::DecToHex(const _16Bit& data, const Type& type = Type::_8)
 {
 	std::stringstream ss;
 	ss << std::hex << data;
 	std::string res = ss.str() + 'H';
 	Utility::Capitalize(res);
 
-	if (hexSize == HexSize::_8Bit)
+	if (type == Type::_8)
 	{
 		Utility::Format8Bit(res);
 	}

@@ -29,7 +29,6 @@
     <ClInclude Include="parser.h" />
     <ClInclude Include="program_manager.h" />
     <ClInclude Include="register.h" />
-    <ClInclude Include="hex_size.h" />
     <ClInclude Include="typedef.h" />
     <ClInclude Include="utility.h" />
   </ItemGroup>

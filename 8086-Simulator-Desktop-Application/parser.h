@@ -24,7 +24,7 @@ bool ValidateAndFormatExp(std::string& exp)
 
 	if (s.length() > 11 || s.length() < 2)
 	{
-		Error::LOG("Unexpected number of characters\n");
+		std::cout << "Unexpected number of characters\n";
 		return false;
 	}
 
@@ -33,7 +33,7 @@ bool ValidateAndFormatExp(std::string& exp)
 	
 	if (afterSplit.size() > 3)
 	{
-		Error::LOG("More than 3 strings separated by '+'\n");
+		std::cout << "More than 3 strings separated by +\n";
 		return false;
 	}
 
@@ -218,24 +218,14 @@ void Read()
 		std::cout << '\n';
 		if (tokens.empty())
 		{
-			Error::LOG("Empty Tokens\n");
+			Error::LOG("Empty Token Error\n");
 		}
 
 		Operand op = { tokens[1], tokens[3] };
 
 
 		//Compile
-		if (tokens.front() == "MOV")
-		{
-			ProgramManager::MOV(op);
-			Mnemonic::MOV(op.first, op.second);
-		}
-		else if(tokens.front() == "ADD")
-		{
-			ProgramManager::ADD(op);
-			Mnemonic::ADD(op.first, op.second);
-		}
-		
+		ProgramManager::ADD(op);
 
 		//Data Initialize
 		/*Register::REG16(REGISTER::DS, 0x1000);
@@ -256,7 +246,6 @@ void Read()
 	}
 
 	//View
-	std::cout << "\x1B[36m\n==============[OUTPUT]==============\x1B[0m\n\n";
-	Memory::DebugMem(0x1000, 0x3333, 2);
-	Register::PrintAll();
+	/*Memory::DebugMem(0x1000, 0x01ff, 2);
+	Register::PrintAll();*/
 }

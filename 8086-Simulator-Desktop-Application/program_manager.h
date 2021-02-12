@@ -1066,7 +1066,6 @@ bool ProgramManager::ADD(const Operand& operand)
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
-		/*[CASE-11] REG16, IMMD8*/
 		return ADD_CASE_11(OP1, OP2);
 	}
 
