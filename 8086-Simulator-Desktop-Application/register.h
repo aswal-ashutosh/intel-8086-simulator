@@ -49,8 +49,8 @@ public:
 	static _16Bit REG16(const std::string&);
 
 	/*SETTERS*/
-	static void REG8(const std::string&, const Byte&);
-	static void REG16(const std::string&, const _16Bit&);
+	static void REG8(const std::string&, const Byte);
+	static void REG16(const std::string&, const _16Bit);
 
 	static void IP_INC(const _16Bit&); /*Function to increment IP*/
 	static void IP(const _16Bit&);
@@ -97,13 +97,13 @@ void Register::PrintAll()
 	for (const std::pair<const std::string, Byte>& R : _REG8)
 	{
 		const std::string& data = Converter::DecToHex(R.second);
-		std::cout << R.first << ":[" << data << "]\n";
+		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
 	}
 
 	for (const std::pair<const std::string, _16Bit>& R : _REG16)
 	{
-		const std::string& data = Converter::DecToHex(R.second, Type::_16);
-		std::cout << R.first << ":[" << data << "]\n";
+		const std::string& data = Converter::DecToHex(R.second, HexSize::_16Bit);
+		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
 	}
 }
 
@@ -218,7 +218,7 @@ _16Bit Register::REG16(const std::string& R)
 }
 
 /*SETTERS*/
-void Register::REG8(const std::string& R, const Byte& data)
+void Register::REG8(const std::string& R, const Byte data)
 {
 	if (_REG8.count(R))
 	{
@@ -232,7 +232,7 @@ void Register::REG8(const std::string& R, const Byte& data)
 }
 
 
-void Register::REG16(const std::string& R, const _16Bit& data)
+void Register::REG16(const std::string& R, const _16Bit data)
 {
 	if (_REG16.count(R))
 	{
