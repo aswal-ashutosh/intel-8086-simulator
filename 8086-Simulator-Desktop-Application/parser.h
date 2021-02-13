@@ -238,10 +238,10 @@ void Read()
 			ProgramManager::ADD(op);
 			Mnemonic::ADD(op.first, op.second);
 		}
-		else if (tokens.front() == "ADC")
+		else if (tokens.front() == "XOR")
 		{
-			ProgramManager::ADC(op);
-			Mnemonic::ADC(op.first, op.second);
+			ProgramManager::XOR(op);
+			//Mnemonic::ADC(op.first, op.second);
 		}
 
 		//Data Initialize
