@@ -235,7 +235,10 @@ void Read()
 			ProgramManager::ADD(op);
 			Mnemonic::ADD(op.first, op.second);
 		}
-		
+		else if (tokens.front() == "ADC")
+		{
+			ProgramManager::ADC(op);
+		}
 
 		//Data Initialize
 		/*Register::REG16(REGISTER::DS, 0x1000);

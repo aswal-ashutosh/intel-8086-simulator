@@ -1,2 +1,11 @@
-mov ax, ffffh
-add ax, 0ffh 
+adc [bx + si + 015h], cl
+adc bx, dx
+adc [3456h], ax
+adc al, cl
+adc al, [bp + si + 015h]
+adc al, 056h
+adc ax, 1234h
+adc [bx + si], 087h
+adc [bx + si + 10h], 1234h 
+adc [bx + si], 012h
+adc bx, 033h

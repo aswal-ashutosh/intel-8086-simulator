@@ -21,21 +21,22 @@ class ProgramManager
 	static bool MOV_CASE_7(std::string&, std::string&);
 	static bool MOV_CASE_8(std::string&, std::string&);
 
-	static bool ADD_CASE_1(std::string&, std::string&);
-	static bool ADD_CASE_2(std::string&, std::string&);
-	static bool ADD_CASE_3(std::string&, std::string&);
-	static bool ADD_CASE_4(std::string&, std::string&);
-	static bool ADD_CASE_5(std::string&, std::string&);
-	static bool ADD_CASE_6(std::string&, std::string&);
-	static bool ADD_CASE_7(std::string&, std::string&);
-	static bool ADD_CASE_8(std::string&, std::string&);
-	static bool ADD_CASE_9(std::string&, std::string&);
-	static bool ADD_CASE_10(std::string&, std::string&);
-	static bool ADD_CASE_11(std::string&, std::string&);
+	static bool ADD_CASE_1(std::string&, std::string&, const bool);
+	static bool ADD_CASE_2(std::string&, std::string&, const bool);
+	static bool ADD_CASE_3(std::string&, std::string&, const bool);
+	static bool ADD_CASE_4(std::string&, std::string&, const bool);
+	static bool ADD_CASE_5(std::string&, std::string&, const bool);
+	static bool ADD_CASE_6(std::string&, std::string&, const bool);
+	static bool ADD_CASE_7(std::string&, std::string&, const bool);
+	static bool ADD_CASE_8(std::string&, std::string&, const bool);
+	static bool ADD_CASE_9(std::string&, std::string&, const bool);
+	static bool ADD_CASE_10(std::string&, std::string&, const bool);
+	static bool ADD_CASE_11(std::string&, std::string&, const bool);
 
 public:
 	static bool MOV(const Operand&);
-	static bool ADD(const Operand&);
+	static bool ADD(const Operand&, const bool);
+	static bool ADC(const Operand&);
 };
 
 bool ProgramManager::MOV_CASE_1(std::string& OP1, std::string& OP2)
@@ -555,7 +556,7 @@ bool ProgramManager::MOV(const Operand& operand)
 	return Error::LOG("Syntax Error @ MOV\n");
 }
 
-bool ProgramManager::ADD_CASE_1(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_1(std::string& OP1, std::string& OP2, const bool ADC)
 {	
 	//REG8, R/M8
 	//[CASE-1]REG8, REG8 
@@ -565,11 +566,11 @@ bool ProgramManager::ADD_CASE_1(std::string& OP1, std::string& OP2)
 	B2 |= REG_CODE.find(OP1)->second << 3;
 	B2 |= REG_CODE.find(OP2)->second;
 	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "02" << ' ' << hB2.substr(0, 2) << '\n';
+	out << (ADC ? "12" : "02") << ' ' << hB2.substr(0, 2) << '\n';
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_2(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_2(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	//[CASE-2]REG8, [MEM]
 	//1st Byte => 02
@@ -587,7 +588,7 @@ bool ProgramManager::ADD_CASE_2(std::string& OP1, std::string& OP2)
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
 
-		out << "02" << ' ' << hB2.substr(0, 2);
+		out << (ADC ? "12" : "02") << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
@@ -621,7 +622,7 @@ bool ProgramManager::ADD_CASE_2(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_3(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_3(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	/*[CASE-3] MEM, REG8*/
 	//1st Byte => 00
@@ -639,7 +640,7 @@ bool ProgramManager::ADD_CASE_3(std::string& OP1, std::string& OP2)
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
 
-		out << "00" << ' ' << hB2.substr(0, 2);
+		out << (ADC ? "10" : "00") << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
@@ -673,7 +674,7 @@ bool ProgramManager::ADD_CASE_3(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_4(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_4(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	//REG16, R/M16
 	/*[CASE-4] REG16, REG16*/
@@ -683,11 +684,11 @@ bool ProgramManager::ADD_CASE_4(std::string& OP1, std::string& OP2)
 	B2 |= REG_CODE.find(OP1)->second << 3;
 	B2 |= REG_CODE.find(OP2)->second;
 	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "03" << ' ' << hB2.substr(0, 2) << '\n';
+	out << (ADC ? "13" : "03") << ' ' << hB2.substr(0, 2) << '\n';
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_5(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_5(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	/*[CASE-5] REG16, MEM*/
 	//1st Byte => 03
@@ -705,7 +706,7 @@ bool ProgramManager::ADD_CASE_5(std::string& OP1, std::string& OP2)
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
 
-		out << "03" << ' ' << hB2.substr(0, 2);
+		out << (ADC ? "13" : "03") << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
@@ -739,7 +740,7 @@ bool ProgramManager::ADD_CASE_5(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_6(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_6(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	/*[CASE-6] MEM, REG16*/
 	//1st Byte => 01
@@ -757,7 +758,7 @@ bool ProgramManager::ADD_CASE_6(std::string& OP1, std::string& OP2)
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
 
-		out << "01" << ' ' << hB2.substr(0, 2);
+		out << (ADC ? "11" : "01") << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
@@ -791,7 +792,7 @@ bool ProgramManager::ADD_CASE_6(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_7(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_7(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	/*[CASE-7] MEM, IMMD8*/
 	//1st Byte => 80
@@ -802,6 +803,7 @@ bool ProgramManager::ADD_CASE_7(std::string& OP1, std::string& OP2)
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B2 = info.mod << 6;
+		B2 |= (ADC ? 0b00010000 : 0b00000000);
 		B2 |= info.rm;
 		const std::string& hB2 = Converter::DecToHex(B2);
 
@@ -843,7 +845,7 @@ bool ProgramManager::ADD_CASE_7(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_8(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_8(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	/*[CASE-8] MEM, IMMD16*/
 	//1st Byte => 81
@@ -854,6 +856,7 @@ bool ProgramManager::ADD_CASE_8(std::string& OP1, std::string& OP2)
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B2 = info.mod << 6;
+		B2 |= (ADC ? 0b00010000 : 0b00000000);
 		B2 |= info.rm;
 		const std::string& hB2 = Converter::DecToHex(B2);
 
@@ -895,7 +898,7 @@ bool ProgramManager::ADD_CASE_8(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_9(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_9(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	//R/M8, IMMD8
 	/*[CASE-9] REG8, IMMD8*/
@@ -903,7 +906,7 @@ bool ProgramManager::ADD_CASE_9(std::string& OP1, std::string& OP2)
 	if (OP1 == REGISTER::AL)
 	{
 		Utility::Format16Bit(OP2);
-		out << "04" << ' ' << OP2.substr(2, 2) << '\n';
+		out << (ADC ? "14" : "04") << ' ' << OP2.substr(2, 2) << '\n';
 	}
 	else
 	{
@@ -913,6 +916,7 @@ bool ProgramManager::ADD_CASE_9(std::string& OP1, std::string& OP2)
 		{
 			const MOD_RM_INFO& info = MOD_RM.find(OP1)->second;
 			Byte B2 = info.mod << 6;
+			B2 |= (ADC ? 0b00010000 : 0b00000000);
 			B2 |= info.rm;
 			const std::string& hB2 = Converter::DecToHex(B2);
 
@@ -931,7 +935,7 @@ bool ProgramManager::ADD_CASE_9(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_10(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_10(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	//R/M16, IMMD16
 	/*CASE-10] REG16, IMMD16*/
@@ -939,7 +943,7 @@ bool ProgramManager::ADD_CASE_10(std::string& OP1, std::string& OP2)
 	if (OP1 == REGISTER::AX)
 	{
 		Utility::Format16Bit(OP2);
-		out << "05" << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
+		out << (ADC ? "15" : "05") << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
 	}
 	else
 	{
@@ -949,6 +953,7 @@ bool ProgramManager::ADD_CASE_10(std::string& OP1, std::string& OP2)
 		{
 			const MOD_RM_INFO& info = MOD_RM.find(OP1)->second;
 			Byte B2 = info.mod << 6;
+			B2 |= (ADC ? 0b00010000 : 0b00000000);
 			B2 |= info.rm;
 			const std::string& hB2 = Converter::DecToHex(B2);
 
@@ -966,14 +971,14 @@ bool ProgramManager::ADD_CASE_10(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD_CASE_11(std::string& OP1, std::string& OP2)
+bool ProgramManager::ADD_CASE_11(std::string& OP1, std::string& OP2, const bool ADC)
 {
 	//REG16, Immd8
 	/*[*] Special Case when reg is AX=> 1st Byte [05]   2nd Byte [immd8 as immd16] */
 	if (OP1 == REGISTER::AX)
 	{
 		Utility::Format16Bit(OP2);
-		out << "05" << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
+		out << (ADC ? "15": "05") << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
 	}
 	else
 	{
@@ -983,6 +988,7 @@ bool ProgramManager::ADD_CASE_11(std::string& OP1, std::string& OP2)
 		{
 			const MOD_RM_INFO& info = MOD_RM.find(OP1)->second;
 			Byte B2 = info.mod << 6;
+			B2 |= (ADC ? 0b00010000 : 0b00000000);
 			B2 |= info.rm;
 			const std::string& hB2 = Converter::DecToHex(B2);
 
@@ -1000,7 +1006,7 @@ bool ProgramManager::ADD_CASE_11(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::ADD(const Operand& operand)
+bool ProgramManager::ADD(const Operand& operand, const bool ADC = false)
 {
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
@@ -1012,63 +1018,68 @@ bool ProgramManager::ADD(const Operand& operand)
 
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{	/*[CASE-1] REG8, REG8*/
-		return ADD_CASE_1(OP1, OP2);
+		return ADD_CASE_1(OP1, OP2, ADC);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsMemory(OP2))
 	{
 		/*[CASE-2] REG8, MEM*/
-		return ADD_CASE_2(OP1, OP2);
+		return ADD_CASE_2(OP1, OP2, ADC);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		/*[CASE-3] MEM, REG8*/
-		return ADD_CASE_3(OP1, OP2);
+		return ADD_CASE_3(OP1, OP2, ADC);
 
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		/*[CASE-4] REG16, REG16*/
-		return ADD_CASE_4(OP1, OP2);
+		return ADD_CASE_4(OP1, OP2, ADC);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsMemory(OP2))
 	{
 		/*[CASE-5] REG16, MEM*/
-		return ADD_CASE_5(OP1, OP2);
+		return ADD_CASE_5(OP1, OP2, ADC);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		/*[CASE-6] MEM, REG16*/
-		return ADD_CASE_6(OP1, OP2);
+		return ADD_CASE_6(OP1, OP2, ADC);
 
 	}
 	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-7] MEM, IMMD8*/
-		return ADD_CASE_7(OP1, OP2);
+		return ADD_CASE_7(OP1, OP2, ADC);
 
 	}
 	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
 	{
 		/*[CASE-8] MEM, IMMD16*/
-		return ADD_CASE_8(OP1, OP2);
+		return ADD_CASE_8(OP1, OP2, ADC);
 
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-9] REG8, IMMD8*/
-		return ADD_CASE_9(OP1, OP2);
+		return ADD_CASE_9(OP1, OP2, ADC);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
 	{
 		/*CASE-10] REG16, IMMD16*/
-		return ADD_CASE_10(OP1, OP2);
+		return ADD_CASE_10(OP1, OP2, ADC);
 		
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-11] REG16, IMMD8*/
-		return ADD_CASE_11(OP1, OP2);
+		return ADD_CASE_11(OP1, OP2, ADC);
 	}
 
 	return Error::LOG("Syntax error @ ADD\n");
+}
+
+bool ProgramManager::ADC(const Operand& operand)
+{
+	return ADD(operand, true);
 }
