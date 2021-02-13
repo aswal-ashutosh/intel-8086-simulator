@@ -1,3 +1,2 @@
-MOV Ax, 5034h
-MOV Bx, 3212h
-ADD Ax, Bx
+mov ax, ffffh
+add ax, 0ffh 
