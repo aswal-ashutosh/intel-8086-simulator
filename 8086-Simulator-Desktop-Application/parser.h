@@ -203,6 +203,9 @@ std::vector<std::string> Tokenize(const std::string &line)
 
 void Read()
 {
+	//Pre work
+	Register::SetFlag(Register::FLAG::CF, true);
+	//End
 	std::fstream file;
 	file.open("test.txt", std::ios::in);
 	while (!file.eof())
@@ -238,6 +241,7 @@ void Read()
 		else if (tokens.front() == "ADC")
 		{
 			ProgramManager::ADC(op);
+			Mnemonic::ADC(op.first, op.second);
 		}
 
 		//Data Initialize
