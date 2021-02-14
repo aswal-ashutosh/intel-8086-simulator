@@ -67,10 +67,6 @@ public:
 	
 	static void SetFlag(const FLAG&, const bool&);
 	static bool GetFlag(const FLAG&);
-
-	static void UpdateFlags8Bit(const Byte, const Byte, const _16Bit, const bool);
-	static void UpdateFlags16Bit(const _16Bit, const _16Bit, const int, const bool);
-
 };
 
 _16Bit Register::_IP;
@@ -122,126 +118,6 @@ void Register::SetFlag(const FLAG& X, const bool& state)
 bool Register::GetFlag(const FLAG& X)
 {
 	return Flag & _16Bit(X);
-}
-
-void Register::UpdateFlags8Bit(const Byte OP1, const Byte OP2, const _16Bit Result, const bool WithCarry = false)
-{
-	bool oldCF = Register::GetFlag(Register::FLAG::CF);
-	Register::SetFlag(FLAG::CF, Result > 0x00ff); //Carry Flag
-	Register::SetFlag(FLAG::AF, (OP1 & 0x0f) + (OP2 & 0x0f) > 0x0f); //Auxillary Carry Flag
-	Byte Result8Bit = Result; //Truncating Extra Bits
-
-	//Over Flow Flag
-	if (WithCarry)
-	{
-		_16Bit ResOP2_CF = _16Bit(OP2) + _16Bit(oldCF);
-		bool OF = false;
-		if ((OP2 & (1 << 7)) ^ (Byte(oldCF) & (1 << 7)))
-		{
-			OF = false;
-		}
-		else
-		{
-			OF = (ResOP2_CF & (1 << 7)) ^ (OP2 & (1 << 7));
-		}
-
-		ResOP2_CF = Byte(ResOP2_CF); //Truncating Extra Bits
-
-		_16Bit ResFinal = OP1 + ResOP2_CF;
-
-		if ((OP1 & (1 << 7)) ^ (ResOP2_CF & (1 << 7)))
-		{
-			//Different Sign
-			Register::SetFlag(FLAG::OF, OF);
-		}
-		else
-		{
-			//Same Sign
-			Register::SetFlag(FLAG::OF, OF | ((ResFinal & (1 << 7)) ^ (OP1 & (1 << 7))));
-		}
-	}
-	else
-	{
-		if ((OP1 & (1 << 7)) ^ (OP2 & (1 << 7)))
-		{
-			//Different Sign
-			Register::SetFlag(FLAG::OF, false);
-		}
-		else
-		{
-			//Same Sign
-			Register::SetFlag(FLAG::OF, (Result8Bit & (1 << 7)) ^ (OP1 & (1 << 7)));
-		}
-	}
-	
-	Register::SetFlag(FLAG::PF, !(Utility::SetBitCount(Result8Bit) & 1)); //Parity Flag
-
-	Register::SetFlag(FLAG::SF, Result8Bit & (1 << 7)); //Sign Flag
-
-	Register::SetFlag(FLAG::ZF, Result8Bit == 0x00);
-
-	/*[TODO][DF]*/
-}
-
-void Register::UpdateFlags16Bit(const _16Bit OP1, const _16Bit OP2, const int Result, const bool WithCarry = false)
-{
-	bool oldCF = Register::GetFlag(Register::FLAG::CF);
-	Register::SetFlag(FLAG::CF, Result > 0xffff); //Carry Flag
-	_16Bit Result16Bit = Result; //Truncating Extra Bits
-
-	//Over Flow Flag
-	if (WithCarry)
-	{
-		int ResOP2_CF = int(OP2) + int(oldCF);
-		bool OF = false;
-
-		if ((OP2 & (1 << 15)) ^ (_16Bit(oldCF) & (1 << 15)))
-		{
-			OF = false;
-		}
-		else
-		{
-			OF = (ResOP2_CF & (1 << 15)) ^ (OP2 & (1 << 15));
-		}
-
-		ResOP2_CF = _16Bit(ResOP2_CF); //Truncating Extra Bits
-
-		int ResFinal = OP1 + ResOP2_CF;
-
-		if ((OP1 & (1 << 15)) ^ (ResOP2_CF & (1 << 15)))
-		{
-			//Different Sign
-			Register::SetFlag(FLAG::OF, OF);
-		}
-		else
-		{
-			//Same Sign
-			Register::SetFlag(FLAG::OF, OF | ((ResFinal & (1 << 15)) ^ (OP1 & (1 << 15))));
-		}
-	}
-	else
-	{
-		if ((OP1 & (1 << 15)) ^ (OP2 & (1 << 15)))
-		{
-			//Different Sign
-			Register::SetFlag(FLAG::OF, false);
-		}
-		else
-		{
-			//Same Sign
-			Register::SetFlag(FLAG::OF, (Result16Bit & (1 << 15)) ^ (OP1 & (1 << 15)));
-		}
-	}
-	
-
-
-	Register::SetFlag(FLAG::PF, !(Utility::SetBitCount(Result16Bit) & 1)); //Parity Flag
-
-	Register::SetFlag(FLAG::SF, Result16Bit & (1 << 15)); //Sign Flag
-
-	Register::SetFlag(FLAG::ZF, Result16Bit == 0x0000);
-
-	/*[TODO][DF]*/
 }
 
 void Register::PrintAll()
