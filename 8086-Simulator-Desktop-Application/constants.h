@@ -2,6 +2,13 @@
 #include<unordered_map>
 #include"mod_rm.h"
 
+namespace MNEMONIC
+{
+	const std::string MOV = "MOV";
+	const std::string ADD = "ADD";
+	const std::string ADC = "ADC";
+}
+
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =
 {
 	{"[BX+SI]",		{0b00, 0b000}},
@@ -74,11 +81,6 @@ const std::unordered_map<std::string, Byte> REG_CODE =
 	{"SS", 0b10},
 	{"CS", 0b01},
 	{"DS", 0b11},
-};
-
-const std::unordered_map<std::string, Byte> MNEMONIC =
-{
-	{"MOV", 0b100010}
 };
 
 namespace REGISTER

@@ -33,9 +33,6 @@
     <ClInclude Include="utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="program_manager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="operands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -52,6 +49,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="hex_size.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="program_loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

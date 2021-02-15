@@ -5,13 +5,16 @@
 #include<fstream>
 #include"converter.h"
 #include<iostream>
+#include<unordered_map>
+#include"instruction.h"
 
 
 std::fstream out("machine_code.txt", std::ios::out);
 
 
-class ProgramManager
+class ProgramLoader
 {
+	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
 	static bool MOV_CASE_1(std::string&, std::string&);
 	static bool MOV_CASE_2(std::string&, std::string&);
 	static bool MOV_CASE_3(std::string&, std::string&);
@@ -36,6 +39,10 @@ class ProgramManager
 	static bool AAACOSSX(const Operand&, const Byte, const Byte);
 
 public:
+	static void LoadCallBacks();
+	static bool Load(const std::vector<Instruction>&);
+
+
 	static bool MOV(const Operand&);
 	static bool ADD(const Operand&);
 	static bool ADC(const Operand&);
@@ -47,7 +54,36 @@ public:
 	static bool XOR(const Operand&);
 };
 
-bool ProgramManager::MOV_CASE_1(std::string& OP1, std::string& OP2)
+std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
+
+void ProgramLoader::LoadCallBacks()
+{
+	CallBacks[MNEMONIC::MOV] = MOV;
+	CallBacks[MNEMONIC::ADD] = ADD;
+	CallBacks[MNEMONIC::ADC] = ADC;
+}
+
+bool ProgramLoader::Load(const std::vector<Instruction>& Program)
+{
+	//[TODO:] Remove extra checking at release version
+	for (const Instruction& I : Program)
+	{
+		if (CallBacks.count(I.Mnemonic))
+		{
+			if (!CallBacks[I.Mnemonic](I.operand))
+			{
+				return Error::LOG("Execution Faild!\n");
+			}
+		}
+		else
+		{
+			return Error::LOG(I.Mnemonic + " is not implemented yet! @ Load\n");
+		}
+	}
+	return true;
+}
+
+bool ProgramLoader::MOV_CASE_1(std::string& OP1, std::string& OP2)
 {
 	if (Utility::Is8BitRegister(OP1))//REG8, 8-BIT-DATA
 	{
@@ -56,18 +92,11 @@ bool ProgramManager::MOV_CASE_1(std::string& OP1, std::string& OP2)
 		{
 			Error::LOG("Expected 8Bit data. @MOV\n");
 		}
-		else
-		{
-			//may be data is represented using redundatn hex digit eg: 001Ah, 010H
-			Utility::Format16Bit(OP2);
-			OP2 = OP2.substr(2); // Truncating redundant digits
-		}
 
 		//opcode(8Bit)=> B0 + reg_Code
 		const std::string& opcode = Converter::DecToHex(0xB0 + REG_CODE.find(OP1)->second);
-		Utility::Format8Bit(OP2);
-		const std::string& data = OP2.substr(0, 2);
-		out << opcode.substr(0, 2) << ' ' << data << '\n';
+		Utility::Format16Bit(OP2);
+		out << opcode.substr(0, 2) << ' ' << OP2.substr(2, 2) << '\n';
 	}
 	else if (Utility::Is16BitRegister(OP1))//REG16, 16-BIT-DATA
 	{
@@ -90,7 +119,7 @@ bool ProgramManager::MOV_CASE_1(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV_CASE_2(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_2(std::string& OP1, std::string& OP2)
 {
 	/*
 		As there is no register so reg code will be 000
@@ -162,7 +191,7 @@ bool ProgramManager::MOV_CASE_2(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV_CASE_3(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_3(std::string& OP1, std::string& OP2)
 {
 	//Opcde(6)-d(1)-w(1) => 100010-1-0 => 8A
 	const std::string& opcode = "8A";
@@ -179,7 +208,7 @@ bool ProgramManager::MOV_CASE_3(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV_CASE_4(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_4(std::string& OP1, std::string& OP2)
 {
 	//Opcode(6)-d(1)-w(1) => 100010-1-1 => 8B
 	const std::string& opcode = "8B";
@@ -195,7 +224,7 @@ bool ProgramManager::MOV_CASE_4(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV_CASE_5(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_5(std::string& OP1, std::string& OP2)
 {
 	const std::string &reg = OP1;
 	const std::string &mem = OP2;
@@ -276,7 +305,7 @@ bool ProgramManager::MOV_CASE_5(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV_CASE_6(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_6(std::string& OP1, std::string& OP2)
 {
 	const std::string& mem = OP1;
 	const std::string& reg = OP2;
@@ -357,7 +386,7 @@ bool ProgramManager::MOV_CASE_6(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV_CASE_7(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_7(std::string& OP1, std::string& OP2)
 {
 	if (Utility::IsSegmentRegister(OP2)){ return Error::LOG("mov sreg, sreg is not allowed\n"); }
 	else if (OP1 == REGISTER::CS){ return Error::LOG("Cs can't be modified directly\n"); }
@@ -431,7 +460,7 @@ bool ProgramManager::MOV_CASE_7(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV_CASE_8(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_8(std::string& OP1, std::string& OP2)
 {
 	if (Utility::IsSegmentRegister(OP1))
 	{
@@ -507,7 +536,7 @@ bool ProgramManager::MOV_CASE_8(std::string& OP1, std::string& OP2)
 	return true;
 }
 
-bool ProgramManager::MOV(const Operand& operand)
+bool ProgramLoader::MOV(const Operand& operand)
 {
 	//TODO:: Check Whether we have two operands or not
 
@@ -564,7 +593,7 @@ bool ProgramManager::MOV(const Operand& operand)
 	return Error::LOG("Syntax Error @ MOV\n");
 }
 
-bool ProgramManager::AAACOSSX_CASE_1(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_1(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {	
 	//REG8, R/M8
 	//[CASE-1]REG8, REG8 
@@ -580,7 +609,7 @@ bool ProgramManager::AAACOSSX_CASE_1(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_2(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_2(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	//[CASE-2]REG8, [MEM]
 	//1st Byte => 02
@@ -634,7 +663,7 @@ bool ProgramManager::AAACOSSX_CASE_2(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_3(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_3(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	/*[CASE-3] MEM, REG8*/
 	//1st Byte => 00
@@ -688,7 +717,7 @@ bool ProgramManager::AAACOSSX_CASE_3(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_4(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_4(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	//REG16, R/M16
 	/*[CASE-4] REG16, REG16*/
@@ -704,7 +733,7 @@ bool ProgramManager::AAACOSSX_CASE_4(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_5(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_5(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	/*[CASE-5] REG16, MEM*/
 	//1st Byte => 03
@@ -758,7 +787,7 @@ bool ProgramManager::AAACOSSX_CASE_5(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_6(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_6(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	/*[CASE-6] MEM, REG16*/
 	//1st Byte => 01
@@ -812,7 +841,7 @@ bool ProgramManager::AAACOSSX_CASE_6(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_7(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_7(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	/*[CASE-7] MEM, IMMD8*/
 	//1st Byte => 80
@@ -865,7 +894,7 @@ bool ProgramManager::AAACOSSX_CASE_7(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_8(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_8(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	/*[CASE-8] MEM, IMMD16*/
 	//1st Byte => 81
@@ -918,7 +947,7 @@ bool ProgramManager::AAACOSSX_CASE_8(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_9(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_9(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	//R/M8, IMMD8
 	/*[CASE-9] REG8, IMMD8*/
@@ -957,7 +986,7 @@ bool ProgramManager::AAACOSSX_CASE_9(std::string& OP1, std::string& OP2, const B
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_10(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_10(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	//R/M16, IMMD16
 	/*CASE-10] REG16, IMMD16*/
@@ -995,7 +1024,7 @@ bool ProgramManager::AAACOSSX_CASE_10(std::string& OP1, std::string& OP2, const 
 	return true;
 }
 
-bool ProgramManager::AAACOSSX_CASE_11(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_11(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
 {
 	//REG16, Immd8
 	/*[*] Special Case when reg is AX=> 1st Byte [05]   2nd Byte [immd8 as immd16] */
@@ -1032,7 +1061,7 @@ bool ProgramManager::AAACOSSX_CASE_11(std::string& OP1, std::string& OP2, const 
 	return true;
 }
 
-bool ProgramManager::AAACOSSX(const Operand& operand, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const Byte REG)
 {
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
@@ -1105,42 +1134,42 @@ bool ProgramManager::AAACOSSX(const Operand& operand, const Byte OFFSET, const B
 	return Error::LOG("Syntax error @ ADD\n");
 }
 
-bool ProgramManager::ADD(const Operand& operand)
+bool ProgramLoader::ADD(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x00, 0b00000000) ? true : Error::LOG("Execution Failder @ ADD\n");
 }
 
-bool ProgramManager::ADC(const Operand& operand)
+bool ProgramLoader::ADC(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x10, 0b00010000) ? true : Error::LOG("Execution Failder @ ADC\n");
 }
 
-bool ProgramManager::AND(const Operand& operand)
+bool ProgramLoader::AND(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x20, 0b00100000) ? true : Error::LOG("Execution Failder @ AND\n");
 }
 
-bool ProgramManager::CMP(const Operand& operand)
+bool ProgramLoader::CMP(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x38, 0b00111000) ? true : Error::LOG("Execution Failder @ CMP\n");
 }
 
-bool ProgramManager::OR(const Operand& operand)
+bool ProgramLoader::OR(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x08, 0b00001000) ? true : Error::LOG("Execution Failder @ OR\n");
 }
 
-bool ProgramManager::SBB(const Operand& operand)
+bool ProgramLoader::SBB(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x18, 0b00011000) ? true : Error::LOG("Execution Failder @ SBB\n");
 }
 
-bool ProgramManager::SUB(const Operand& operand)
+bool ProgramLoader::SUB(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x28, 0b00101000) ? true : Error::LOG("Execution Failder @ SUB\n");
 }
 
-bool ProgramManager::XOR(const Operand& operand)
+bool ProgramLoader::XOR(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x30, 0b00110000) ? true : Error::LOG("Execution Failder @ XOR\n");
 }

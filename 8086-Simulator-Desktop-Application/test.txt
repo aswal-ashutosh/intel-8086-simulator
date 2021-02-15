@@ -1,12 +1,1 @@
-XOR bl, cl
-XOR bx, dx
-XOR al, [bx + si + 010h]
-XOR bl, [10h]
-XOR ax, [bp + di + 2234h]
-XOR bx, [123h]
-XOR al, 012h
-XOR ax, 1234h
-XOR [bx + si], 023h
-XOR [bx], 1234h
-XOR ax, 012h
-XOR bx, 012h
+mov al, 33h

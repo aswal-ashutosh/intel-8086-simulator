@@ -4,11 +4,36 @@
 #include<vector>
 #include"utility.h"
 #include"operands.h"
-#include"program_manager.h"
+#include"program_loader.h"
 #include"8086.h"
 #include"memory.h"
+#include"instruction.h"
 
-bool ValidateAndFormatExp(std::string& exp)
+
+class Parser
+{
+	static std::vector<Instruction> Program;
+public:
+	//Will format the memroy expression and also check for possible error.
+	static bool ValidateAndFormatMemoryExp(std::string&);
+
+	//Will convert the give line into tokens
+	static std::vector<std::string > Tokenize(const std::string&);
+
+	//Will Read, check & load the source code for further execution
+	static bool Read(const std::string&);
+
+	static const std::vector<Instruction>& GetProgram();
+};
+
+std::vector<Instruction> Parser::Program;
+
+const std::vector<Instruction>& Parser::GetProgram()
+{
+	return Program;
+}
+
+bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 {
 	//Remove spaces
 	std::string s;
@@ -117,7 +142,7 @@ bool ValidateAndFormatExp(std::string& exp)
 	return true;
 }
 
-std::vector<std::string> Tokenize(const std::string &line)
+std::vector<std::string> Parser::Tokenize(const std::string &line)
 {
 	std::vector<std::string> Tokens;
 	std::string token;
@@ -156,7 +181,7 @@ std::vector<std::string> Tokenize(const std::string &line)
 			{
 				if (line[j] == ']')
 				{			
-					if (ValidateAndFormatExp(exp))
+					if (ValidateAndFormatMemoryExp(exp))
 					{
 						token = '[' + exp + ']';
 						OK = true;
@@ -200,18 +225,23 @@ std::vector<std::string> Tokenize(const std::string &line)
 	return Tokens;
 }
 
-
-void Read()
+bool Parser::Read(const std::string& FILE_PATH)
 {
 	//Pre work
 	//Register::SetFlag(Register::FLAG::CF, true);
 	//End
 	std::fstream file;
-	file.open("test.txt", std::ios::in);
+	file.open(FILE_PATH, std::ios::in);
+	int nLineNumber = 0;
 	while (!file.eof())
 	{
+		++nLineNumber;
 		std::string line;
 		std::getline(file, line);
+		if (line.empty())//[TODO: Line containing sapces or comments]
+		{
+			continue;
+		}
 		std::vector<std::string> tokens = Tokenize(line);
 		
 		for (const std::string& s : tokens)
@@ -221,28 +251,32 @@ void Read()
 		std::cout << '\n';
 		if (tokens.empty())
 		{
-			Error::LOG("Empty Tokens\n");
+			return Error::LOG("Empty Tokens\n");
 		}
 
-		Operand op = { tokens[1], tokens[3] };
+		Instruction instruction;
+		instruction.LineNumber = nLineNumber;
+		instruction.Mnemonic = tokens.front();
+		instruction.operand = { tokens[1], tokens[3] };
 
+		Program.push_back(instruction);
 
-		//Compile
-		if (tokens.front() == "MOV")
-		{
-			ProgramManager::MOV(op);
-			Mnemonic::MOV(op.first, op.second);
-		}
-		else if(tokens.front() == "ADD")
-		{
-			ProgramManager::ADD(op);
-			Mnemonic::ADD(op.first, op.second);
-		}
-		else if (tokens.front() == "XOR")
-		{
-			ProgramManager::XOR(op);
-			//Mnemonic::ADC(op.first, op.second);
-		}
+		////Compile
+		//if (tokens.front() == "MOV")
+		//{
+		//	ProgramManager::MOV(op);
+		//	Mnemonic::MOV(op.first, op.second);
+		//}
+		//else if(tokens.front() == "ADD")
+		//{
+		//	ProgramManager::ADD(op);
+		//	Mnemonic::ADD(op.first, op.second);
+		//}
+		//else if (tokens.front() == "XOR")
+		//{
+		//	ProgramManager::XOR(op);
+		//	//Mnemonic::ADC(op.first, op.second);
+		//}
 
 		//Data Initialize
 		/*Register::REG16(REGISTER::DS, 0x1000);
@@ -263,7 +297,8 @@ void Read()
 	}
 
 	//View
-	std::cout << "\x1B[36m\n==============[OUTPUT]==============\x1B[0m\n\n";
+	/*std::cout << "\x1B[36m\n==============[OUTPUT]==============\x1B[0m\n\n";
 	Memory::DebugMem(0x1000, 0x3333, 2);
-	Register::PrintAll();
+	Register::PrintAll();*/
+	return true;
 }

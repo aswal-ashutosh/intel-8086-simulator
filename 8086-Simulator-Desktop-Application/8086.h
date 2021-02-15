@@ -4,9 +4,12 @@
 #include"utility.h"
 #include"register.h"
 #include"memory.h"
+#include<unordered_map>
+#include"instruction.h"
 
-class Mnemonic
+class ProgramExecutor
 {
+	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
 	static bool MOV_CASE_1(const std::string&, const std::string&);
 	static bool MOV_CASE_2(const std::string&, const std::string&);
 	static bool MOV_CASE_3(const std::string&, const std::string&);
@@ -38,15 +41,49 @@ class Mnemonic
 	static void UpdateFlags_ADC_16Bit(const _16Bit, const _16Bit, const int);
 
 public:
-	static bool MOV(const std::string&, const std::string&);
-	static bool ADD(const std::string&, const std::string&, const bool);
-	static bool ADC(const std::string&, const std::string&);
+	static void LoadCallBacks();
+	static bool Execute(const std::vector<Instruction>&);
+
+
+	static bool MOV(const Operand &);
+	static bool ADD(const Operand &);
+	static bool ADC(const Operand &);
 };
+
+std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
+
+void ProgramExecutor::LoadCallBacks()
+{
+	CallBacks[MNEMONIC::MOV] = MOV;
+	CallBacks[MNEMONIC::ADD] = ADD;
+	CallBacks[MNEMONIC::ADC] = ADC;
+}
+
+bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
+{
+	//[TODO:] Remove extra checking at release version
+	for (const Instruction& I : Program)
+	{
+		if (CallBacks.count(I.Mnemonic))
+		{
+			if (!CallBacks[I.Mnemonic](I.operand))
+			{
+				return Error::LOG("Execution Faild!\n");
+			}
+		}
+		else
+		{
+			return Error::LOG(I.Mnemonic + " is not implemented yet! @ Execute\n");
+		}
+	}
+
+	return true;
+}
 
 
 /*<-------------------------------------------FLAG UPDATE----------------------------------->*/
 
-void Mnemonic::UpdateFlags_ADD_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
+void ProgramExecutor::UpdateFlags_ADD_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
 {
 	Register::SetFlag(Register::FLAG::CF, Result > 0x00ff); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) + (OP2 & 0x0f) > 0x0f); //Auxillary Carry Flag
@@ -73,7 +110,7 @@ void Mnemonic::UpdateFlags_ADD_8Bit(const Byte OP1, const Byte OP2, const _16Bit
 	/*[TODO][DF]*/
 }
 
-void Mnemonic::UpdateFlags_ADC_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
+void ProgramExecutor::UpdateFlags_ADC_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
 	Register::SetFlag(Register::FLAG::CF, Result > 0x00ff); //Carry Flag
@@ -116,7 +153,7 @@ void Mnemonic::UpdateFlags_ADC_8Bit(const Byte OP1, const Byte OP2, const _16Bit
 	/*[TODO][DF]*/
 }
 
-void Mnemonic::UpdateFlags_ADD_16Bit(const _16Bit OP1, const _16Bit OP2, const int Result)
+void ProgramExecutor::UpdateFlags_ADD_16Bit(const _16Bit OP1, const _16Bit OP2, const int Result)
 {
 	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
 	_16Bit Result16Bit = Result; //Truncating Extra Bits
@@ -142,7 +179,7 @@ void Mnemonic::UpdateFlags_ADD_16Bit(const _16Bit OP1, const _16Bit OP2, const i
 	/*[TODO][DF]*/
 }
 
-void Mnemonic::UpdateFlags_ADC_16Bit(const _16Bit OP1, const _16Bit OP2, const int Result)
+void ProgramExecutor::UpdateFlags_ADC_16Bit(const _16Bit OP1, const _16Bit OP2, const int Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
 	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
@@ -190,78 +227,80 @@ void Mnemonic::UpdateFlags_ADC_16Bit(const _16Bit OP1, const _16Bit OP2, const i
 
 /*<-----------------------------------------MOV------------------------------------------>*/
 
-bool Mnemonic::MOV_CASE_1(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_1(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:1] MOV REG8, REG8*/
 	Register::REG8(OP1, Register::REG8(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_2(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_2(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:2] MOV REG16, REG16*/
 	Register::REG16(OP1, Register::REG16(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_3(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_3(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:3] MOV [MEM], REG8*/
 	Memory::Set8Bit(Memory::PhysicalAddress(OP1), Register::REG8(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_4(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_4(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:4] MOV [MEM], REG16*/
 	Memory::Set16Bit(Memory::PhysicalAddress(OP1), Register::REG16(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_5(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_5(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:5] MOV [MEM], IMMD8*/
 	Memory::Set8Bit(Memory::PhysicalAddress(OP1), Converter::HexToDec(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_6(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_6(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:6] MOV [MEM], IMMD16*/
 	Memory::Set16Bit(Memory::PhysicalAddress(OP1), Converter::HexToDec(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_7(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_7(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:7] MOV REG8, [MEM]*/
 	Register::REG8(OP1, Memory::Get8Bit(Memory::PhysicalAddress(OP2)));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_8(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_8(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:8] MOV REG16, [MEM]*/
 	Register::REG16(OP1, Memory::Get16Bit(Memory::PhysicalAddress(OP2)));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_9(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_9(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:9] MOV REG8, IMMD8*/
 	Register::REG8(OP1, Converter::HexToDec(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV_CASE_10(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV_CASE_10(const std::string& OP1, const std::string& OP2)
 {
 	/*[CASE:10] MOV REG16, IMMD16*/
 	Register::REG16(OP1, Converter::HexToDec(OP2));
 	return true;
 }
 
-bool Mnemonic::MOV(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::MOV(const Operand& operand)
 {
+	const std::string& OP1 = operand.first;
+	const std::string& OP2 = operand.second;
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		/*[CASE:1] MOV REG8, REG8*/
@@ -337,7 +376,7 @@ bool Mnemonic::MOV(const std::string& OP1, const std::string& OP2)
 
 /*<-----------------------------------------ADD------------------------------------------>*/
 
-bool Mnemonic::ADD_CASE_1(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_1(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-1] REG8, REG8*/
 	Byte X = Register::REG8(OP1);
@@ -357,7 +396,7 @@ bool Mnemonic::ADD_CASE_1(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_2(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_2(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-2] REG8, MEM*/
 	Byte X = Register::REG8(OP1);
@@ -377,7 +416,7 @@ bool Mnemonic::ADD_CASE_2(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_3(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_3(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-3] MEM, REG8*/
 	int PAdd = Memory::PhysicalAddress(OP1);
@@ -398,7 +437,7 @@ bool Mnemonic::ADD_CASE_3(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_4(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_4(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-4] REG16, REG16*/
 	_16Bit X = Register::REG16(OP1);
@@ -418,7 +457,7 @@ bool Mnemonic::ADD_CASE_4(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_5(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_5(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-5] REG16, MEM*/
 	_16Bit X = Register::REG16(OP1);
@@ -438,7 +477,7 @@ bool Mnemonic::ADD_CASE_5(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_6(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_6(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-6] MEM, REG16*/
 	int PAdd = Memory::PhysicalAddress(OP1);
@@ -459,7 +498,7 @@ bool Mnemonic::ADD_CASE_6(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_7(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_7(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-7] MEM, IMMD8*/
 	int PAdd = Memory::PhysicalAddress(OP1);
@@ -480,7 +519,7 @@ bool Mnemonic::ADD_CASE_7(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_8(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_8(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-8] MEM, IMMD16*/
 	int PAdd = Memory::PhysicalAddress(OP1);
@@ -501,7 +540,7 @@ bool Mnemonic::ADD_CASE_8(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_9(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_9(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*[CASE-9] REG8, IMMD8*/
 	Byte X = Register::REG8(OP1);
@@ -521,7 +560,7 @@ bool Mnemonic::ADD_CASE_9(const std::string& OP1, const std::string& OP2, const 
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_10(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_10(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*CASE-10] REG16, IMMD16*/
 	_16Bit X = Register::REG16(OP1);
@@ -541,7 +580,7 @@ bool Mnemonic::ADD_CASE_10(const std::string& OP1, const std::string& OP2, const
 	return true;
 }
 
-bool Mnemonic::ADD_CASE_11(const std::string& OP1, const std::string& OP2, const bool ADC)
+bool ProgramExecutor::ADD_CASE_11(const std::string& OP1, const std::string& OP2, const bool ADC = false)
 {
 	/*CASE-11] REG16, IMMD8*/
 	_16Bit X = Register::REG16(OP1);
@@ -563,70 +602,132 @@ bool Mnemonic::ADD_CASE_11(const std::string& OP1, const std::string& OP2, const
 	return true;
 }
 
-bool Mnemonic::ADD(const std::string& OP1, const std::string& OP2, const bool ADC = false)
+bool ProgramExecutor::ADD(const Operand& operand)
 {
+	const std::string& OP1 = operand.first;
+	const std::string& OP2 = operand.second;
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{	/*[CASE-1] REG8, REG8*/
-		return ADD_CASE_1(OP1, OP2, ADC);
+		return ADD_CASE_1(OP1, OP2);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsMemory(OP2))
 	{
 		/*[CASE-2] REG8, MEM*/
-		return ADD_CASE_2(OP1, OP2, ADC);
+		return ADD_CASE_2(OP1, OP2);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		/*[CASE-3] MEM, REG8*/
-		return ADD_CASE_3(OP1, OP2, ADC);
+		return ADD_CASE_3(OP1, OP2);
 
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		/*[CASE-4] REG16, REG16*/
-		return ADD_CASE_4(OP1, OP2, ADC);
+		return ADD_CASE_4(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsMemory(OP2))
 	{
 		/*[CASE-5] REG16, MEM*/
-		return ADD_CASE_5(OP1, OP2, ADC);
+		return ADD_CASE_5(OP1, OP2);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		/*[CASE-6] MEM, REG16*/
-		return ADD_CASE_6(OP1, OP2, ADC);
+		return ADD_CASE_6(OP1, OP2);
 
 	}
 	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-7] MEM, IMMD8*/
-		return ADD_CASE_7(OP1, OP2, ADC);
+		return ADD_CASE_7(OP1, OP2);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
 	{
 		/*[CASE-8] MEM, IMMD16*/
-		return ADD_CASE_8(OP1, OP2, ADC);
+		return ADD_CASE_8(OP1, OP2);
 
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-9] REG8, IMMD8*/
-		return ADD_CASE_9(OP1, OP2, ADC);
+		return ADD_CASE_9(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
 	{
 		/*CASE-10] REG16, IMMD16*/
-		return ADD_CASE_10(OP1, OP2, ADC);
+		return ADD_CASE_10(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-11] REG16, IMMD8*/
-		return ADD_CASE_11(OP1, OP2, ADC);
+		return ADD_CASE_11(OP1, OP2);
 	}
 
 	return Error::LOG("Execution Failder @ ADD\n");
 }
 
-bool Mnemonic::ADC(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::ADC(const Operand& operand)
 {
-	return ADD(OP1, OP2, true);
+	const std::string& OP1 = operand.first;
+	const std::string& OP2 = operand.second;
+	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
+	{	/*[CASE-1] REG8, REG8*/
+		return ADD_CASE_1(OP1, OP2, true);
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsMemory(OP2))
+	{
+		/*[CASE-2] REG8, MEM*/
+		return ADD_CASE_2(OP1, OP2, true);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		/*[CASE-3] MEM, REG8*/
+		return ADD_CASE_3(OP1, OP2, true);
+
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		/*[CASE-4] REG16, REG16*/
+		return ADD_CASE_4(OP1, OP2, true);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsMemory(OP2))
+	{
+		/*[CASE-5] REG16, MEM*/
+		return ADD_CASE_5(OP1, OP2, true);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		/*[CASE-6] MEM, REG16*/
+		return ADD_CASE_6(OP1, OP2, true);
+
+	}
+	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-7] MEM, IMMD8*/
+		return ADD_CASE_7(OP1, OP2, true);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	{
+		/*[CASE-8] MEM, IMMD16*/
+		return ADD_CASE_8(OP1, OP2, true);
+
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-9] REG8, IMMD8*/
+		return ADD_CASE_9(OP1, OP2, true);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	{
+		/*CASE-10] REG16, IMMD16*/
+		return ADD_CASE_10(OP1, OP2, true);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-11] REG16, IMMD8*/
+		return ADD_CASE_11(OP1, OP2, true);
+	}
+
+	return Error::LOG("Execution Failder @ ADC\n");
 }
