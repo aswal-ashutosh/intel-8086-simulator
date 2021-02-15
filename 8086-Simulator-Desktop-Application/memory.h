@@ -62,7 +62,7 @@ Byte Memory::Get8Bit(const int loc)
 
 _16Bit Memory::Get16Bit(const int loc)
 {
-	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Get8Bit\n"); }
+	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Get16Bit\n"); }
 	int pAddressL = loc;
 	int pAddressH = loc + 1 > 0xfffff ? 0x00000 : loc + 1;	//Address should be in range[00000H-FFFFFH]
 	_16Bit HigherData = mem[pAddressH];

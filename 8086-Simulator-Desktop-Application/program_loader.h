@@ -61,6 +61,8 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::MOV] = MOV;
 	CallBacks[MNEMONIC::ADD] = ADD;
 	CallBacks[MNEMONIC::ADC] = ADC;
+	CallBacks[MNEMONIC::SUB] = SUB;
+	CallBacks[MNEMONIC::SBB] = SBB;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -1136,40 +1138,40 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 
 bool ProgramLoader::ADD(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x00, 0b00000000) ? true : Error::LOG("Execution Failder @ ADD\n");
+	return AAACOSSX(operand, 0x00, 0b00000000) ? true : Error::LOG("Execution Failed @ ADD\n");
 }
 
 bool ProgramLoader::ADC(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x10, 0b00010000) ? true : Error::LOG("Execution Failder @ ADC\n");
+	return AAACOSSX(operand, 0x10, 0b00010000) ? true : Error::LOG("Execution Failed @ ADC\n");
 }
 
 bool ProgramLoader::AND(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x20, 0b00100000) ? true : Error::LOG("Execution Failder @ AND\n");
+	return AAACOSSX(operand, 0x20, 0b00100000) ? true : Error::LOG("Execution Failed @ AND\n");
 }
 
 bool ProgramLoader::CMP(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x38, 0b00111000) ? true : Error::LOG("Execution Failder @ CMP\n");
+	return AAACOSSX(operand, 0x38, 0b00111000) ? true : Error::LOG("Execution Failed @ CMP\n");
 }
 
 bool ProgramLoader::OR(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x08, 0b00001000) ? true : Error::LOG("Execution Failder @ OR\n");
+	return AAACOSSX(operand, 0x08, 0b00001000) ? true : Error::LOG("Execution Failed @ OR\n");
 }
 
 bool ProgramLoader::SBB(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x18, 0b00011000) ? true : Error::LOG("Execution Failder @ SBB\n");
+	return AAACOSSX(operand, 0x18, 0b00011000) ? true : Error::LOG("Execution Failed @ SBB\n");
 }
 
 bool ProgramLoader::SUB(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x28, 0b00101000) ? true : Error::LOG("Execution Failder @ SUB\n");
+	return AAACOSSX(operand, 0x28, 0b00101000) ? true : Error::LOG("Execution Failed @ SUB\n");
 }
 
 bool ProgramLoader::XOR(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x30, 0b00110000) ? true : Error::LOG("Execution Failder @ XOR\n");
+	return AAACOSSX(operand, 0x30, 0b00110000) ? true : Error::LOG("Execution Failed @ XOR\n");
 }

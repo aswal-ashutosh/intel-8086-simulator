@@ -1,1 +1,2 @@
-mov al, 33h
+mov ax, ffffh
+sbb ax, 1234h

@@ -7,6 +7,12 @@ namespace MNEMONIC
 	const std::string MOV = "MOV";
 	const std::string ADD = "ADD";
 	const std::string ADC = "ADC";
+	const std::string AND = "AND";
+	const std::string CMP = "CMP";
+	const std::string OR = "OR";
+	const std::string SUB = "SUB";
+	const std::string SBB = "SBB";
+	const std::string XOR = "XOR";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =
