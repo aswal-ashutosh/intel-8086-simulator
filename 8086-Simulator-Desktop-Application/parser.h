@@ -257,7 +257,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 		Instruction instruction;
 		instruction.LineNumber = nLineNumber;
 		instruction.Mnemonic = tokens.front();
-		instruction.operand = { tokens[1], tokens[3] };
+		instruction.operand = { tokens[1], ""};
 
 		Program.push_back(instruction);
 

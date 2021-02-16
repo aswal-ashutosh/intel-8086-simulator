@@ -1,2 +1,20 @@
-mov ax, ffffh
-sbb ax, 1234h
+mul al
+mul bl
+mul cl
+mul dl
+mul ah
+mul bh
+mul ch
+mul dh
+mul ax
+mul bx
+mul cx
+mul dx
+mul [bx + si]
+mul [bx + si + 10h]
+mul [bx + di]
+mul [10h]
+mul [bp + si]
+mul [bx]
+mul [bx + si + 1234h]
+mul [1234h]

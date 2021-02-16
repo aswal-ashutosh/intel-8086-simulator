@@ -38,6 +38,10 @@ class ProgramLoader
 	//AAACOSSX generate machine code for => ADD, ADC, AND, CMP, OR, SUB, SBB, XOR
 	static bool AAACOSSX(const Operand&, const Byte, const Byte);
 
+	static bool MUL_CASE_1(std::string&);
+	static bool MUL_CASE_2(std::string&);
+	static bool MUL_CASE_3(std::string&);
+
 public:
 	static void LoadCallBacks();
 	static bool Load(const std::vector<Instruction>&);
@@ -52,6 +56,7 @@ public:
 	static bool SUB(const Operand&);
 	static bool SBB(const Operand&);
 	static bool XOR(const Operand&);
+	static bool MUL(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -63,6 +68,7 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::ADC] = ADC;
 	CallBacks[MNEMONIC::SUB] = SUB;
 	CallBacks[MNEMONIC::SBB] = SBB;
+	CallBacks[MNEMONIC::MUL] = MUL;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -1133,7 +1139,76 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 		return AAACOSSX_CASE_11(OP1, OP2, OFFSET, REG);
 	}
 
-	return Error::LOG("Syntax error @ ADD\n");
+	return Error::LOG("Syntax error @ AAACOSSX\n");
+}
+
+bool ProgramLoader::MUL_CASE_1(std::string& OP)
+{
+	//Memory
+	const std::string& mem = OP;
+	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00100000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+
+		out << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == "8")
+				{
+					out << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			out << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid Memory Exp @MUL_CASE_1\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::MUL_CASE_2(std::string& OP)
+{
+	//REG8
+	Byte B2 = 0b11100000;
+	B2 |= REG_CODE.find(OP)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	out << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::MUL_CASE_3(std::string& OP)
+{
+	//REG16
+	Byte B2 = 0b11100000;
+	B2 |= REG_CODE.find(OP)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	out << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
 }
 
 bool ProgramLoader::ADD(const Operand& operand)
@@ -1174,4 +1249,30 @@ bool ProgramLoader::SUB(const Operand& operand)
 bool ProgramLoader::XOR(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x30, 0b00110000) ? true : Error::LOG("Execution Failed @ XOR\n");
+}
+
+bool ProgramLoader::MUL(const Operand& operand)
+{
+	//REG8, REG16, []
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected 1 Operand1 @MUL\n");
+	}
+
+	std::string OP = operand.first;
+
+	if (Utility::IsMemory(OP))
+	{
+		return MUL_CASE_1(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		return MUL_CASE_2(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		return MUL_CASE_3(OP);
+	}
+
+	return Error::LOG("Syntax Error @MUL\n");
 }
