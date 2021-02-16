@@ -48,6 +48,9 @@ class ProgramExecutor
 	static bool SUB_CASE_10(const std::string&, const std::string&, const bool);
 	static bool SUB_CASE_11(const std::string&, const std::string&, const bool);
 
+	static bool MUL_CASE_1(const std::string&);
+	static bool MUL_CASE_2(const std::string&);
+	static bool MUL_CASE_3(const std::string&);
 
 	//Functions to update flag register after executing a instruction
 	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const _16Bit);
@@ -58,6 +61,8 @@ class ProgramExecutor
 	static void UpdateFlags_SUB_16Bit(const _16Bit, const _16Bit, const uint32_t);
 	static void UpdateFlags_SBB_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_SBB_16Bit(const _16Bit, const _16Bit, const uint32_t);
+	static void UpdateFlags_MUL_8Bit();
+	static void UpdateFlags_MUL_16Bit();
 
 public:
 	static void LoadCallBacks();
@@ -69,6 +74,7 @@ public:
 	static bool ADC(const Operand&);
 	static bool SUB(const Operand&);
 	static bool SBB(const Operand&);
+	static bool MUL(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -80,6 +86,7 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::ADC] = ADC;
 	CallBacks[MNEMONIC::SUB] = SUB;
 	CallBacks[MNEMONIC::SBB] = SBB;
+	CallBacks[MNEMONIC::MUL] = MUL;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -403,6 +410,21 @@ void ProgramExecutor::UpdateFlags_SBB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 	Register::SetFlag(Register::FLAG::ZF, Result16Bit == 0x0000);
 
 	/*[TODO][DF]*/
+}
+
+//MUL only affects OF and CF based upon the upper half of the result all other flags are undefined
+void ProgramExecutor::UpdateFlags_MUL_8Bit()
+{
+	Byte AH = Register::REG8(REGISTER::AH);
+	Register::SetFlag(Register::FLAG::CF, AH != 0x00);
+	Register::SetFlag(Register::FLAG::OF,AH != 0x00);
+}
+
+void ProgramExecutor::UpdateFlags_MUL_16Bit()
+{
+	_16Bit DX = Register::REG16(REGISTER::DX);
+	Register::SetFlag(Register::FLAG::CF, DX != 0x00);
+	Register::SetFlag(Register::FLAG::OF, DX != 0x00);
 }
 
 //[TODO] Updating IP
@@ -914,7 +936,6 @@ bool ProgramExecutor::ADC(const Operand& operand)
 	return Error::LOG("Execution Failder @ ADC\n");
 }
 
-
 /*-----------------------------------------SUB--------------------------------------------------------------*/
 bool ProgramExecutor::SUB_CASE_1(const std::string& OP1, const std::string& OP2, const bool SBB = false)
 {
@@ -1237,7 +1258,7 @@ bool ProgramExecutor::SUB(const Operand& operand)
 		return SUB_CASE_11(OP1, OP2);
 	}
 
-	return Error::LOG("Execution Failder @ ADD\n");
+	return Error::LOG("Execution Failed @ SUB\n");
 }
 
 bool ProgramExecutor::SBB(const Operand& operand)
@@ -1302,5 +1323,63 @@ bool ProgramExecutor::SBB(const Operand& operand)
 		return SUB_CASE_11(OP1, OP2, true);
 	}
 
-	return Error::LOG("Execution Failder @ ADD\n");
+	return Error::LOG("Execution Failed @ SBB\n");
+}
+
+/*<---------------------------------------------MUL------------------------------------------>*/
+
+bool ProgramExecutor::MUL_CASE_1(const std::string& OP)
+{
+	//Memory
+	_16Bit multiplicand = Register::REG8(REGISTER::AL);
+	_16Bit mulitplier = Memory::Get8Bit(Memory::PhysicalAddress(OP));
+	_16Bit Result = multiplicand * mulitplier;
+	Register::REG16(REGISTER::AX, Result);
+	UpdateFlags_MUL_8Bit();
+	return true;
+}
+
+bool ProgramExecutor::MUL_CASE_2(const std::string& OP)
+{
+	//REG8
+	_16Bit multiplicand = Register::REG8(REGISTER::AL);
+	_16Bit mulitplier = Register::REG8(OP);
+	_16Bit Result = multiplicand * mulitplier;
+	Register::REG16(REGISTER::AX, Result);
+	UpdateFlags_MUL_8Bit();
+	return true;
+}
+
+bool ProgramExecutor::MUL_CASE_3(const std::string& OP)
+{
+	//REG16
+	uint32_t multiplicand = Register::REG16(REGISTER::AX);
+	uint32_t mulitplier = Register::REG16(OP);
+	uint32_t Result = multiplicand * mulitplier;
+	_16Bit UpperHalf = (Result & 0xffff0000) >> 16;
+	_16Bit LowerHalf = (Result & 0x0000ffff);
+	Register::REG16(REGISTER::DX, UpperHalf);
+	Register::REG16(REGISTER::AX, LowerHalf);
+	UpdateFlags_MUL_16Bit();
+	return true;
+}
+
+bool ProgramExecutor::MUL(const Operand& operand)
+{
+	std::string OP = operand.first;
+
+	if (Utility::IsMemory(OP))
+	{
+		return MUL_CASE_1(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		return MUL_CASE_2(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		return MUL_CASE_3(OP);
+	}
+
+	return Error::LOG("Execution Failed @MUL\n");
 }

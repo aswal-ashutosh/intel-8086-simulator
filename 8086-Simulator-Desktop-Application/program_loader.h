@@ -547,7 +547,6 @@ bool ProgramLoader::MOV_CASE_8(std::string& OP1, std::string& OP2)
 bool ProgramLoader::MOV(const Operand& operand)
 {
 	//TODO:: Check Whether we have two operands or not
-
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
 		return Error::LOG("Expected 2 Operands @MOV\n");

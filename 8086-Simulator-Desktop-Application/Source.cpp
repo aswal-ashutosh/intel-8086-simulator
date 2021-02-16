@@ -9,10 +9,10 @@ int main()
 	ProgramExecutor::LoadCallBacks();
 	Parser::Read("test.txt");
 	ProgramLoader::Load(Parser::GetProgram());
-	/*ProgramExecutor::Execute(Parser::GetProgram());*/
+	ProgramExecutor::Execute(Parser::GetProgram());
 
-	/*std::cout << "\n.....................................\n\n";
-	Memory::DebugMem(0x1000, 0x3333, 2);
-	Register::PrintAll();*/
+	std::cout << "\n.....................................\n\n";
+	Memory::DebugMem(0x0000, 0x1234, 2);
+	Register::PrintAll();
 	return 0;
 }
