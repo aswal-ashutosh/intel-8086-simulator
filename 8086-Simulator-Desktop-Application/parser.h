@@ -257,10 +257,10 @@ bool Parser::Read(const std::string& FILE_PATH)
 		Instruction instruction;
 		instruction.LineNumber = nLineNumber;
 		instruction.Mnemonic = tokens.front();
-		if(tokens.front() == "MUL")
-		instruction.operand = { tokens[1], ""};
+		if(tokens.front() == "MOV")
+		instruction.operand = { tokens[1], tokens[3] } ;
 		else
-		instruction.operand = { tokens[1], tokens[3] };
+		instruction.operand = { tokens[1], "" };
 
 		Program.push_back(instruction);
 

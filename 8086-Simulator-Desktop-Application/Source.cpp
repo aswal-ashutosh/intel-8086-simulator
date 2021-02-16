@@ -12,7 +12,7 @@ int main()
 	ProgramExecutor::Execute(Parser::GetProgram());
 
 	std::cout << "\n.....................................\n\n";
-	Memory::DebugMem(0x0000, 0x1234, 2);
 	Register::PrintAll();
+	//Memory::DebugMem(0x0000, 0x1234, 2);
 	return 0;
 }

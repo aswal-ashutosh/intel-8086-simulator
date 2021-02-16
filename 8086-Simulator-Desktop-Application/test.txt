@@ -1,3 +1,3 @@
-mov ax, ffffh  
-mov [1234h], ffffh
-mul [1234h]
+mov al, 0ffh  
+mov bl, 001h
+imul bl
