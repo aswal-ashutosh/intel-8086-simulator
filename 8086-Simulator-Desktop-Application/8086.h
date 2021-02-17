@@ -81,6 +81,18 @@ class ProgramExecutor
 	static bool IDIV_CASE_2(const std::string&);
 	static bool IDIV_CASE_3(const std::string&);
 
+	static bool CMP_CASE_1(const std::string&, const std::string&);
+	static bool CMP_CASE_2(const std::string&, const std::string&);
+	static bool CMP_CASE_3(const std::string&, const std::string&);
+	static bool CMP_CASE_4(const std::string&, const std::string&);
+	static bool CMP_CASE_5(const std::string&, const std::string&);
+	static bool CMP_CASE_6(const std::string&, const std::string&);
+	static bool CMP_CASE_7(const std::string&, const std::string&);
+	static bool CMP_CASE_8(const std::string&, const std::string&);
+	static bool CMP_CASE_9(const std::string&, const std::string&);
+	static bool CMP_CASE_10(const std::string&, const std::string&);
+	static bool CMP_CASE_11(const std::string&, const std::string&);
+
 	//Functions to update flag register after executing a instruction
 	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_ADD_16Bit(const _16Bit, const _16Bit, const uint32_t);
@@ -90,6 +102,10 @@ class ProgramExecutor
 	static void UpdateFlags_SUB_16Bit(const _16Bit, const _16Bit, const uint32_t);
 	static void UpdateFlags_SBB_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_SBB_16Bit(const _16Bit, const _16Bit, const uint32_t);
+
+	static void UpdateFlags_CMP_8Bit(const Byte, const Byte, const _16Bit);
+	static void UpdateFlags_CMP_16Bit(const _16Bit, const _16Bit, const uint32_t);
+
 
 	//Will update flags for AND, XOR & OR
 	static void UpdateFlags_LOGIC_8Bit(const Byte);
@@ -116,6 +132,7 @@ public:
 	static bool AND(const Operand&);
 	static bool OR(const Operand&);
 	static bool XOR(const Operand&);
+	static bool CMP(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -134,6 +151,7 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::AND] = AND;
 	CallBacks[MNEMONIC::OR] = OR;
 	CallBacks[MNEMONIC::XOR] = XOR;
+	CallBacks[MNEMONIC::CMP] = CMP;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -238,6 +256,7 @@ void ProgramExecutor::UpdateFlags_ADC_8Bit(const Byte OP1, const Byte OP2, const
 void ProgramExecutor::UpdateFlags_ADD_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
 {
 	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) + (OP2 & 0x000f) > 0x000f); //Auxillary Carry Flag
 	_16Bit Result16Bit = Result; //Truncating Extra Bits
 
 	//Over Flow Flag
@@ -265,6 +284,7 @@ void ProgramExecutor::UpdateFlags_ADC_16Bit(const _16Bit OP1, const _16Bit OP2, 
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
 	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) + (OP2 & 0x000f) > 0x000f); //Auxillary Carry Flag
 	_16Bit Result16Bit = Result; //Truncating Extra Bits
 
 	//Over Flow Flag
@@ -307,8 +327,8 @@ void ProgramExecutor::UpdateFlags_ADC_16Bit(const _16Bit OP1, const _16Bit OP2, 
 void ProgramExecutor::UpdateFlags_SUB_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
 {
 	Byte _2SC = -OP2;
-	Register::SetFlag(Register::FLAG::CF, Result > 0x00ff); //Carry Flag
-	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) + (_2SC & 0x0f) > 0x0f); //Auxillary Carry Flag
+	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) < (OP2 & 0x0f)); //Auxillary Carry Flag
 	Byte Result8Bit = Result; //Truncating Extra Bits
 
 	//Over Flow Flag
@@ -342,7 +362,8 @@ void ProgramExecutor::UpdateFlags_SUB_8Bit(const Byte OP1, const Byte OP2, const
 void ProgramExecutor::UpdateFlags_SUB_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
 {
 	_16Bit _2SC = -OP2;
-	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
+	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
 	_16Bit Result16Bit = Result; //Truncating Extra Bits
 
 	//Over Flow Flag
@@ -364,8 +385,6 @@ void ProgramExecutor::UpdateFlags_SUB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 	Register::SetFlag(Register::FLAG::ZF, Result16Bit == 0x0000);
 
 	/*[TODO][DF]*/
-
-	/*[TODO][DF]*/
 }
 
 void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
@@ -373,8 +392,8 @@ void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
 	Byte _2SC = -OP2;
 	Byte _2SC_CF = oldCF ? 0xff : 0x00;
-	Register::SetFlag(Register::FLAG::CF, Result > 0x00ff); //Carry Flag
-	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) + (OP2 & 0x0f) > 0x0f); //Auxillary Carry Flag
+	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) < (OP2 & 0x0f)); //Auxillary Carry Flag
 	Byte Result8Bit = Result; //Truncating Extra Bits
 
 	//Over Flow Flag
@@ -418,7 +437,8 @@ void ProgramExecutor::UpdateFlags_SBB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
 	_16Bit _2SC = -OP2;
 	_16Bit _2SC_CF = oldCF ? 0xffff : 0x0000;
-	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
+	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
 	_16Bit Result16Bit = Result; //Truncating Extra Bits
 
 	//Over Flow Flag
@@ -457,7 +477,6 @@ void ProgramExecutor::UpdateFlags_SBB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 
 	/*[TODO][DF]*/
 }
-
 
 void ProgramExecutor::UpdateFlags_MUL_8Bit()
 {
@@ -509,6 +528,69 @@ void ProgramExecutor::UpdateFlags_LOGIC_16Bit(const _16Bit Result)
 
 	Register::SetFlag(Register::FLAG::ZF, Result == 0x0000); //Zero Flag
 
+}
+
+void ProgramExecutor::UpdateFlags_CMP_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
+{
+	Byte _2SC = -OP2;
+	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) < (OP2 & 0x0f)); //Auxillary Carry Flag
+	Byte Result8Bit = Result; //Truncating Extra Bits
+
+	//Over Flow Flag
+	/*
+		If 2 Two's Complement numbers are subtracted, and their signs are different, then
+		overflow occurs if and only if the result has the same sign as the subtrahend.
+										OR
+		We can just calculate it by considering it the sum of OP1 and 2s complement of OP2
+	*/
+
+	if ((OP1 & (1 << 7)) ^ (_2SC & (1 << 7)))
+	{
+		//Different Sign
+		Register::SetFlag(Register::FLAG::OF, false);
+	}
+	else
+	{
+		//Same Sign
+		Register::SetFlag(Register::FLAG::OF, (Result8Bit & (1 << 7)) ^ (OP1 & (1 << 7)));
+	}
+
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result8Bit) & 1)); //Parity Flag
+
+	Register::SetFlag(Register::FLAG::SF, Result8Bit & (1 << 7)); //Sign Flag
+
+	Register::SetFlag(Register::FLAG::ZF, Result8Bit == 0x00);
+
+	/*[TODO][DF]*/
+}
+
+void ProgramExecutor::UpdateFlags_CMP_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
+{
+	_16Bit _2SC = -OP2;
+	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
+	_16Bit Result16Bit = Result; //Truncating Extra Bits
+
+	//Over Flow Flag
+	if ((OP1 & (1 << 15)) ^ (_2SC & (1 << 15)))
+	{
+		//Different Sign
+		Register::SetFlag(Register::FLAG::OF, false);
+	}
+	else
+	{
+		//Same Sign
+		Register::SetFlag(Register::FLAG::OF, (Result16Bit & (1 << 15)) ^ (OP1 & (1 << 15)));
+	}
+
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result16Bit) & 1)); //Parity Flag
+
+	Register::SetFlag(Register::FLAG::SF, Result16Bit & (1 << 15)); //Sign Flag
+
+	Register::SetFlag(Register::FLAG::ZF, Result16Bit == 0x0000);
+
+	/*[TODO][DF]*/
 }
 
 //[TODO] Updating IP
@@ -878,7 +960,6 @@ bool ProgramExecutor::ADD_CASE_11(const std::string& OP1, const std::string& OP2
 	REG += IMMD8 + (ADC ? Register::GetFlag(Register::FLAG::CF) : 0);
 	Register::REG16(OP1, REG);//Extra Bits will automatically get truncated as we are assigning 32Bit to 16Bit
 	//This 16 Bit operation will affect the aux flag
-	Register::SetFlag(Register::FLAG::AF, (X & 0x000f) + (Y & 0x000f) > 0x000f);//Explicitly Checking aur Auxillary Carry
 	if (ADC)
 	{
 		UpdateFlags_ADC_16Bit(X, Y, REG);
@@ -1268,7 +1349,6 @@ bool ProgramExecutor::SUB_CASE_11(const std::string& OP1, const std::string& OP2
 	}
 	Register::REG16(OP1, Result);//Extra Bits will automatically get truncated as we are assigning 32Bit to 16Bit
 	//This 16 Bit operation will affect the aux flag
-	Register::SetFlag(Register::FLAG::AF, (X & 0x000f) + (_2SC & 0x000f) > 0x000f);//Explicitly Checking aur Auxillary Carry
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);
@@ -1911,4 +1991,196 @@ bool ProgramExecutor::OR(const Operand& operand)
 bool ProgramExecutor::XOR(const Operand& operand)
 {
 	return LOGICAL_OPERATION(operand, LOGIC::XOR) ? true : Error::LOG("Execution Failed @ XOR\n");
+}
+
+/*<---------------------------------------CMP----------------------------------------------->*/
+
+bool ProgramExecutor::CMP_CASE_1(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-1] REG8, REG8*/
+	Byte X = Register::REG8(OP1);
+	Byte Y = Register::REG8(OP2);
+	Byte _2SC = -Y;
+	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	UpdateFlags_CMP_8Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_2(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-2] REG8, MEM*/
+	Byte X = Register::REG8(OP1);
+	Byte Y = Memory::Get8Bit(Memory::PhysicalAddress(OP2));
+	Byte _2SC = -Y;
+	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	UpdateFlags_CMP_8Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_3(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-3] MEM, REG8*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	Byte X = Memory::Get8Bit(PAdd);
+	Byte Y = Register::REG8(OP2);
+	Byte _2SC = -Y;
+	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	UpdateFlags_CMP_8Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_4(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-4] REG16, REG16*/
+	_16Bit X = Register::REG16(OP1);
+	_16Bit Y = Register::REG16(OP2);
+	_16Bit _2SC = -Y;
+	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
+	UpdateFlags_CMP_16Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_5(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-5] REG16, MEM*/
+	_16Bit X = Register::REG16(OP1);
+	_16Bit Y = Memory::Get16Bit(Memory::PhysicalAddress(OP2));
+	_16Bit _2SC = -Y;
+	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
+	UpdateFlags_CMP_16Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_6(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-6] MEM, REG16*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	_16Bit X = Memory::Get16Bit(PAdd);
+	_16Bit Y = Register::REG16(OP2);
+	_16Bit _2SC = -Y;
+	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
+	UpdateFlags_CMP_16Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_7(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-7] MEM, IMMD8*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	Byte X = Memory::Get8Bit(PAdd);
+	Byte Y = Converter::HexToDec(OP2);
+	Byte _2SC = -Y;
+	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	UpdateFlags_CMP_8Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_8(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-8] MEM, IMMD16*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	_16Bit X = Memory::Get16Bit(PAdd);
+	_16Bit Y = Converter::HexToDec(OP2);
+	_16Bit _2SC = -Y;
+	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
+	UpdateFlags_CMP_16Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_9(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-9] REG8, IMMD8*/
+	Byte X = Register::REG8(OP1);
+	Byte Y = Converter::HexToDec(OP2);
+	Byte _2SC = -Y;
+	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	UpdateFlags_CMP_8Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_10(const std::string& OP1, const std::string& OP2)
+{
+	/*CASE-10] REG16, IMMD16*/
+	_16Bit X = Register::REG16(OP1);
+	_16Bit Y = Converter::HexToDec(OP2);
+	_16Bit _2SC = -Y;
+	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
+	UpdateFlags_CMP_16Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP_CASE_11(const std::string& OP1, const std::string& OP2)
+{
+	/*CASE-11] REG16, IMMD8*/
+	_16Bit X = Register::REG16(OP1);
+	_16Bit Y = Converter::HexToDec(OP2);
+	_16Bit _2SC = -Y;
+	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
+	UpdateFlags_CMP_16Bit(X, Y, Result);
+	return true;
+}
+
+bool ProgramExecutor::CMP(const Operand& operand)
+{
+	const std::string& OP1 = operand.first;
+	const std::string& OP2 = operand.second;
+	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
+	{	/*[CASE-1] REG8, REG8*/
+		return CMP_CASE_1(OP1, OP2);
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsMemory(OP2))
+	{
+		/*[CASE-2] REG8, MEM*/
+		return CMP_CASE_2(OP1, OP2);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		/*[CASE-3] MEM, REG8*/
+		return CMP_CASE_3(OP1, OP2);
+
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		/*[CASE-4] REG16, REG16*/
+		return CMP_CASE_4(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsMemory(OP2))
+	{
+		/*[CASE-5] REG16, MEM*/
+		return CMP_CASE_5(OP1, OP2);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		/*[CASE-6] MEM, REG16*/
+		return CMP_CASE_6(OP1, OP2);
+
+	}
+	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-7] MEM, IMMD8*/
+		return CMP_CASE_7(OP1, OP2);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	{
+		/*[CASE-8] MEM, IMMD16*/
+		return	CMP_CASE_8(OP1, OP2);
+
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-9] REG8, IMMD8*/
+		return CMP_CASE_9(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	{
+		/*CASE-10] REG16, IMMD16*/
+		return CMP_CASE_10(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-11] REG16, IMMD8*/
+		return CMP_CASE_11(OP1, OP2);
+	}
+
+	return Error::LOG("Execution Failed @ CMP\n");
 }

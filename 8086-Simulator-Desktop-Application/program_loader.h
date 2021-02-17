@@ -90,6 +90,7 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::AND] = AND;
 	CallBacks[MNEMONIC::OR] = OR;
 	CallBacks[MNEMONIC::XOR] = XOR;
+	CallBacks[MNEMONIC::CMP] = CMP;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
