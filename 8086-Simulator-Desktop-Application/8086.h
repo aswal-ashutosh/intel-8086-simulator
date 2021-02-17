@@ -56,6 +56,14 @@ class ProgramExecutor
 	static bool IMUL_CASE_2(const std::string&);
 	static bool IMUL_CASE_3(const std::string&);
 
+	static bool DIV_CASE_1(const std::string&);
+	static bool DIV_CASE_2(const std::string&);
+	static bool DIV_CASE_3(const std::string&);
+
+	static bool IDIV_CASE_1(const std::string&);
+	static bool IDIV_CASE_2(const std::string&);
+	static bool IDIV_CASE_3(const std::string&);
+
 	//Functions to update flag register after executing a instruction
 	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_ADD_16Bit(const _16Bit, const _16Bit, const uint32_t);
@@ -82,6 +90,8 @@ public:
 	static bool SBB(const Operand&);
 	static bool MUL(const Operand&);
 	static bool IMUL(const Operand&);
+	static bool DIV(const Operand&);
+	static bool IDIV(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -95,6 +105,8 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::SBB] = SBB;
 	CallBacks[MNEMONIC::MUL] = MUL;
 	CallBacks[MNEMONIC::IMUL] = IMUL;
+	CallBacks[MNEMONIC::DIV] = DIV;
+	CallBacks[MNEMONIC::IDIV] = IDIV;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -1372,14 +1384,11 @@ bool ProgramExecutor::MUL_CASE_3(const std::string& OP)
 	return true;
 }
 
-
 bool ProgramExecutor::IMUL_CASE_1(const std::string& OP)
 {
 	//Memory
-	char A = Register::REG8(REGISTER::AL);
-	char B = Memory::Get8Bit(Memory::PhysicalAddress(OP));
-	short multiplicand = A;
-	short mulitplier = B;
+	short multiplicand = (char)Register::REG8(REGISTER::AL);
+	short mulitplier = (char)Memory::Get8Bit(Memory::PhysicalAddress(OP));
 	short Result = multiplicand * mulitplier;
 	Register::REG16(REGISTER::AX, Result);
 	UpdateFlags_MUL_8Bit();
@@ -1389,10 +1398,8 @@ bool ProgramExecutor::IMUL_CASE_1(const std::string& OP)
 bool ProgramExecutor::IMUL_CASE_2(const std::string& OP)
 {
 	//REG8
-	char A = Register::REG8(REGISTER::AL);
-	char B = Register::REG8(OP);
-	short multiplicand = A;
-	short mulitplier = B;
+	short multiplicand = (char)Register::REG8(REGISTER::AL);
+	short mulitplier = (char)Register::REG8(OP);
 	short Result = multiplicand * mulitplier;
 	Register::REG16(REGISTER::AX, Result);
 	UpdateFlags_MUL_8Bit();
@@ -1402,10 +1409,8 @@ bool ProgramExecutor::IMUL_CASE_2(const std::string& OP)
 bool ProgramExecutor::IMUL_CASE_3(const std::string& OP)
 {
 	//REG16
-	short A = Register::REG16(REGISTER::AX);
-	short B = Register::REG16(OP);
-	int multiplicand = A;
-	int mulitplier = B;
+	int multiplicand = (short)Register::REG16(REGISTER::AX);
+	int mulitplier = (short)Register::REG16(OP);
 	int Result = multiplicand * mulitplier;
 	_16Bit UpperHalf = (Result & 0xffff0000) >> 16;
 	_16Bit LowerHalf = (Result & 0x0000ffff);
@@ -1452,5 +1457,141 @@ bool ProgramExecutor::IMUL(const Operand& operand)
 		return IMUL_CASE_3(OP);
 	}
 
-	return Error::LOG("Execution Failed @MUL\n");
+	return Error::LOG("Execution Failed @IMUL\n");
+}
+
+/*<------------------------------------DIV----------------------------------->*/
+
+bool ProgramExecutor::DIV_CASE_1(const std::string& OP)
+{
+	//Memory
+	_16Bit divisor = Memory::Get8Bit(Memory::PhysicalAddress(OP));
+	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
+	_16Bit dividend = Register::REG16(REGISTER::AX);
+	_16Bit quotient = dividend / divisor;
+	_16Bit remainder = dividend % divisor;
+	if (quotient > 0xff) { return Error::LOG("Division Error. Result can't be fit in AL\n"); }
+	Register::REG8(REGISTER::AL, quotient);
+	Register::REG8(REGISTER::AH, remainder);
+	//Flags are Undefined
+	return true;
+}
+
+bool ProgramExecutor::DIV_CASE_2(const std::string& OP)
+{
+	//REG8
+	_16Bit divisor = Register::REG8(OP);
+	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
+	_16Bit dividend = Register::REG16(REGISTER::AX);
+	_16Bit quotient = dividend / divisor;
+	_16Bit remainder = dividend % divisor;
+	if (quotient > 0xff) { return Error::LOG("Division Error. Result can't be fit in AL\n"); }
+	Register::REG8(REGISTER::AL, quotient);
+	Register::REG8(REGISTER::AH, remainder);
+	//Flags are Undefined
+	return true;
+}
+
+bool ProgramExecutor::DIV_CASE_3(const std::string& OP)
+{
+	//REG16
+	uint32_t divisor = Register::REG16(OP);
+	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
+	uint32_t dividendLowerHalf = Register::REG16(REGISTER::AX);
+	uint32_t dividendUpperHalf = Register::REG16(REGISTER::DX);
+	uint32_t dividend = (dividendUpperHalf << 16) | dividendLowerHalf;
+	uint32_t quotient = dividend / divisor;
+	uint32_t remainder = dividend % divisor;
+	if (quotient > 0xffff) { return Error::LOG("Division Error. Result can't be fit in AX\n"); }
+	Register::REG16(REGISTER::AX, quotient);
+	Register::REG16(REGISTER::DX, remainder);
+	//Flags are Undefined
+	return true;
+}
+
+bool ProgramExecutor::IDIV_CASE_1(const std::string& OP)
+{
+	//Memory
+	short divisor = (char)Memory::Get8Bit(Memory::PhysicalAddress(OP));
+	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
+	short dividend = Register::REG16(REGISTER::AX);
+	short quotient = dividend / divisor;
+	short remainder = dividend % divisor;
+	if (quotient > 0x7f || quotient < (char)0x80) { return Error::LOG("Division Error. Result can't be fit in AL\n"); }
+	Register::REG8(REGISTER::AL, quotient);
+	Register::REG8(REGISTER::AH, remainder);
+	//Flags are Undefined
+	return true;
+}
+
+bool ProgramExecutor::IDIV_CASE_2(const std::string& OP)
+{
+	//REG8
+	short divisor = (char)Register::REG8(OP);
+	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
+	short dividend = Register::REG16(REGISTER::AX);
+	short quotient = dividend / divisor;
+	short remainder = dividend % divisor;
+	if (quotient > 0x7f || quotient < (char)0x80) { return Error::LOG("Division Error. Result can't be fit in AL\n"); }
+	Register::REG8(REGISTER::AL, quotient);
+	Register::REG8(REGISTER::AH, remainder);
+	//Flags are Undefined
+	return true;
+}
+
+bool ProgramExecutor::IDIV_CASE_3(const std::string& OP)
+{
+	//REG16
+	int divisor = (short)Register::REG16(OP);
+	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
+	uint32_t dividendLowerHalf = Register::REG16(REGISTER::AX);
+	uint32_t dividendUpperHalf = Register::REG16(REGISTER::DX);
+	int dividend = (dividendUpperHalf << 16) | dividendLowerHalf;
+	int quotient = dividend / divisor;
+	int remainder = dividend % divisor;
+	if (quotient > 0x7fff || quotient < (short)0x8000) { return Error::LOG("Division Error. Result can't be fit in AX\n"); }
+	Register::REG16(REGISTER::AX, quotient);
+	Register::REG16(REGISTER::DX, remainder);
+	//Flags are Undefined
+	return true;
+}
+
+bool ProgramExecutor::DIV(const Operand& operand)
+{
+	std::string OP = operand.first;
+
+	if (Utility::IsMemory(OP))
+	{
+		return DIV_CASE_1(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		return DIV_CASE_2(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		return DIV_CASE_3(OP);
+	}
+
+	return Error::LOG("Execution Failed @DIV\n");
+}
+
+bool ProgramExecutor::IDIV(const Operand& operand)
+{
+	std::string OP = operand.first;
+
+	if (Utility::IsMemory(OP))
+	{
+		return IDIV_CASE_1(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		return IDIV_CASE_2(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		return IDIV_CASE_3(OP);
+	}
+
+	return Error::LOG("Execution Failed @IDIV\n");
 }
