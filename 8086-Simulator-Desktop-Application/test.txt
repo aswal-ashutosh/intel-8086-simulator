@@ -1,3 +1,10 @@
-mov al, 0ffh  
-mov bl, 001h
-imul bl
+idiv al
+idiv bl
+idiv dh
+idiv ch
+idiv [13h]
+idiv [bx + si]
+idiv [di]
+idiv ax
+idiv bx
+idiv [bx + si + 3333h]

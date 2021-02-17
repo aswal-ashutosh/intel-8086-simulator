@@ -46,6 +46,14 @@ class ProgramLoader
 	static bool IMUL_CASE_2(std::string&);
 	static bool IMUL_CASE_3(std::string&);
 
+	static bool DIV_CASE_1(std::string&);
+	static bool DIV_CASE_2(std::string&);
+	static bool DIV_CASE_3(std::string&);
+
+	static bool IDIV_CASE_1(std::string&);
+	static bool IDIV_CASE_2(std::string&);
+	static bool IDIV_CASE_3(std::string&);
+
 public:
 	static void LoadCallBacks();
 	static bool Load(const std::vector<Instruction>&);
@@ -62,6 +70,8 @@ public:
 	static bool XOR(const Operand&);
 	static bool MUL(const Operand&);
 	static bool IMUL(const Operand&);
+	static bool DIV(const Operand&);
+	static bool IDIV(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -75,6 +85,8 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::SBB] = SBB;
 	CallBacks[MNEMONIC::MUL] = MUL;
 	CallBacks[MNEMONIC::IMUL] = IMUL;
+	CallBacks[MNEMONIC::DIV] = DIV;
+	CallBacks[MNEMONIC::IDIV] = IDIV;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -1285,6 +1297,144 @@ bool ProgramLoader::IMUL_CASE_3(std::string& OP)
 	return true;
 }
 
+bool ProgramLoader::DIV_CASE_1(std::string& OP)
+{
+	//Memory
+	const std::string& mem = OP;
+	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00110000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+
+		out << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == "8")
+				{
+					out << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			out << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid Memory Exp @DIV_CASE_1\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::DIV_CASE_2(std::string& OP)
+{
+	//REG8
+	Byte B2 = 0b11110000;
+	B2 |= REG_CODE.find(OP)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	out << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::DIV_CASE_3(std::string& OP)
+{
+	//REG16
+	Byte B2 = 0b11110000;
+	B2 |= REG_CODE.find(OP)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	out << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::IDIV_CASE_1(std::string& OP)
+{
+	//Memory
+	const std::string& mem = OP;
+	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00111000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+
+		out << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == "8")
+				{
+					out << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			out << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid Memory Exp @DIV_CASE_1\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::IDIV_CASE_2(std::string& OP)
+{
+	//REG8
+	Byte B2 = 0b11111000;
+	B2 |= REG_CODE.find(OP)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	out << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::IDIV_CASE_3(std::string& OP)
+{
+	//REG16
+	Byte B2 = 0b11111000;
+	B2 |= REG_CODE.find(OP)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	out << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
 bool ProgramLoader::ADD(const Operand& operand)
 {
 	return AAACOSSX(operand, 0x00, 0b00000000) ? true : Error::LOG("Execution Failed @ ADD\n");
@@ -1356,7 +1506,7 @@ bool ProgramLoader::IMUL(const Operand& operand)
 	//REG8, REG16, []
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand1 @MUL\n");
+		return Error::LOG("Expected 1 Operand1 @IMUL\n");
 	}
 
 	std::string OP = operand.first;
@@ -1375,4 +1525,56 @@ bool ProgramLoader::IMUL(const Operand& operand)
 	}
 
 	return Error::LOG("Syntax Error @IMUL\n");
+}
+
+bool ProgramLoader::DIV(const Operand& operand)
+{
+	//REG8, REG16, []
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected 1 Operand1 @DIV\n");
+	}
+
+	std::string OP = operand.first;
+
+	if (Utility::IsMemory(OP))
+	{
+		return DIV_CASE_1(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		return DIV_CASE_2(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		return DIV_CASE_3(OP);
+	}
+
+	return Error::LOG("Syntax Error @DIV\n");
+}
+
+bool ProgramLoader::IDIV(const Operand& operand)
+{
+	//REG8, REG16, []
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected 1 Operand1 @IDIV\n");
+	}
+
+	std::string OP = operand.first;
+
+	if (Utility::IsMemory(OP))
+	{
+		return IDIV_CASE_1(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		return IDIV_CASE_2(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		return IDIV_CASE_3(OP);
+	}
+
+	return Error::LOG("Syntax Error @IDIV\n");
 }
