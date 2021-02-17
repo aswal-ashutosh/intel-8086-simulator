@@ -87,6 +87,7 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::IMUL] = IMUL;
 	CallBacks[MNEMONIC::DIV] = DIV;
 	CallBacks[MNEMONIC::IDIV] = IDIV;
+	CallBacks[MNEMONIC::AND] = AND;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)

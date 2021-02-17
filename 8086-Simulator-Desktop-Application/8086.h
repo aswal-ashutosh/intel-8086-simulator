@@ -48,6 +48,19 @@ class ProgramExecutor
 	static bool SUB_CASE_10(const std::string&, const std::string&, const bool);
 	static bool SUB_CASE_11(const std::string&, const std::string&, const bool);
 
+	static bool AND_CASE_1(const std::string&, const std::string&);
+	static bool AND_CASE_2(const std::string&, const std::string&);
+	static bool AND_CASE_3(const std::string&, const std::string&);
+	static bool AND_CASE_4(const std::string&, const std::string&);
+	static bool AND_CASE_5(const std::string&, const std::string&);
+	static bool AND_CASE_6(const std::string&, const std::string&);
+	static bool AND_CASE_7(const std::string&, const std::string&);
+	static bool AND_CASE_8(const std::string&, const std::string&);
+	static bool AND_CASE_9(const std::string&, const std::string&);
+	static bool AND_CASE_10(const std::string&, const std::string&);
+	static bool AND_CASE_11(const std::string&, const std::string&);
+
+
 	static bool MUL_CASE_1(const std::string&);
 	static bool MUL_CASE_2(const std::string&);
 	static bool MUL_CASE_3(const std::string&);
@@ -73,7 +86,8 @@ class ProgramExecutor
 	static void UpdateFlags_SUB_16Bit(const _16Bit, const _16Bit, const uint32_t);
 	static void UpdateFlags_SBB_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_SBB_16Bit(const _16Bit, const _16Bit, const uint32_t);
-	
+	static void UpdateFlags_AND_8Bit(const Byte);
+	static void UpdateFlags_AND_16Bit(const _16Bit);
 	//Will also Update the flags for IMUL
 	static void UpdateFlags_MUL_8Bit();
 	static void UpdateFlags_MUL_16Bit();
@@ -92,6 +106,7 @@ public:
 	static bool IMUL(const Operand&);
 	static bool DIV(const Operand&);
 	static bool IDIV(const Operand&);
+	static bool AND(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -107,6 +122,7 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::IMUL] = IMUL;
 	CallBacks[MNEMONIC::DIV] = DIV;
 	CallBacks[MNEMONIC::IDIV] = IDIV;
+	CallBacks[MNEMONIC::AND] = AND;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -160,7 +176,7 @@ void ProgramExecutor::UpdateFlags_ADD_8Bit(const Byte OP1, const Byte OP2, const
 
 	Register::SetFlag(Register::FLAG::SF, Result8Bit & (1 << 7)); //Sign Flag
 
-	Register::SetFlag(Register::FLAG::ZF, Result8Bit == 0x00);
+	Register::SetFlag(Register::FLAG::ZF, Result8Bit == 0x00); //Zero Flag
 
 	/*[TODO][DF]*/
 }
@@ -229,7 +245,7 @@ void ProgramExecutor::UpdateFlags_ADD_16Bit(const _16Bit OP1, const _16Bit OP2, 
 
 	Register::SetFlag(Register::FLAG::SF, Result16Bit & (1 << 15)); //Sign Flag
 
-	Register::SetFlag(Register::FLAG::ZF, Result16Bit == 0x0000);
+	Register::SetFlag(Register::FLAG::ZF, Result16Bit == 0x0000); //Zero Flag
 
 	/*[TODO][DF]*/
 }
@@ -341,7 +357,6 @@ void ProgramExecutor::UpdateFlags_SUB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 	/*[TODO][DF]*/
 }
 
-
 void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
@@ -432,9 +447,10 @@ void ProgramExecutor::UpdateFlags_SBB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 	/*[TODO][DF]*/
 }
 
-//MUL only affects OF and CF based upon the upper half of the result all other flags are undefined
+
 void ProgramExecutor::UpdateFlags_MUL_8Bit()
 {
+	//MUL only affects OF and CF based upon the upper half of the result all other flags are undefined
 	Byte AH = Register::REG8(REGISTER::AH);
 	Register::SetFlag(Register::FLAG::CF, AH != 0x00);
 	Register::SetFlag(Register::FLAG::OF, AH != 0x00);
@@ -442,9 +458,46 @@ void ProgramExecutor::UpdateFlags_MUL_8Bit()
 
 void ProgramExecutor::UpdateFlags_MUL_16Bit()
 {
+	//MUL only affects OF and CF based upon the upper half of the result all other flags are undefined
 	_16Bit DX = Register::REG16(REGISTER::DX);
 	Register::SetFlag(Register::FLAG::CF, DX != 0x0000);
 	Register::SetFlag(Register::FLAG::OF, DX != 0x0000);
+}
+
+void ProgramExecutor::UpdateFlags_AND_8Bit(const Byte Result)
+{
+	/*
+	The OF and CF flags are cleared.
+	The SF, ZF, and PF flags are set according to the result.
+	The state of the AF flag is undefined.
+	*/
+	Register::SetFlag(Register::FLAG::CF, false);
+	Register::SetFlag(Register::FLAG::OF, false);
+
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
+
+	Register::SetFlag(Register::FLAG::SF, Result & (1 << 7)); //Sign Flag
+
+	Register::SetFlag(Register::FLAG::ZF, Result == 0x00); //Zero Flag
+
+}
+
+void ProgramExecutor::UpdateFlags_AND_16Bit(const _16Bit Result)
+{
+	/*
+	The OF and CF flags are cleared.
+	The SF, ZF, and PF flags are set according to the result.
+	The state of the AF flag is undefined.
+	*/
+	Register::SetFlag(Register::FLAG::CF, false);
+	Register::SetFlag(Register::FLAG::OF, false);
+
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
+
+	Register::SetFlag(Register::FLAG::SF, Result & (1 << 15)); //Sign Flag
+
+	Register::SetFlag(Register::FLAG::ZF, Result == 0x0000); //Zero Flag
+
 }
 
 //[TODO] Updating IP
@@ -1594,4 +1647,174 @@ bool ProgramExecutor::IDIV(const Operand& operand)
 	}
 
 	return Error::LOG("Execution Failed @IDIV\n");
+}
+
+/*<--------------------------AND---------------------------------------->*/
+
+bool ProgramExecutor::AND_CASE_1(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-1] REG8, REG8*/
+	Byte Result = Register::REG8(OP1) & Register::REG8(OP2);
+	Register::REG8(OP1, Result);
+	UpdateFlags_AND_8Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_2(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-2] REG8, MEM*/
+	Byte Result = Register::REG8(OP1) & Memory::Get8Bit(Memory::PhysicalAddress(OP2));
+	Register::REG8(OP1, Result);
+	UpdateFlags_AND_8Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_3(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-3] MEM, REG8*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	Byte Result = Memory::Get8Bit(PAdd) & Register::REG8(OP2);
+	Memory::Set8Bit(PAdd, Result);
+	UpdateFlags_AND_8Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_4(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-4] REG16, REG16*/
+	_16Bit Result = Register::REG16(OP1) & Register::REG16(OP2);
+	Register::REG16(OP1, Result);
+	UpdateFlags_AND_16Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_5(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-5] REG16, MEM*/
+	_16Bit Result = Register::REG16(OP1) & Memory::Get16Bit(Memory::PhysicalAddress(OP2));
+	Register::REG16(OP1, Result);
+	UpdateFlags_AND_16Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_6(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-6] MEM, REG16*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	_16Bit Result = Memory::Get16Bit(PAdd) & Register::REG16(OP2);
+	Memory::Set16Bit(PAdd, Result);
+	UpdateFlags_AND_16Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_7(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-7] MEM, IMMD8*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	Byte Result = Memory::Get8Bit(PAdd) & Converter::HexToDec(OP2);
+	Memory::Set8Bit(PAdd, Result);
+	UpdateFlags_AND_8Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_8(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-8] MEM, IMMD16*/
+	int PAdd = Memory::PhysicalAddress(OP1);
+	_16Bit Result = Memory::Get16Bit(PAdd) & Converter::HexToDec(OP2);
+	Memory::Set16Bit(PAdd, Result);
+	UpdateFlags_AND_16Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_9(const std::string& OP1, const std::string& OP2)
+{
+	/*[CASE-9] REG8, IMMD8*/
+	Byte Result = Register::REG8(OP1) & Converter::HexToDec(OP2);
+	Register::REG8(OP1, Result);
+	UpdateFlags_AND_8Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_10(const std::string& OP1, const std::string& OP2)
+{
+	/*CASE-10] REG16, IMMD16*/
+	_16Bit Result = Register::REG16(OP1) & Converter::HexToDec(OP2);
+	Register::REG16(OP1, Result);
+	UpdateFlags_AND_16Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND_CASE_11(const std::string& OP1, const std::string& OP2)
+{
+	/*CASE-11] REG16, IMMD8*/
+	_16Bit Result = Register::REG16(OP1) & Converter::HexToDec(OP2);
+	Register::REG16(OP1, Result);
+	UpdateFlags_AND_16Bit(Result);
+	return true;
+}
+
+bool ProgramExecutor::AND(const Operand& operand)
+{
+	const std::string& OP1 = operand.first;
+	const std::string& OP2 = operand.second;
+	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
+	{	/*[CASE-1] REG8, REG8*/
+		return AND_CASE_1(OP1, OP2);
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsMemory(OP2))
+	{
+		/*[CASE-2] REG8, MEM*/
+		return AND_CASE_2(OP1, OP2);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		/*[CASE-3] MEM, REG8*/
+		return AND_CASE_3(OP1, OP2);
+
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		/*[CASE-4] REG16, REG16*/
+		return AND_CASE_4(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsMemory(OP2))
+	{
+		/*[CASE-5] REG16, MEM*/
+		return AND_CASE_5(OP1, OP2);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		/*[CASE-6] MEM, REG16*/
+		return AND_CASE_6(OP1, OP2);
+
+	}
+	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-7] MEM, IMMD8*/
+		return AND_CASE_7(OP1, OP2);
+	}
+	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	{
+		/*[CASE-8] MEM, IMMD16*/
+		return AND_CASE_8(OP1, OP2);
+
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-9] REG8, IMMD8*/
+		return AND_CASE_9(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	{
+		/*CASE-10] REG16, IMMD16*/
+		return AND_CASE_10(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	{
+		/*[CASE-11] REG16, IMMD8*/
+		return AND_CASE_11(OP1, OP2);
+	}
+
+	return Error::LOG("Execution Failder @ AND\n");
 }

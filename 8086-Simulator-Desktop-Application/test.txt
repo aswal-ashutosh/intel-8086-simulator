@@ -1,3 +1,2 @@
-mov ax, ffffh
-mov bx, 0001h
-imul bx
+mov bx, abcdh
+and bx, ffh
