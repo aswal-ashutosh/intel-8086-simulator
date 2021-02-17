@@ -1,2 +1,2 @@
-mov bx, abcdh
-and bx, ffh
+mov bx, 0000h
+or bx, abcdh

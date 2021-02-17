@@ -48,17 +48,21 @@ class ProgramExecutor
 	static bool SUB_CASE_10(const std::string&, const std::string&, const bool);
 	static bool SUB_CASE_11(const std::string&, const std::string&, const bool);
 
-	static bool AND_CASE_1(const std::string&, const std::string&);
-	static bool AND_CASE_2(const std::string&, const std::string&);
-	static bool AND_CASE_3(const std::string&, const std::string&);
-	static bool AND_CASE_4(const std::string&, const std::string&);
-	static bool AND_CASE_5(const std::string&, const std::string&);
-	static bool AND_CASE_6(const std::string&, const std::string&);
-	static bool AND_CASE_7(const std::string&, const std::string&);
-	static bool AND_CASE_8(const std::string&, const std::string&);
-	static bool AND_CASE_9(const std::string&, const std::string&);
-	static bool AND_CASE_10(const std::string&, const std::string&);
-	static bool AND_CASE_11(const std::string&, const std::string&);
+
+	enum class LOGIC{AND, OR, XOR};
+	//Will Perform Logical Operations i.e AND, OR, XOR
+	static bool LOGIC_CASE_1(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_2(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_3(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_4(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_5(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_6(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_7(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_8(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_9(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_10(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGIC_CASE_11(const std::string&, const std::string&, const LOGIC&);
+	static bool LOGICAL_OPERATION(const Operand&, const LOGIC&);
 
 
 	static bool MUL_CASE_1(const std::string&);
@@ -86,8 +90,11 @@ class ProgramExecutor
 	static void UpdateFlags_SUB_16Bit(const _16Bit, const _16Bit, const uint32_t);
 	static void UpdateFlags_SBB_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_SBB_16Bit(const _16Bit, const _16Bit, const uint32_t);
-	static void UpdateFlags_AND_8Bit(const Byte);
-	static void UpdateFlags_AND_16Bit(const _16Bit);
+
+	//Will update flags for AND, XOR & OR
+	static void UpdateFlags_LOGIC_8Bit(const Byte);
+	static void UpdateFlags_LOGIC_16Bit(const _16Bit);
+
 	//Will also Update the flags for IMUL
 	static void UpdateFlags_MUL_8Bit();
 	static void UpdateFlags_MUL_16Bit();
@@ -107,6 +114,8 @@ public:
 	static bool DIV(const Operand&);
 	static bool IDIV(const Operand&);
 	static bool AND(const Operand&);
+	static bool OR(const Operand&);
+	static bool XOR(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -123,6 +132,8 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::DIV] = DIV;
 	CallBacks[MNEMONIC::IDIV] = IDIV;
 	CallBacks[MNEMONIC::AND] = AND;
+	CallBacks[MNEMONIC::OR] = OR;
+	CallBacks[MNEMONIC::XOR] = XOR;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -464,7 +475,7 @@ void ProgramExecutor::UpdateFlags_MUL_16Bit()
 	Register::SetFlag(Register::FLAG::OF, DX != 0x0000);
 }
 
-void ProgramExecutor::UpdateFlags_AND_8Bit(const Byte Result)
+void ProgramExecutor::UpdateFlags_LOGIC_8Bit(const Byte Result)
 {
 	/*
 	The OF and CF flags are cleared.
@@ -482,7 +493,7 @@ void ProgramExecutor::UpdateFlags_AND_8Bit(const Byte Result)
 
 }
 
-void ProgramExecutor::UpdateFlags_AND_16Bit(const _16Bit Result)
+void ProgramExecutor::UpdateFlags_LOGIC_16Bit(const _16Bit Result)
 {
 	/*
 	The OF and CF flags are cleared.
@@ -1649,172 +1660,255 @@ bool ProgramExecutor::IDIV(const Operand& operand)
 	return Error::LOG("Execution Failed @IDIV\n");
 }
 
-/*<--------------------------AND---------------------------------------->*/
+/*<--------------------------LOGICAL OPERATION---------------------------------------->*/
 
-bool ProgramExecutor::AND_CASE_1(const std::string& OP1, const std::string& OP2)
+
+
+bool ProgramExecutor::LOGIC_CASE_1(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-1] REG8, REG8*/
-	Byte Result = Register::REG8(OP1) & Register::REG8(OP2);
+	Byte Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Register::REG8(OP1) & Register::REG8(OP2); break;
+	case LOGIC::OR: Result = Register::REG8(OP1) | Register::REG8(OP2); break;
+	case LOGIC::XOR: Result = Register::REG8(OP1) ^ Register::REG8(OP2); break;
+	}
 	Register::REG8(OP1, Result);
-	UpdateFlags_AND_8Bit(Result);
+	UpdateFlags_LOGIC_8Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_2(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_2(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-2] REG8, MEM*/
-	Byte Result = Register::REG8(OP1) & Memory::Get8Bit(Memory::PhysicalAddress(OP2));
+	Byte Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Register::REG8(OP1) & Memory::Get8Bit(Memory::PhysicalAddress(OP2)); break;
+	case LOGIC::OR: Result = Register::REG8(OP1) | Memory::Get8Bit(Memory::PhysicalAddress(OP2)); break;
+	case LOGIC::XOR: Result = Register::REG8(OP1) ^ Memory::Get8Bit(Memory::PhysicalAddress(OP2)); break;
+	}
 	Register::REG8(OP1, Result);
-	UpdateFlags_AND_8Bit(Result);
+	UpdateFlags_LOGIC_8Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_3(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_3(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-3] MEM, REG8*/
 	int PAdd = Memory::PhysicalAddress(OP1);
-	Byte Result = Memory::Get8Bit(PAdd) & Register::REG8(OP2);
+	Byte Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Memory::Get8Bit(PAdd) & Register::REG8(OP2); break;
+	case LOGIC::OR: Result = Memory::Get8Bit(PAdd) | Register::REG8(OP2); break;
+	case LOGIC::XOR: Result = Memory::Get8Bit(PAdd) ^ Register::REG8(OP2); break;
+	}
 	Memory::Set8Bit(PAdd, Result);
-	UpdateFlags_AND_8Bit(Result);
+	UpdateFlags_LOGIC_8Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_4(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_4(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-4] REG16, REG16*/
-	_16Bit Result = Register::REG16(OP1) & Register::REG16(OP2);
+	 _16Bit Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Register::REG16(OP1) & Register::REG16(OP2); break;
+	case LOGIC::OR: Result = Register::REG16(OP1) | Register::REG16(OP2); break;
+	case LOGIC::XOR: Result = Register::REG16(OP1) ^ Register::REG16(OP2); break;
+	}
 	Register::REG16(OP1, Result);
-	UpdateFlags_AND_16Bit(Result);
+	UpdateFlags_LOGIC_16Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_5(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_5(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-5] REG16, MEM*/
-	_16Bit Result = Register::REG16(OP1) & Memory::Get16Bit(Memory::PhysicalAddress(OP2));
+	_16Bit Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Register::REG16(OP1) & Memory::Get16Bit(Memory::PhysicalAddress(OP2)); break;
+	case LOGIC::OR: Result = Register::REG16(OP1) | Memory::Get16Bit(Memory::PhysicalAddress(OP2)); break;
+	case LOGIC::XOR: Result = Register::REG16(OP1) ^ Memory::Get16Bit(Memory::PhysicalAddress(OP2)); break;
+	}
 	Register::REG16(OP1, Result);
-	UpdateFlags_AND_16Bit(Result);
+	UpdateFlags_LOGIC_16Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_6(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_6(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-6] MEM, REG16*/
 	int PAdd = Memory::PhysicalAddress(OP1);
-	_16Bit Result = Memory::Get16Bit(PAdd) & Register::REG16(OP2);
+	_16Bit Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Memory::Get16Bit(PAdd) & Register::REG16(OP2); break;
+	case LOGIC::OR: Result = Memory::Get16Bit(PAdd) | Register::REG16(OP2); break;
+	case LOGIC::XOR: Result = Memory::Get16Bit(PAdd) ^ Register::REG16(OP2); break;
+	}
 	Memory::Set16Bit(PAdd, Result);
-	UpdateFlags_AND_16Bit(Result);
+	UpdateFlags_LOGIC_16Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_7(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_7(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-7] MEM, IMMD8*/
 	int PAdd = Memory::PhysicalAddress(OP1);
-	Byte Result = Memory::Get8Bit(PAdd) & Converter::HexToDec(OP2);
+	Byte Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Memory::Get8Bit(PAdd) & Converter::HexToDec(OP2); break;
+	case LOGIC::OR: Result = Memory::Get8Bit(PAdd) | Converter::HexToDec(OP2); break;
+	case LOGIC::XOR: Result = Memory::Get8Bit(PAdd) ^ Converter::HexToDec(OP2); break;
+	}
 	Memory::Set8Bit(PAdd, Result);
-	UpdateFlags_AND_8Bit(Result);
+	UpdateFlags_LOGIC_8Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_8(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_8(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-8] MEM, IMMD16*/
 	int PAdd = Memory::PhysicalAddress(OP1);
-	_16Bit Result = Memory::Get16Bit(PAdd) & Converter::HexToDec(OP2);
+	_16Bit Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Memory::Get16Bit(PAdd) & Converter::HexToDec(OP2); break;
+	case LOGIC::OR: Result = Memory::Get16Bit(PAdd) | Converter::HexToDec(OP2); break;
+	case LOGIC::XOR: Result = Memory::Get16Bit(PAdd) ^ Converter::HexToDec(OP2); break;
+	}
 	Memory::Set16Bit(PAdd, Result);
-	UpdateFlags_AND_16Bit(Result);
+	UpdateFlags_LOGIC_16Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_9(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_9(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*[CASE-9] REG8, IMMD8*/
-	Byte Result = Register::REG8(OP1) & Converter::HexToDec(OP2);
+	Byte Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Register::REG8(OP1) & Converter::HexToDec(OP2); break;
+	case LOGIC::OR: Result = Register::REG8(OP1) | Converter::HexToDec(OP2); break;
+	case LOGIC::XOR: Result = Register::REG8(OP1) ^ Converter::HexToDec(OP2); break;
+	}
 	Register::REG8(OP1, Result);
-	UpdateFlags_AND_8Bit(Result);
+	UpdateFlags_LOGIC_8Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_10(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_10(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*CASE-10] REG16, IMMD16*/
-	_16Bit Result = Register::REG16(OP1) & Converter::HexToDec(OP2);
+	_16Bit Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Register::REG16(OP1) & Converter::HexToDec(OP2); break;
+	case LOGIC::OR: Result = Register::REG16(OP1) | Converter::HexToDec(OP2); break;
+	case LOGIC::XOR: Result = Register::REG16(OP1) ^ Converter::HexToDec(OP2); break;
+	}
 	Register::REG16(OP1, Result);
-	UpdateFlags_AND_16Bit(Result);
+	UpdateFlags_LOGIC_16Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND_CASE_11(const std::string& OP1, const std::string& OP2)
+bool ProgramExecutor::LOGIC_CASE_11(const std::string& OP1, const std::string& OP2, const LOGIC& OPERATION)
 {
 	/*CASE-11] REG16, IMMD8*/
-	_16Bit Result = Register::REG16(OP1) & Converter::HexToDec(OP2);
+	_16Bit Result = 0;
+	switch (OPERATION)
+	{
+	case LOGIC::AND: Result = Register::REG16(OP1) & Converter::HexToDec(OP2); break;
+	case LOGIC::OR: Result = Register::REG16(OP1) | Converter::HexToDec(OP2); break;
+	case LOGIC::XOR: Result = Register::REG16(OP1) ^ Converter::HexToDec(OP2); break;
+	}
 	Register::REG16(OP1, Result);
-	UpdateFlags_AND_16Bit(Result);
+	UpdateFlags_LOGIC_16Bit(Result);
 	return true;
 }
 
-bool ProgramExecutor::AND(const Operand& operand)
+bool ProgramExecutor::LOGICAL_OPERATION(const Operand& operand, const LOGIC& OPERATION)
 {
 	const std::string& OP1 = operand.first;
 	const std::string& OP2 = operand.second;
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{	/*[CASE-1] REG8, REG8*/
-		return AND_CASE_1(OP1, OP2);
+		return LOGIC_CASE_1(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsMemory(OP2))
 	{
 		/*[CASE-2] REG8, MEM*/
-		return AND_CASE_2(OP1, OP2);
+		return LOGIC_CASE_2(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		/*[CASE-3] MEM, REG8*/
-		return AND_CASE_3(OP1, OP2);
+		return LOGIC_CASE_3(OP1, OP2, OPERATION);
 
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		/*[CASE-4] REG16, REG16*/
-		return AND_CASE_4(OP1, OP2);
+		return LOGIC_CASE_4(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsMemory(OP2))
 	{
 		/*[CASE-5] REG16, MEM*/
-		return AND_CASE_5(OP1, OP2);
+		return LOGIC_CASE_5(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		/*[CASE-6] MEM, REG16*/
-		return AND_CASE_6(OP1, OP2);
+		return LOGIC_CASE_6(OP1, OP2, OPERATION);
 
 	}
 	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-7] MEM, IMMD8*/
-		return AND_CASE_7(OP1, OP2);
+		return LOGIC_CASE_7(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
 	{
 		/*[CASE-8] MEM, IMMD16*/
-		return AND_CASE_8(OP1, OP2);
+		return LOGIC_CASE_8(OP1, OP2, OPERATION);
 
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-9] REG8, IMMD8*/
-		return AND_CASE_9(OP1, OP2);
+		return LOGIC_CASE_9(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
 	{
 		/*CASE-10] REG16, IMMD16*/
-		return AND_CASE_10(OP1, OP2);
+		return LOGIC_CASE_10(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
 	{
 		/*[CASE-11] REG16, IMMD8*/
-		return AND_CASE_11(OP1, OP2);
+		return LOGIC_CASE_11(OP1, OP2, OPERATION);
 	}
 
-	return Error::LOG("Execution Failder @ AND\n");
+	return Error::LOG("Failed To Perform Logical Operation\n");
+}
+
+bool ProgramExecutor::AND(const Operand& operand)
+{
+	return LOGICAL_OPERATION(operand, LOGIC::AND) ? true : Error::LOG("Execution Failed @ AND\n");
+}
+
+bool ProgramExecutor::OR(const Operand& operand)
+{
+	return LOGICAL_OPERATION(operand, LOGIC::OR) ? true : Error::LOG("Execution Failed @ OR\n");
+}
+
+bool ProgramExecutor::XOR(const Operand& operand)
+{
+	return LOGICAL_OPERATION(operand, LOGIC::XOR) ? true : Error::LOG("Execution Failed @ XOR\n");
 }

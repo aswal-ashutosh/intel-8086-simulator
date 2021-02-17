@@ -88,6 +88,8 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::DIV] = DIV;
 	CallBacks[MNEMONIC::IDIV] = IDIV;
 	CallBacks[MNEMONIC::AND] = AND;
+	CallBacks[MNEMONIC::OR] = OR;
+	CallBacks[MNEMONIC::XOR] = XOR;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
