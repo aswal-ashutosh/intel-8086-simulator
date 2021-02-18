@@ -130,7 +130,7 @@ void Register::PrintAll()
 
 	for (const std::pair<const std::string, _16Bit>& R : _REG16)
 	{
-		const std::string& data = Converter::DecToHex(R.second, HexSize::_16Bit);
+		const std::string& data = Converter::DecToHex(R.second, SIZE::WORD);
 		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
 	}
 

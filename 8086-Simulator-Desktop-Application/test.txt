@@ -1,2 +1,2 @@
-mov ax, 1234h
-cmp ax, ffffh
+mov w[1234h], AX
+mov W[si + bx + 12h], 2134h

@@ -7,14 +7,16 @@
 #include<iostream>
 #include<unordered_map>
 #include"instruction.h"
+#include"hex_size.h"
 
 
-std::fstream out("machine_code.txt", std::ios::out);
+std::fstream OUT("machine_code.txt", std::ios::out);
 
 
 class ProgramLoader
 {
 	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
+
 	static bool MOV_CASE_1(std::string&, std::string&);
 	static bool MOV_CASE_2(std::string&, std::string&);
 	static bool MOV_CASE_3(std::string&, std::string&);
@@ -23,6 +25,13 @@ class ProgramLoader
 	static bool MOV_CASE_6(std::string&, std::string&);
 	static bool MOV_CASE_7(std::string&, std::string&);
 	static bool MOV_CASE_8(std::string&, std::string&);
+	static bool MOV_CASE_9(std::string&, std::string&);
+	static bool MOV_CASE_10(std::string&, std::string&);
+	static bool MOV_CASE_11(std::string&, std::string&);
+	static bool MOV_CASE_12(std::string&, std::string&);
+	static bool MOV_CASE_13(std::string&, std::string&);
+	static bool MOV_CASE_14(std::string&, std::string&);
+	static bool MOV_CASE_15(std::string&, std::string&);
 
 	static bool AAACOSSX_CASE_1(std::string&, std::string&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_2(std::string&, std::string&, const Byte, const Byte);
@@ -35,24 +44,29 @@ class ProgramLoader
 	static bool AAACOSSX_CASE_9(std::string&, std::string&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_10(std::string&, std::string&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_11(std::string&, std::string&, const Byte, const Byte);
+	static bool AAACOSSX_CASE_12(std::string&, std::string&, const Byte, const Byte);
 	//AAACOSSX generate machine code for => ADD, ADC, AND, CMP, OR, SUB, SBB, XOR
 	static bool AAACOSSX(const Operand&, const Byte, const Byte);
 
 	static bool MUL_CASE_1(std::string&);
 	static bool MUL_CASE_2(std::string&);
 	static bool MUL_CASE_3(std::string&);
+	static bool MUL_CASE_4(std::string&);
 	
 	static bool IMUL_CASE_1(std::string&);
 	static bool IMUL_CASE_2(std::string&);
 	static bool IMUL_CASE_3(std::string&);
+	static bool IMUL_CASE_4(std::string&);
 
 	static bool DIV_CASE_1(std::string&);
 	static bool DIV_CASE_2(std::string&);
 	static bool DIV_CASE_3(std::string&);
+	static bool DIV_CASE_4(std::string&);
 
 	static bool IDIV_CASE_1(std::string&);
 	static bool IDIV_CASE_2(std::string&);
 	static bool IDIV_CASE_3(std::string&);
+	static bool IDIV_CASE_4(std::string&);
 
 public:
 	static void LoadCallBacks();
@@ -113,462 +127,581 @@ bool ProgramLoader::Load(const std::vector<Instruction>& Program)
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_1(std::string& OP1, std::string& OP2)
+/*<-------------------------------------MOV-------------------------------------->*/
+
+bool ProgramLoader::MOV_CASE_1(std::string& REG8, std::string& IMMD8)
 {
-	if (Utility::Is8BitRegister(OP1))//REG8, 8-BIT-DATA
-	{
-		//If the OP2 is in 8bit range or not
-		if (Utility::HexSize(OP2) != "8")
-		{
-			Error::LOG("Expected 8Bit data. @MOV\n");
-		}
-
-		//opcode(8Bit)=> B0 + reg_Code
-		const std::string& opcode = Converter::DecToHex(0xB0 + REG_CODE.find(OP1)->second);
-		Utility::Format16Bit(OP2);
-		out << opcode.substr(0, 2) << ' ' << OP2.substr(2, 2) << '\n';
-	}
-	else if (Utility::Is16BitRegister(OP1))//REG16, 16-BIT-DATA
-	{
-		//If the OP2 is in 16bit range or not
-		if (OP2.length() > 5) { return Error::LOG("Expected 16-Bit data. @MOV\n"); }
-
-		//OPCODE(8bit)=> B8 + reg_Code
-		const std::string& opcode = Converter::DecToHex(0xB8 + REG_CODE.find(OP1)->second);
-		Utility::Format16Bit(OP2);
-		const std::string& lowerData = OP2.substr(2, 2);
-		const std::string& higherData = OP2.substr(0, 2);
-		out << opcode.substr(0, 2) << ' ' << lowerData << ' ' << higherData << '\n';
-	}
-	else
-	{
-		//error
-		return Error::LOG("Expected MOV reg8/16, 8/16-Bit-DATA\n");
-	}
-
+	//Case-1:MOV REG8, immd8
+	//opcode(8Bit)=> B0 + reg_Code
+	const std::string& OPCODE = Converter::DecToHex(0xB0 + REG_CODE.find(REG8)->second);
+	Utility::Format16Bit(IMMD8);
+	OUT << OPCODE.substr(0, 2) << ' ' << IMMD8.substr(2, 2) << '\n';
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_2(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_2(std::string& REG16, std::string& IMMD)
 {
-	/*
-		As there is no register so reg code will be 000
-		If immd8 1st Byte wiil be C6 else if immd16 then 1st Byte wiil be C7
-	*/
-	const std::string& mem = OP1;
-	std::string immd = OP2;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	//Case-2:MOV REG16, immd16/immd8
+	//OPCODE(8bit)=> B8 + reg_Code
+	const std::string& OPCODE = Converter::DecToHex(0xB8 + REG_CODE.find(REG16)->second);
+	Utility::Format16Bit(IMMD);
+	OUT << OPCODE.substr(0, 2) << ' ' << IMMD.substr(2, 2) << ' ' << IMMD.substr(0, 2) << '\n';
+	return true;
+}
 
+bool ProgramLoader::MOV_CASE_3(std::string& MEM8, std::string& IMMD8)
+{
+	//Case-3:[], immd8
+	//As there is no register so reg code will be 000
+	//1st Byte wiil be C6
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
 	if (MOD_RM.count(fExp))
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte _2ndByte = info.mod << 6;
 		//Reg-Code is 000 already
 		_2ndByte |= info.rm;
-
 		std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
-
 		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
-
-		if (Utility::HexSize(immd) == "8")//immd8
-		{
-			out << "C6" << ' ' << _2ndByteHex.substr(0, 2);
-		}
-		else//immd16
-		{
-			out << "C7" << ' ' << _2ndByteHex.substr(0, 2);
-		}
-
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+		OUT << "C6" << ' ' << _2ndByteHex.substr(0, 2);
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
 			if (onlyDisp)
 			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
 			}
 			else
 			{
-				if (Utility::HexSize(displacement) == "8")
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2);
+					OUT << ' ' << displacement.substr(2, 2);
 				}
 				else
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
 				}
 			}
 		}
-
 		//Next byte will contain immd
-		Utility::Format16Bit(immd);
-
-		if (Utility::HexSize(immd) == "8")
-		{
-			out << ' ' << immd.substr(2, 2) << '\n';
-		}
-		else
-		{
-			out << ' ' << immd.substr(2, 2) << ' ' << immd.substr(0, 2) << '\n';
-		}
+		Utility::Format16Bit(IMMD8);
+		OUT << ' ' << IMMD8.substr(2, 2) << '\n';
 
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP][CASE:2]\n");
+		return Error::LOG("Invalid [EXP] @MOV_CASE_3\n");
 	}
-	
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_3(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_4(std::string& MEM, std::string& IMMD16)
 {
-	//Opcde(6)-d(1)-w(1) => 100010-1-0 => 8A
-	const std::string& opcode = "8A";
+	//Case-4:[]/W[], immd16
+	//As there is no register so reg code will be 000
+	//1st Byte wiil C7
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte _2ndByte = info.mod << 6;
+		//Reg-Code is 000 already
+		_2ndByte |= info.rm;
+		std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
+		OUT << "C7" << ' ' << _2ndByteHex.substr(0, 2);
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2);
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+				}
+			}
+		}
+		//Next byte will contain immd
+		Utility::Format16Bit(IMMD16);
+		OUT << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @MOV_CASE_4\n");
+	}
+	return true;
+}
 
-	//mod(2)-reg(3)-r/m(3) => 11-Reg_CODE(first)-Reg_Code(second)
-	Byte _2ndByte = 0b11000000;						//mod = 11
-	_2ndByte |= REG_CODE.find(OP1)->second << 3;	//reg-code(first)
-	_2ndByte |= REG_CODE.find(OP2)->second;			//reg-code/(r/m)
+bool ProgramLoader::MOV_CASE_5(std::string& MEM16, std::string& IMMD8)
+{
+	//Case-5:W[], immd8
+	//As Destination is word so immd8 will move as immd16
+	//As there is no register so reg code will be 000
+	//1st Byte wiil C7
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte _2ndByte = info.mod << 6;
+		//Reg-Code is 000 already
+		_2ndByte |= info.rm;
+		std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+		OUT << "C7" << ' ' << _2ndByteHex.substr(0, 2);
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2);
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+				}
+			}
+		}
+		//Next byte will contain immd
+		Utility::Format16Bit(IMMD8);
+		OUT << ' ' << IMMD8.substr(2, 2) << ' ' << IMMD8.substr(0, 2) << '\n';
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @MOV_CASE_5\n");
+	}
+	return true;
+}
 
+bool ProgramLoader::MOV_CASE_6(std::string& REG8_D, std::string& REG8_S)
+{
+	//Case-6: REG8, REG8
+	//[Byte-1]Opcde(6)-d(1)-w(1) => 100010-1-0 => 8A
+	//[Byte-2]mod(2)-reg(3)-r/m(3) => 11-Reg_CODE(first)-Reg_Code(second)
+
+	Byte _2ndByte = 0b11000000;							//mod = 11
+	_2ndByte |= REG_CODE.find(REG8_D)->second << 3;		//reg-code(first)
+	_2ndByte |= REG_CODE.find(REG8_S)->second;			//reg-code/(r/m)
 	const std::string& _2ndByteHex = Converter::DecToHex(_2ndByte);
-
-	out << opcode << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-
+	OUT << "8A" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_4(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_7(std::string& REG16_D, std::string& REG16_S)
 {
+	//Case-7: REG16, REG16
 	//Opcode(6)-d(1)-w(1) => 100010-1-1 => 8B
-	const std::string& opcode = "8B";
-
 	//mod(2)-reg(3)-r/m(3) => 11-Reg_CODE(first)-Reg_Code(second)
-	Byte _2ndByte = 0b11000000;						//mod = 11
-	_2ndByte |= REG_CODE.find(OP1)->second << 3;	//reg-code(first)
-	_2ndByte |= REG_CODE.find(OP2)->second;			//reg-code/(r/m)
 
+	Byte _2ndByte = 0b11000000;							//mod = 11
+	_2ndByte |= REG_CODE.find(REG16_D)->second << 3;	//reg-code(first)
+	_2ndByte |= REG_CODE.find(REG16_S)->second;			//reg-code/(r/m)
 	const std::string& _2ndByteHex = Converter::DecToHex(_2ndByte);
-
-	out << opcode << ' ' << _2ndByteHex.substr(0, 2) << '\n';
+	OUT << "8B" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_5(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_8(std::string& REG8, std::string& MEM8)
 {
-	const std::string &reg = OP1;
-	const std::string &mem = OP2;
+	//Case-8: REG8, []
+
 	/*
 		For 8Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-1-0 => 8A
-		For 16Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-1-1 => 8B
 		[*]Special Case when reg is AL and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-0-0 => A0, Second byte of opcode will be data directly
+	*/
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+	if (onlyDisp && REG8 == REGISTER::AL)
+	{
+		//Special Case
+		Utility::Format16Bit(displacement);
+		OUT << "A0" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+	}
+	else
+	{
+		const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+		if (MOD_RM.count(fExp))
+		{
+			//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
+			const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+			Byte _2ndByte = info.mod << 6; //mod
+			_2ndByte |= REG_CODE.find(REG8)->second << 3; // reg
+			_2ndByte |= info.rm;
+			std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+			OUT << "8A" << ' ' << _2ndByteHex.substr(0, 2);
+			if(!displacement.empty())
+			{
+				Utility::Format16Bit(displacement);
+				if (onlyDisp)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+				else
+				{
+					if (Utility::HexSize(displacement) == SIZE::BYTE)
+					{
+						OUT << ' ' << displacement.substr(2, 2) << '\n';
+					}
+					else
+					{
+						OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					}
+				}
+			}
+			else
+			{
+				OUT << '\n';
+			}
+		}
+		else
+		{
+			return Error::LOG("Invalid [EXP] @MOV_CASE_8\n");
+		}
+	}
+
+	return true;
+}
+
+bool ProgramLoader::MOV_CASE_9(std::string& REG16, std::string& MEM)
+{
+	//Case-9: REG16, []/W[]
+	/*
+		For 16Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-1-1 => 8B
 		[*]Special Case when reg is AX and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-0-1 => A1, Second byte of opcode will be data directly
 	*/
-
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
-
 	std::string displacement = "";
-	bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
 
-	//Checking for Special Case
-	if (onlyDisp && (reg == REGISTER::AL || reg == REGISTER::AX))
+	if (onlyDisp && REG16 == REGISTER::AX)
 	{
 		//Special Cases
 		Utility::Format16Bit(displacement);
-		if (reg == REGISTER::AL)
-		{
-			out << "A0" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-		}
-		else if (reg == REGISTER::AX)
-		{
-			out << "A1" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-		}
+		OUT << "A1" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 	}
 	else
 	{
-		const std::string& opcode = Utility::Is8BitRegister(reg) ? "8A" : "8B";
+		const std::string& fExp = Utility::ExpressionForModRM(MEM);
+		if (MOD_RM.count(fExp))
+		{
+			//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
+			const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+			Byte _2ndByte = info.mod << 6; //mod
+			_2ndByte |= REG_CODE.find(REG16)->second << 3; // reg
+			_2ndByte |= info.rm;
+			std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+			OUT << "8B" << ' ' << _2ndByteHex.substr(0, 2);
+
+			if(!displacement.empty())
+			{
+				Utility::Format16Bit(displacement);
+				if (onlyDisp)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+				else
+				{
+					if (Utility::HexSize(displacement) == SIZE::BYTE)
+					{
+						OUT << ' ' << displacement.substr(2, 2) << '\n';
+					}
+					else
+					{
+						OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					}
+				}
+			}
+			else
+			{
+				OUT << '\n';
+			}
+		}
+		else
+		{
+			return Error::LOG("Invalid [EXP] @MOV_CASE_9\n");
+		}
+	}
+
+	return true;
+}
+
+bool ProgramLoader::MOV_CASE_10(std::string& MEM8, std::string& REG8)
+{
+	//Case-10: [], REG8
+	//For 8Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-0-0 => 88
+	//[*]Special Case when reg is AL and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-1-0 => A2, Second byte of opcode will be data directly
+	
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+	if (onlyDisp && REG8 == REGISTER::AL)
+	{
+		//Special Cases
+		Utility::Format16Bit(displacement);
+		OUT << "A2" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+	}
+	else
+	{
+		const std::string& fExp = Utility::ExpressionForModRM(MEM8);
 		if (MOD_RM.count(fExp))
 		{
 			//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
 			const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 
 			Byte _2ndByte = info.mod << 6; //mod
-			_2ndByte |= REG_CODE.find(reg)->second << 3; // reg
+			_2ndByte |= REG_CODE.find(REG8)->second << 3; // reg
 			_2ndByte |= info.rm;
 
 			std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
 
-			out << opcode
-				<< ' ' << _2ndByteHex.substr(0, 2);
+			OUT << "88" << ' ' << _2ndByteHex.substr(0, 2);
 
-			//there may be displacement data/Disp in expersion
-			if (displacement.empty())
-			{
-				out << '\n';
-			}
-			else
+			
+			if(!displacement.empty())
 			{
 				Utility::Format16Bit(displacement);
 				if (onlyDisp) //It will considered in 16 bit
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
 				else
 				{
-					if (Utility::HexSize(displacement) == "8")
+					if (Utility::HexSize(displacement) == SIZE::BYTE)
 					{
-						out << ' ' << displacement.substr(2, 2) << '\n';
+						OUT << ' ' << displacement.substr(2, 2) << '\n';
 					}
 					else
 					{
-						out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+						OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 					}
 				}
+			}
+			else
+			{
+				OUT << '\n';
 			}
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP][CASE:5]\n");
+			return Error::LOG("Invalid [EXP] @MOV_CASE_10\n");
 		}
 	}
-
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_6(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_11(std::string& MEM, std::string& REG16)
 {
-	const std::string& mem = OP1;
-	const std::string& reg = OP2;
-
-	/*
-		For 8Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-0-0 => 88
-		For 16Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-0-1 => 89
-		[*]Special Case when reg is AL and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-1-0 => A2, Second byte of opcode will be data directly
-		[*]Special Case when reg is AX and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-1-1 => A3, Second byte of opcode will be data directly
-	*/
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	//Case-11: []/W[], REG16
+	//For 16Bit Register	=> Opcode(6)-d(1)-w(1) => 100010-0-1 => 89
+	//[*]Special Case when reg is AX and mem exp is contaning displacement only i.e., [DATA]=> Opcode(6)-d(1)-w(1) => 101000-1-1 => A3, Second byte of opcode will be data directly
 
 	std::string displacement = "";
-	bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
 
-
-	//Checking for Special Case
-	if (onlyDisp && (reg == REGISTER::AL || reg == REGISTER::AX))
+	if (onlyDisp && REG16 == REGISTER::AX)
 	{
 		//Special Cases
 		Utility::Format16Bit(displacement);
-		if (reg == REGISTER::AL)
-		{
-			out << "A2" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-		}
-		else if (reg == REGISTER::AX)
-		{
-			out << "A3" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-		}
+		OUT << "A3" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 	}
 	else
 	{
-		const std::string& opcode = Utility::Is8BitRegister(reg) ? "88" : "89";
+		const std::string& fExp = Utility::ExpressionForModRM(MEM);
 		if (MOD_RM.count(fExp))
 		{
 			//mod(2)-reg(3)-r/m(3) => mod-Reg_CODE(first)-r/m_code
 			const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 
 			Byte _2ndByte = info.mod << 6; //mod
-			_2ndByte |= REG_CODE.find(reg)->second << 3; // reg
+			_2ndByte |= REG_CODE.find(REG16)->second << 3; // reg
 			_2ndByte |= info.rm;
 
 			std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
 
-			out << opcode << ' ' << _2ndByteHex.substr(0, 2);
+			OUT << "89" << ' ' << _2ndByteHex.substr(0, 2);
 
 			//there may be displacement data/Disp in expersion
-			if (displacement.empty())
-			{
-				out << '\n';
-			}
-			else
+
+			if(!displacement.empty())
 			{
 				Utility::Format16Bit(displacement);
 				if (onlyDisp) //It will considered in 16 bit
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
 				else
 				{
-					if (Utility::HexSize(displacement) == "8")
+					if (Utility::HexSize(displacement) == SIZE::BYTE)
 					{
-						out << ' ' << displacement.substr(2, 2) << '\n';
+						OUT << ' ' << displacement.substr(2, 2) << '\n';
 					}
 					else
 					{
-						out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+						OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 					}
 				}
+			}
+			else
+			{
+				OUT << '\n';
 			}
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP][CASE:6]\n");
+			return Error::LOG("Invalid [EXP] @MOV_CASE_11\n");
 		}
 	}
 
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_7(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_12(std::string& SREG, std::string& REG16)
 {
-	if (Utility::IsSegmentRegister(OP2)){ return Error::LOG("mov sreg, sreg is not allowed\n"); }
-	else if (OP1 == REGISTER::CS){ return Error::LOG("Cs can't be modified directly\n"); }
-
-	const std::string& sreg = OP1;
-	const std::string& rm16 = OP2;
-	const std::string& opcode = "8E";
-
+	//Case-12: SREG, REG16
+	if (SREG == REGISTER::CS) { return Error::LOG("Cs can't be modified directly\n"); }
 	//Second Byte => xx0sregxxx =>mod(2)-0-sreg(2)-rm(3)
-	if (Utility::Is16BitRegister(rm16))
-	{
-		const MOD_RM_INFO& info = MOD_RM.find(rm16)->second;
-		Byte _2ndByte = info.mod << 6;
-		_2ndByte |= REG_CODE.find(sreg)->second << 3;
-		_2ndByte |= info.rm;
+	const MOD_RM_INFO& info = MOD_RM.find(REG16)->second;
+	Byte _2ndByte = info.mod << 6;
+	_2ndByte |= REG_CODE.find(SREG)->second << 3;
+	_2ndByte |= info.rm;
 
-		std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
-		out << opcode << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-	}
-	else if (Utility::IsMemory(rm16))
-	{
-
-		const std::string& fExp = Converter::ExpressionForModRM(rm16);
-		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(rm16, displacement);
-		if (MOD_RM.count(fExp))
-		{
-			const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
-			Byte _2ndByte = info.mod << 6;
-			_2ndByte |= REG_CODE.find(sreg)->second << 3;
-			_2ndByte |= info.rm;
-
-			std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
-			out << opcode << ' ' << _2ndByteHex.substr(0, 2);
-
-			if (displacement.empty())
-			{
-				out << '\n';
-			}
-			else
-			{
-				Utility::Format16Bit(displacement);
-				if (onlyDisp) //It will considered in 16 bit
-				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				}
-				else
-				{
-					if (Utility::HexSize(displacement) == "8")
-					{
-						out << ' ' << displacement.substr(2, 2) << '\n';
-					}
-					else
-					{
-						out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-					}
-				}
-			}
-		}
-		else
-		{
-			return Error::LOG("Invalid [EXP][CASE:7]\n");
-		}
-	}
-	else
-	{
-		//error
-		return Error::LOG("Expected MOV sreg, r/m16\n");
-	}
-
+	std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+	OUT << "8E" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
 	return true;
 }
 
-bool ProgramLoader::MOV_CASE_8(std::string& OP1, std::string& OP2)
+bool ProgramLoader::MOV_CASE_13(std::string& SREG, std::string& MEM)
 {
-	if (Utility::IsSegmentRegister(OP1))
-	{
-		return Error::LOG("mov sreg, sreg is not allowed\n");
-	}
+	//Case-13: SREG, []/W[]
 
-	const std::string& sreg = OP2;
-	const std::string& rm16 = OP1;
-	const std::string& opcode = "8C";
+	if (SREG == REGISTER::CS) { return Error::LOG("Cs can't be modified directly\n"); }
 
 	//Second Byte => xx0sregxxx =>mod(2)-0-sreg(2)-rm(3)
-	if (Utility::Is16BitRegister(rm16))
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
+	if (MOD_RM.count(fExp))
 	{
-		const MOD_RM_INFO& info = MOD_RM.find(rm16)->second;
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte _2ndByte = info.mod << 6;
-		_2ndByte |= REG_CODE.find(sreg)->second << 3;
+		_2ndByte |= REG_CODE.find(SREG)->second << 3;
 		_2ndByte |= info.rm;
 
 		std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
-		out << opcode << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-	}
-	else if (Utility::IsMemory(rm16))
-	{
+		OUT << "8E" << ' ' << _2ndByteHex.substr(0, 2);
 
-		const std::string& fExp = Converter::ExpressionForModRM(rm16);
-		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(rm16, displacement);
-		if (MOD_RM.count(fExp))
+		if(!displacement.empty())
 		{
-			const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
-			Byte _2ndByte = info.mod << 6;
-			_2ndByte |= REG_CODE.find(sreg)->second << 3;
-			_2ndByte |= info.rm;
-
-			std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
-			out << opcode << ' ' << _2ndByteHex.substr(0, 2);
-
-			if (displacement.empty())
+			Utility::Format16Bit(displacement);
+			if (onlyDisp) //It will considered in 16 bit
 			{
-				out << '\n';
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 			}
 			else
 			{
-				Utility::Format16Bit(displacement);
-				if (onlyDisp) //It will considered in 16 bit
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
 				}
 				else
 				{
-					if (Utility::HexSize(displacement) == "8")
-					{
-						out << ' ' << displacement.substr(2, 2) << '\n';
-					}
-					else
-					{
-						out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-					}
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
 			}
 		}
 		else
 		{
-			return Error::LOG("Invalid[EXP]\n");
+			OUT << '\n';
 		}
 	}
 	else
 	{
-		//error
-		return Error::LOG("Expected MOV r/m16, sreg\n");
+		return Error::LOG("Invalid [EXP] @MOV_CASE_13\n");
 	}
-
 	return true;
+}
+
+bool ProgramLoader::MOV_CASE_14(std::string& REG16, std::string& SREG)
+{
+	//Case-14: REG16, SREG
+	//Second Byte => xx0sregxxx =>mod(2)-0-sreg(2)-rm(3)
+	const MOD_RM_INFO& info = MOD_RM.find(REG16)->second;
+	Byte _2ndByte = info.mod << 6;
+	_2ndByte |= REG_CODE.find(SREG)->second << 3;
+	_2ndByte |= info.rm;
+	std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+	OUT << "8C" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::MOV_CASE_15(std::string& MEM, std::string& SREG)
+{
+	//Case-15: []/W[], SREG
+	//Second Byte => xx0sregxxx =>mod(2)-0-sreg(2)-rm(3)
+
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte _2ndByte = info.mod << 6;
+		_2ndByte |= REG_CODE.find(SREG)->second << 3;
+		_2ndByte |= info.rm;
+
+		std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
+		OUT << "8C" << ' ' << _2ndByteHex.substr(0, 2);
+
+		if (displacement.empty())
+		{
+			OUT << '\n';
+		}
+		else
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp) //It will considered in 16 bit
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid[EXP] @MOV_CASE_15\n");
+	}
+	return true;
+
 }
 
 bool ProgramLoader::MOV(const Operand& operand)
 {
-	//TODO:: Check Whether we have two operands or not
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
 		return Error::LOG("Expected 2 Operands @MOV\n");
@@ -576,307 +709,336 @@ bool ProgramLoader::MOV(const Operand& operand)
 
 	std::string OP1 = operand.first;
 	std::string OP2 = operand.second;
-
-	if ((Utility::Is16BitRegister(OP1) || Utility::Is8BitRegister(OP1)) && Utility::IsValidHex(OP2))
+	
+	
+	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
-		/*[CASE:1] MOV reg8/reg16, immd8/immd16*/
+		//Case-1:MOV REG8, immd8
 		return MOV_CASE_1(OP1, OP2);
 	}
-	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2))
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2))
 	{
-		/*[CASE:2] MOV mem, immd8/immd16*/
+		//Case-2:MOV REG16, immd16/immd8
 		return MOV_CASE_2(OP1, OP2);
 	}
-	else if ((Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2)))
+	else if(Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
-		/*[CASE:3]MOV reg8, reg8*/
+		//Case-3:[], immd8
 		return MOV_CASE_3(OP1, OP2);
-
 	}
-	else if ((Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2)))
+	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
-		/*[CASE:4]MOV reg16, reg16*/
+		//Case-4:[]/W[], immd16
 		return MOV_CASE_4(OP1, OP2);
 	}
-	else if ((Utility::Is8BitRegister(OP1) || Utility::Is16BitRegister(OP1)) && Utility::IsMemory(OP2))
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
-		/*[CASE:5]MOV reg8/reg16, mem*/
+		//Case-5:W[], immd8
 		return MOV_CASE_5(OP1, OP2);
 	}
-	else if (Utility::IsMemory(OP1) && (Utility::Is8BitRegister(OP2) || Utility::Is16BitRegister(OP2)))
+	else if(Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
-		/*[CASE:6]MOV mem, reg8/reg16*/
+		//Case-6: REG8, REG8
 		return MOV_CASE_6(OP1, OP2);
 	}
-	else if (Utility::IsSegmentRegister(OP1))
+	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
-		/*[CASE:7]MOV sreg, r/m16*/
+		//Case-7: REG16, REG16
 		return MOV_CASE_7(OP1, OP2);
 	}
-	else if (Utility::IsSegmentRegister(OP2))
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2) && Utility::IsByteMemory(OP2))
 	{
-		/*[CASE:8]MOV r/m16, sreg*/
+		//Case-8: REG8, []
 		return MOV_CASE_8(OP1, OP2);
 	}
-
-	return Error::LOG("Syntax Error @ MOV\n");
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
+	{
+		//Case-9: REG16, []/W[]
+		return MOV_CASE_9(OP1, OP2);
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-10: [], REG8
+		return MOV_CASE_10(OP1, OP2);
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		//Case-11: []/W[], REG16
+		return MOV_CASE_11(OP1, OP2);
+	}
+	else if (Utility::IsSegmentRegister(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		//Case-12: SREG, REG16
+		return MOV_CASE_12(OP1, OP2);
+	}
+	else if (Utility::IsSegmentRegister(OP1) && Utility::IsValidMemory(OP2))
+	{
+		//Case-13: SREG, []/W[]
+		return MOV_CASE_13(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsSegmentRegister(OP2))
+	{
+		//Case-14: REG16, SREG
+		return MOV_CASE_14(OP1, OP2);
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::IsSegmentRegister(OP2))
+	{
+		//Case-15: []/W[], SREG
+		return MOV_CASE_15(OP1, OP2);
+	}
+	return Error::LOG("Wrong Syntax @ MOV\n");
 }
 
-bool ProgramLoader::AAACOSSX_CASE_1(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+/*<-------------------------------------AAACOSSX-------------------------------------->*/
+
+bool ProgramLoader::AAACOSSX_CASE_1(std::string& REG8_D, std::string& REG8_S, const Byte OFFSET, const Byte REG)
 {	
-	//REG8, R/M8
-	//[CASE-1]REG8, REG8 
+	//Case-1: REG8, REG8
 	//1st Byte => 02 + Offset (Depending upon Mnemonic)
 	//2nd Byte => mod(2)-reg(3)-m(3) => [11]-[reg-code(OP1)]-[reg-code(OP2)]
 	Byte B1 = 0x02 + OFFSET;
 	Byte B2 = 0b11000000;
-	B2 |= REG_CODE.find(OP1)->second << 3;
-	B2 |= REG_CODE.find(OP2)->second;
+	B2 |= REG_CODE.find(REG8_D)->second << 3;
+	B2 |= REG_CODE.find(REG8_S)->second;
 	const std::string& hB1 = Converter::DecToHex(B1);
 	const std::string& hB2 = Converter::DecToHex(B2);
-	out << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2) << '\n';
+	OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2) << '\n';
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_2(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_2(std::string& REG8, std::string& MEM8, const Byte OFFSET, const Byte REG)
 {
-	//[CASE-2]REG8, [MEM]
+	//Case-2: REG8, []
 	//1st Byte => 02
 	//2nd Byte => mod(2)-reg(3)-m(3) => [mod]-[reg-code(OP1)]-[RM]
-	const std::string& mem = OP2;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
 	if (MOD_RM.count(fExp))
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B1 = 0x02 + OFFSET;
 		Byte B2 = info.mod << 6;
-		B2 |= REG_CODE.find(OP1)->second << 3;
+		B2 |= REG_CODE.find(REG8)->second << 3;
 		B2 |= info.rm;
 		const std::string& hB1 = Converter::DecToHex(B1);
 		const std::string& hB2 = Converter::DecToHex(B2);
 
 		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
 
-		out << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
+		OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
 			if (onlyDisp)
 			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 			}
 			else
 			{
-				if (Utility::HexSize(displacement) == "8")
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
 				}
 				else
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
 			}
 		}
 		else
 		{
-			out << '\n';
+			OUT << '\n';
 		}
 	}
 	else
 	{
-		return Error::LOG("Invalid R/M [CASE:2]\n");
+		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_2\n");
 	}
 
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_3(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_3(std::string& MEM8, std::string& REG8, const Byte OFFSET, const Byte REG)
 {
-	/*[CASE-3] MEM, REG8*/
+	//Case-3: [], REG8
 	//1st Byte => 00
 	//2nd Byte => mod(2)-reg(3)-m(3) => [mod]-[reg-code(OP2)]-[RM]
-	const std::string& mem = OP1;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
 	if (MOD_RM.count(fExp))
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B1 = 0x00 + OFFSET;
 		Byte B2 = info.mod << 6;
-		B2 |= REG_CODE.find(OP2)->second << 3;
+		B2 |= REG_CODE.find(REG8)->second << 3;
 		B2 |= info.rm;
 		const std::string& hB1 = Converter::DecToHex(B1);
 		const std::string& hB2 = Converter::DecToHex(B2);
 
 		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
 
-		out << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
+		OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
 			if (onlyDisp)
 			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 			}
 			else
 			{
-				if (Utility::HexSize(displacement) == "8")
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
 				}
 				else
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
 			}
 		}
 		else
 		{
-			out << '\n';
+			OUT << '\n';
 		}
 	}
 	else
 	{
-		return Error::LOG("Invalid R/M [CASE:3]\n");
+		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_3\n");
 	}
 
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_4(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_4(std::string& REG16_D, std::string& REG16_S, const Byte OFFSET, const Byte REG)
 {
-	//REG16, R/M16
-	/*[CASE-4] REG16, REG16*/
+	//Case-4: REG16, REG16
 	//1st Byte => 03
 	//2nd Byte => mod(2)-reg(3)-m(3) => [11]-[reg-code(OP1)]-[reg-code(OP2)]
 	Byte B1 = 0x03 + OFFSET;
 	Byte B2 = 0b11000000;
-	B2 |= REG_CODE.find(OP1)->second << 3;
-	B2 |= REG_CODE.find(OP2)->second;
+	B2 |= REG_CODE.find(REG16_D)->second << 3;
+	B2 |= REG_CODE.find(REG16_S)->second;
 	const std::string& hB1 = Converter::DecToHex(B1);
 	const std::string& hB2 = Converter::DecToHex(B2);
-	out << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2) << '\n';
+	OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2) << '\n';
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_5(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_5(std::string& REG16, std::string& MEM, const Byte OFFSET, const Byte REG)
 {
-	/*[CASE-5] REG16, MEM*/
+	//Case-5: REG16, []/W[]
 	//1st Byte => 03
 	//2nd Byte => mod(2)-reg(3)-m(3) => [mod]-[reg-code(OP1)]-[RM]
-	const std::string& mem = OP2;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
 	if (MOD_RM.count(fExp))
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B1 = 0x03 + OFFSET;
 		Byte B2 = info.mod << 6;
-		B2 |= REG_CODE.find(OP1)->second << 3;
+		B2 |= REG_CODE.find(REG16)->second << 3;
 		B2 |= info.rm;
 		const std::string& hB1 = Converter::DecToHex(B1);
 		const std::string& hB2 = Converter::DecToHex(B2);
 
 		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
 
-		out << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
+		OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
 			if (onlyDisp)
 			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 			}
 			else
 			{
-				if (Utility::HexSize(displacement) == "8")
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
 				}
 				else
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
 			}
 		}
 		else
 		{
-			out << '\n';
+			OUT << '\n';
 		}
 	}
 	else
 	{
-		return Error::LOG("Invalid R/M [CASE:5]\n");
+		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_5\n");
 	}
 
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_6(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_6(std::string& MEM, std::string& REG16, const Byte OFFSET, const Byte REG)
 {
-	/*[CASE-6] MEM, REG16*/
+	//Case-6: []/W[], REG16
 	//1st Byte => 01
 	//2nd Byte => mod(2)-reg(3)-m(3) => [mod]-[reg-code(OP2)]-[RM]
-	const std::string& mem = OP1;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
 	if (MOD_RM.count(fExp))
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B1 = 0x01 + OFFSET;
 		Byte B2 = info.mod << 6;
-		B2 |= REG_CODE.find(OP2)->second << 3;
+		B2 |= REG_CODE.find(REG16)->second << 3;
 		B2 |= info.rm;
 		const std::string& hB1 = Converter::DecToHex(B1);
 		const std::string& hB2 = Converter::DecToHex(B2);
 
 		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
 
-		out << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
+		OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
 			if (onlyDisp)
 			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 			}
 			else
 			{
-				if (Utility::HexSize(displacement) == "8")
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
 				}
 				else
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				}
 			}
 		}
 		else
 		{
-			out << '\n';
+			OUT << '\n';
 		}
 	}
 	else
 	{
-		return Error::LOG("Invalid R/M [CASE:6]\n");
+		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_6\n");
 	}
 
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_7(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_7(std::string& MEM8, std::string& IMMD8, const Byte OFFSET, const Byte REG)
 {
-	/*[CASE-7] MEM, IMMD8*/
+	//Case-7: [], IMMD8
 	//1st Byte => 80
 	//2nd Byte => mod(2)-reg(3)-m(3) => [mod]-[reg-code(000)]-[RM]
-	const std::string& mem = OP1;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
 	if (MOD_RM.count(fExp))
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
@@ -886,50 +1048,49 @@ bool ProgramLoader::AAACOSSX_CASE_7(std::string& OP1, std::string& OP2, const By
 		const std::string& hB2 = Converter::DecToHex(B2);
 
 		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
 
-		out << "80" << ' ' << hB2.substr(0, 2);
+		OUT << "80" << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
 			if (onlyDisp)
 			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
 			}
 			else
 			{
-				if (Utility::HexSize(displacement) == "8")
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2);
+					OUT << ' ' << displacement.substr(2, 2);
 				}
 				else
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
 				}
 			}
 		}
 
 		//Next byte will contain immd
-		Utility::Format16Bit(OP2);
-		out << ' ' << OP2.substr(2, 2) << '\n';
+		Utility::Format16Bit(IMMD8);
+		OUT << ' ' << IMMD8.substr(2, 2) << '\n';
 
 	}
 	else
 	{
-		return Error::LOG("Invalid R/M [CASE:7]\n");
+		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_7\n");
 	}
 
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_8(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_8(std::string& MEM, std::string& IMMD16, const Byte OFFSET, const Byte REG)
 {
-	/*[CASE-8] MEM, IMMD16*/
+	//Case-8: []/W[], IMMD16
 	//1st Byte => 81
 	//2nd Byte => mod(2)-reg(3)-m(3) => [mod]-[reg-code(000)]-[RM]
-	const std::string& mem = OP1;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
 	if (MOD_RM.count(fExp))
 	{
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
@@ -939,159 +1100,208 @@ bool ProgramLoader::AAACOSSX_CASE_8(std::string& OP1, std::string& OP2, const By
 		const std::string& hB2 = Converter::DecToHex(B2);
 
 		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
 
-		out << "81" << ' ' << hB2.substr(0, 2);
+		OUT << "81" << ' ' << hB2.substr(0, 2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
 			if (onlyDisp)
 			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
 			}
 			else
 			{
-				if (Utility::HexSize(displacement) == "8")
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
 				{
-					out << ' ' << displacement.substr(2, 2);
+					OUT << ' ' << displacement.substr(2, 2);
 				}
 				else
 				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
 				}
 			}
 		}
 
 		//Next byte will contain immd
-		Utility::Format16Bit(OP2);
-		out << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
+		Utility::Format16Bit(IMMD16);
+		OUT << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
 
 	}
 	else
 	{
-		return Error::LOG("Invalid R/M [CASE:8]\n");
+		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_8\n");
 	}
 
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_9(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_9(std::string& REG8, std::string& IMMD8, const Byte OFFSET, const Byte REG)
 {
-	//R/M8, IMMD8
-	/*[CASE-9] REG8, IMMD8*/
-	/*[*] Special Case when reg is AL=> 1st Byte [04]   2nd Byte [immd8] */
-	if (OP1 == REGISTER::AL)
+	//Case-9: REG8, IMMD8
+	//[*] Special Case when reg is AL=> 1st Byte [04]   2nd Byte [immd8]
+	if (REG8 == REGISTER::AL)
 	{
 		Byte B1 = 0x04 + OFFSET;
 		const std::string& hB1 = Converter::DecToHex(B1);
-		Utility::Format16Bit(OP2);
-		out << hB1.substr(0, 2) << ' ' << OP2.substr(2, 2) << '\n';
+		Utility::Format16Bit(IMMD8);
+		OUT << hB1.substr(0, 2) << ' ' << IMMD8.substr(2, 2) << '\n';
 	}
 	else
 	{
 		//1st Byte => 80
 		//2nd Byte => mod(2)-reg(3)-m(3) => [11]-[reg-code(000)]-[reg-code(OP1)] OR use MOD_RM
-		if (MOD_RM.count(OP1))
+		if (MOD_RM.count(REG8))
 		{
-			const MOD_RM_INFO& info = MOD_RM.find(OP1)->second;
+			const MOD_RM_INFO& info = MOD_RM.find(REG8)->second;
 			Byte B2 = info.mod << 6;
 			B2 |= REG;
 			B2 |= info.rm;
 			const std::string& hB2 = Converter::DecToHex(B2);
 
-			out << "80" << ' ' << hB2.substr(0, 2);
+			OUT << "80" << ' ' << hB2.substr(0, 2);
 
 			//Next byte will contain immd
-			Utility::Format16Bit(OP2);
-			out << ' ' << OP2.substr(2, 2) << '\n';
+			Utility::Format16Bit(IMMD8);
+			OUT << ' ' << IMMD8.substr(2, 2) << '\n';
 
 		}
 		else 
 		{
-			return Error::LOG("Invalid R/M [CASE:9]\n");
+			return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_9\n");
 		}
 	}
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_10(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_10(std::string& REG16, std::string& IMMD16, const Byte OFFSET, const Byte REG)
 {
-	//R/M16, IMMD16
-	/*CASE-10] REG16, IMMD16*/
+	///Case-10: REG16, IMMD16
 	/*[*] Special Case when reg is AX=> 1st Byte [05]   2nd Byte [immd16] */
-	if (OP1 == REGISTER::AX)
+	if (REG16 == REGISTER::AX)
 	{
 		Byte B1 = 0x05 + OFFSET;
 		const std::string& hB1 = Converter::DecToHex(B1);
-		Utility::Format16Bit(OP2);
-		out << hB1.substr(0, 2) << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
+		Utility::Format16Bit(IMMD16);
+		OUT << hB1.substr(0, 2) << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
 	}
 	else
 	{
 		//1st Byte => 81
 		//2nd Byte => mod(2)-reg(3)-m(3) => [11]-[reg-code(000)]-[reg-code(OP1)] OR use MOD_RM
-		if (MOD_RM.count(OP1))
+		if (MOD_RM.count(REG16))
 		{
-			const MOD_RM_INFO& info = MOD_RM.find(OP1)->second;
+			const MOD_RM_INFO& info = MOD_RM.find(REG16)->second;
 			Byte B2 = info.mod << 6;
 			B2 |= REG;
 			B2 |= info.rm;
 			const std::string& hB2 = Converter::DecToHex(B2);
 
-			out << "81" << ' ' << hB2.substr(0, 2);
+			OUT << "81" << ' ' << hB2.substr(0, 2);
 
 			//Next byte will contain immd
-			Utility::Format16Bit(OP2);
-			out << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
+			Utility::Format16Bit(IMMD16);
+			OUT << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
 		}
 		else
 		{
-			return Error::LOG("Invalid R/M [CASE:10]\n");
+			return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_10\n");
 		}
 	}
 	return true;
 }
 
-bool ProgramLoader::AAACOSSX_CASE_11(std::string& OP1, std::string& OP2, const Byte OFFSET, const Byte REG)
+bool ProgramLoader::AAACOSSX_CASE_11(std::string& REG16, std::string& IMMD8, const Byte OFFSET, const Byte REG)
 {
-	//REG16, Immd8
-	/*[*] Special Case when reg is AX=> 1st Byte [05]   2nd Byte [immd8 as immd16] */
-	if (OP1 == REGISTER::AX)
+	//Case-11: REG16, IMMD8
+	//[*] Special Case when reg is AX=> 1st Byte [05]   2nd Byte [immd8 as immd16]
+	if (REG16 == REGISTER::AX)
 	{
 		Byte B1 = 0x05 + OFFSET;
 		const std::string& hB1 = Converter::DecToHex(B1);
-		Utility::Format16Bit(OP2);
-		out << hB1.substr(0, 2) << ' ' << OP2.substr(2, 2) << ' ' << OP2.substr(0, 2) << '\n';
+		Utility::Format16Bit(IMMD8);
+		OUT << hB1.substr(0, 2) << ' ' << IMMD8.substr(2, 2) << ' ' << IMMD8.substr(0, 2) << '\n';
 	}
 	else
 	{
 		//1st Byte => 83
 		//2nd Byte => mod(2)-reg(3)-m(3) => [11]-[reg-code(000)]-[reg-code(OP1)] OR use MOD_RM
-		if (MOD_RM.count(OP1))
+		if (MOD_RM.count(REG16))
 		{
-			const MOD_RM_INFO& info = MOD_RM.find(OP1)->second;
+			const MOD_RM_INFO& info = MOD_RM.find(REG16)->second;
 			Byte B2 = info.mod << 6;
 			B2 |= REG;
 			B2 |= info.rm;
 			const std::string& hB2 = Converter::DecToHex(B2);
 
-			out << "83" << ' ' << hB2.substr(0, 2);
+			OUT << "83" << ' ' << hB2.substr(0, 2);
 
 			//Next byte will contain immd
-			Utility::Format16Bit(OP2);
-			out << ' ' << OP2.substr(2, 2) << '\n';
+			Utility::Format16Bit(IMMD8);
+			OUT << ' ' << IMMD8.substr(2, 2) << '\n';
 		}
 		else
 		{
-			return Error::LOG("Invalid R/M [CASE:11]\n");
+			return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_11\n");
 		}
+	}
+	return true;
+}
+
+bool ProgramLoader::AAACOSSX_CASE_12(std::string& MEM16, std::string& IMMD8, const Byte OFFSET, const Byte REG)
+{
+	//Case-12: W[], IMMD8
+	//1st Byte => 83
+	//2nd Byte => mod(2)-reg(3)-m(3) => [11]-[reg-code(000)]-[reg-code(OP1)] OR use MOD_RM
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= REG;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		OUT << "83" << ' ' << hB2.substr(0, 2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2);
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
+				}
+			}
+		}
+
+		//Next byte will contain immd
+		Utility::Format16Bit(IMMD8);
+		OUT << ' ' << IMMD8.substr(2, 2) << '\n';
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_11\n");
 	}
 	return true;
 }
 
 bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const Byte REG)
 {
+
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
 		return Error::LOG("Expected 2 Operands @MOV\n");
@@ -1101,342 +1311,67 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 	std::string OP2 = operand.second;
 
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
-	{	/*[CASE-1] REG8, REG8*/
+	{
+		//Case-1: REG8, REG8
 		return AAACOSSX_CASE_1(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::Is8BitRegister(OP1) && Utility::IsMemory(OP2))
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2) && Utility::IsByteMemory(OP2))
 	{
-		/*[CASE-2] REG8, MEM*/
+		//Case-2: REG8, []
 		return AAACOSSX_CASE_2(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::IsMemory(OP1) && Utility::Is8BitRegister(OP2))
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
-		/*[CASE-3] MEM, REG8*/
+		//Case-3: [], REG8
 		return AAACOSSX_CASE_3(OP1, OP2, OFFSET, REG);
-
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
-		/*[CASE-4] REG16, REG16*/
+		//Case-4: REG16, REG16
 		return AAACOSSX_CASE_4(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsMemory(OP2))
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
 	{
-		/*[CASE-5] REG16, MEM*/
+		//Case-5: REG16, []/W[]
 		return AAACOSSX_CASE_5(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::IsMemory(OP1) && Utility::Is16BitRegister(OP2))
+	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
-		/*[CASE-6] MEM, REG16*/
+		//Case-6: []/W[], REG16
 		return AAACOSSX_CASE_6(OP1, OP2, OFFSET, REG);
-
 	}
-	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
-		/*[CASE-7] MEM, IMMD8*/
+		//Case-7: [], IMMD8
 		return AAACOSSX_CASE_7(OP1, OP2, OFFSET, REG);
-
 	}
-	else if (Utility::IsMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
-		/*[CASE-8] MEM, IMMD16*/
+		//Case-8: []/W[], IMMD16
 		return AAACOSSX_CASE_8(OP1, OP2, OFFSET, REG);
-
 	}
-	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
-		/*[CASE-9] REG8, IMMD8*/
+		//Case-9: REG8, IMMD8
 		return AAACOSSX_CASE_9(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "16")
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
-		/*CASE-10] REG16, IMMD16*/
+		//Case-10: REG16, IMMD16
 		return AAACOSSX_CASE_10(OP1, OP2, OFFSET, REG);
-		
 	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == "8")
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
-		/*[CASE-11] REG16, IMMD8*/
+		//Case-11: REG16, IMMD8
 		return AAACOSSX_CASE_11(OP1, OP2, OFFSET, REG);
 	}
-
-	return Error::LOG("Syntax error @ AAACOSSX\n");
-}
-
-bool ProgramLoader::MUL_CASE_1(std::string& OP)
-{
-	//Memory
-	const std::string& mem = OP;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
-	if (MOD_RM.count(fExp))
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
-		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
-		Byte B2 = info.mod << 6;
-		B2 |= 0b00100000;
-		B2 |= info.rm;
-		const std::string& hB2 = Converter::DecToHex(B2);
-
-		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
-
-		out << "F6" << ' ' << hB2.substr(0, 2);
-
-		if (!displacement.empty())
-		{
-			Utility::Format16Bit(displacement);
-			if (onlyDisp)
-			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-			}
-			else
-			{
-				if (Utility::HexSize(displacement) == "8")
-				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
-				}
-				else
-				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				}
-			}
-		}
-		else
-		{
-			out << '\n';
-		}
+		//Case-12: W[], IMMD8
+		return AAACOSSX_CASE_12(OP1, OP2, OFFSET, REG);
 	}
-	else
-	{
-		return Error::LOG("Invalid Memory Exp @MUL_CASE_1\n");
-	}
-	return true;
-}
-
-bool ProgramLoader::MUL_CASE_2(std::string& OP)
-{
-	//REG8
-	Byte B2 = 0b11100000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
-}
-
-bool ProgramLoader::MUL_CASE_3(std::string& OP)
-{
-	//REG16
-	Byte B2 = 0b11100000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
-}
-
-bool ProgramLoader::IMUL_CASE_1(std::string& OP)
-{
-	//Memory
-	const std::string& mem = OP;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
-	if (MOD_RM.count(fExp))
-	{
-		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
-		Byte B2 = info.mod << 6;
-		B2 |= 0b00101000;
-		B2 |= info.rm;
-		const std::string& hB2 = Converter::DecToHex(B2);
-
-		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
-
-		out << "F6" << ' ' << hB2.substr(0, 2);
-
-		if (!displacement.empty())
-		{
-			Utility::Format16Bit(displacement);
-			if (onlyDisp)
-			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-			}
-			else
-			{
-				if (Utility::HexSize(displacement) == "8")
-				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
-				}
-				else
-				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				}
-			}
-		}
-		else
-		{
-			out << '\n';
-		}
-	}
-	else
-	{
-		return Error::LOG("Invalid Memory Exp @MUL_CASE_1\n");
-	}
-	return true;
-}
-
-bool ProgramLoader::IMUL_CASE_2(std::string& OP)
-{
-	//REG8
-	Byte B2 = 0b11101000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
-}
-
-bool ProgramLoader::IMUL_CASE_3(std::string& OP)
-{
-	//REG16
-	Byte B2 = 0b11101000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
-}
-
-bool ProgramLoader::DIV_CASE_1(std::string& OP)
-{
-	//Memory
-	const std::string& mem = OP;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
-	if (MOD_RM.count(fExp))
-	{
-		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
-		Byte B2 = info.mod << 6;
-		B2 |= 0b00110000;
-		B2 |= info.rm;
-		const std::string& hB2 = Converter::DecToHex(B2);
-
-		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
-
-		out << "F6" << ' ' << hB2.substr(0, 2);
-
-		if (!displacement.empty())
-		{
-			Utility::Format16Bit(displacement);
-			if (onlyDisp)
-			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-			}
-			else
-			{
-				if (Utility::HexSize(displacement) == "8")
-				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
-				}
-				else
-				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				}
-			}
-		}
-		else
-		{
-			out << '\n';
-		}
-	}
-	else
-	{
-		return Error::LOG("Invalid Memory Exp @DIV_CASE_1\n");
-	}
-	return true;
-}
-
-bool ProgramLoader::DIV_CASE_2(std::string& OP)
-{
-	//REG8
-	Byte B2 = 0b11110000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
-}
-
-bool ProgramLoader::DIV_CASE_3(std::string& OP)
-{
-	//REG16
-	Byte B2 = 0b11110000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
-}
-
-bool ProgramLoader::IDIV_CASE_1(std::string& OP)
-{
-	//Memory
-	const std::string& mem = OP;
-	const std::string& fExp = Converter::ExpressionForModRM(mem);
-	if (MOD_RM.count(fExp))
-	{
-		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
-		Byte B2 = info.mod << 6;
-		B2 |= 0b00111000;
-		B2 |= info.rm;
-		const std::string& hB2 = Converter::DecToHex(B2);
-
-		std::string displacement = "";
-		bool onlyDisp = Utility::ExtractHexFromMemExp(mem, displacement);
-
-		out << "F6" << ' ' << hB2.substr(0, 2);
-
-		if (!displacement.empty())
-		{
-			Utility::Format16Bit(displacement);
-			if (onlyDisp)
-			{
-				out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-			}
-			else
-			{
-				if (Utility::HexSize(displacement) == "8")
-				{
-					out << ' ' << displacement.substr(2, 2) << '\n';
-				}
-				else
-				{
-					out << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				}
-			}
-		}
-		else
-		{
-			out << '\n';
-		}
-	}
-	else
-	{
-		return Error::LOG("Invalid Memory Exp @DIV_CASE_1\n");
-	}
-	return true;
-}
-
-bool ProgramLoader::IDIV_CASE_2(std::string& OP)
-{
-	//REG8
-	Byte B2 = 0b11111000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
-}
-
-bool ProgramLoader::IDIV_CASE_3(std::string& OP)
-{
-	//REG16
-	Byte B2 = 0b11111000;
-	B2 |= REG_CODE.find(OP)->second;
-	const std::string& hB2 = Converter::DecToHex(B2);
-	out << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	return true;
+	
+	return Error::LOG("Wrong Syntax @ AAACOSSX\n");
 }
 
 bool ProgramLoader::ADD(const Operand& operand)
@@ -1479,105 +1414,608 @@ bool ProgramLoader::XOR(const Operand& operand)
 	return AAACOSSX(operand, 0x30, 0b00110000) ? true : Error::LOG("Execution Failed @ XOR\n");
 }
 
+/*<-------------------------------------MUL-------------------------------------->*/
+
+bool ProgramLoader::MUL_CASE_1(std::string& MEM8)
+{
+	//Case-1: MUL []
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00100000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		OUT << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @MUL_CASE_1\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::MUL_CASE_2(std::string& MEM16)
+{
+	//Case-2: MUL W[]
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00100000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+
+		OUT << "F7" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @MUL_CASE_2\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::MUL_CASE_3(std::string& REG8)
+{
+	//Case-3: MUL REG8
+	Byte B2 = 0b11100000;
+	B2 |= REG_CODE.find(REG8)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::MUL_CASE_4(std::string& REG16)
+{
+	//Case-4: MUL REG16
+	Byte B2 = 0b11100000;
+	B2 |= REG_CODE.find(REG16)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
 bool ProgramLoader::MUL(const Operand& operand)
 {
-	//REG8, REG16, []
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand1 @MUL\n");
+		return Error::LOG("Expected 1 Operand @MUL\n");
 	}
 
 	std::string OP = operand.first;
 
-	if (Utility::IsMemory(OP))
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
+		//Case-1: MUL []
 		return MUL_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-2: MUL W[]
+		return MUL_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
-		return MUL_CASE_2(OP);
+		//Case-3: MUL REG8
+		return MUL_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
-		return MUL_CASE_3(OP);
+		//Case-4: MUL REG16
+		return MUL_CASE_4(OP);
 	}
 
 	return Error::LOG("Syntax Error @MUL\n");
 }
 
+
+/*<-------------------------------------IMUL-------------------------------------->*/
+
+bool ProgramLoader::IMUL_CASE_1(std::string& MEM8)
+{
+	//Case-1: IMUL []
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00101000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		OUT << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @IMUL_CASE_1\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::IMUL_CASE_2(std::string& MEM16)
+{
+	//Case-2: IMUL W[]
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00101000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+
+		OUT << "F7" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @MUL_CASE_2\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::IMUL_CASE_3(std::string& REG8)
+{
+	//Case-3: IMUL REG8
+	Byte B2 = 0b11101000;
+	B2 |= REG_CODE.find(REG8)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::IMUL_CASE_4(std::string& REG16)
+{
+	//Case-4: IMUL REG16
+	Byte B2 = 0b11101000;
+	B2 |= REG_CODE.find(REG16)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
 bool ProgramLoader::IMUL(const Operand& operand)
 {
-	//REG8, REG16, []
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand1 @IMUL\n");
+		return Error::LOG("Expected 1 Operand @IMUL\n");
 	}
 
 	std::string OP = operand.first;
 
-	if (Utility::IsMemory(OP))
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
+		//Case-1: IMUL []
 		return IMUL_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-2: IMUL W[]
+		return IMUL_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
-		return IMUL_CASE_2(OP);
+		//Case-3: IMUL REG8
+		return IMUL_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
-		return IMUL_CASE_3(OP);
+		//Case-4: IMUL REG16
+		return IMUL_CASE_4(OP);
 	}
 
 	return Error::LOG("Syntax Error @IMUL\n");
 }
 
+
+/*<-------------------------------------DIV-------------------------------------->*/
+
+bool ProgramLoader::DIV_CASE_1(std::string& MEM8)
+{
+	//Case-1: DIV []
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00110000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		OUT << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @DIV_CASE_1\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::DIV_CASE_2(std::string& MEM16)
+{
+	//Case-2: DIV W[]
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00110000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+
+		OUT << "F7" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @DIV_CASE_2\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::DIV_CASE_3(std::string& REG8)
+{
+	//Case-3: DIV REG8
+	Byte B2 = 0b11110000;
+	B2 |= REG_CODE.find(REG8)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::DIV_CASE_4(std::string& REG16)
+{
+	//Case-4: DIV REG16
+	Byte B2 = 0b11110000;
+	B2 |= REG_CODE.find(REG16)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
 bool ProgramLoader::DIV(const Operand& operand)
 {
-	//REG8, REG16, []
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand1 @DIV\n");
+		return Error::LOG("Expected 1 Operand @DIV\n");
 	}
 
 	std::string OP = operand.first;
 
-	if (Utility::IsMemory(OP))
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
+		//Case-1: DIV []
 		return DIV_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-2: DIV W[]
+		return DIV_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
-		return DIV_CASE_2(OP);
+		//Case-3: DIV REG8
+		return DIV_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
-		return DIV_CASE_3(OP);
+		//Case-4: DIV REG16
+		return DIV_CASE_4(OP);
 	}
 
 	return Error::LOG("Syntax Error @DIV\n");
 }
 
+
+/*<-------------------------------------IDIV-------------------------------------->*/
+
+bool ProgramLoader::IDIV_CASE_1(std::string& MEM8)
+{
+	//Case-1: IDIV []
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00111000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		OUT << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @IDIV_CASE_1\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::IDIV_CASE_2(std::string& MEM16)
+{
+	//Case-2: IDIV W[]
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00111000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+
+		OUT << "F7" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @IDIV_CASE_2\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::IDIV_CASE_3(std::string& REG8)
+{
+	//Case-3: IDIV REG8
+	Byte B2 = 0b11111000;
+	B2 |= REG_CODE.find(REG8)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+bool ProgramLoader::IDIV_CASE_4(std::string& REG16)
+{
+	//Case-4: IDIV REG16
+	Byte B2 = 0b11111000;
+	B2 |= REG_CODE.find(REG16)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
 bool ProgramLoader::IDIV(const Operand& operand)
 {
-	//REG8, REG16, []
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand1 @IDIV\n");
+		return Error::LOG("Expected 1 Operand @IDIV\n");
 	}
 
 	std::string OP = operand.first;
 
-	if (Utility::IsMemory(OP))
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
+		//Case-1: IDIV []
 		return IDIV_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-2: IDIV W[]
+		return IDIV_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
-		return IDIV_CASE_2(OP);
+		//Case-3: IDIV REG8
+		return IDIV_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
-		return IDIV_CASE_3(OP);
+		//Case-4: IDIV REG16
+		return IDIV_CASE_4(OP);
 	}
 
 	return Error::LOG("Syntax Error @IDIV\n");

@@ -21,12 +21,12 @@ public:
 	
 	static void DebugMem(int s, int offset, int cnt)
 	{
-		std::string address = Converter::DecToHex(s, HexSize::_16Bit);
+		std::string address = Converter::DecToHex(s, SIZE::WORD);
 
 		for (int i = 0; i < cnt; ++i)
 		{
 			int physcialAddress = s * 0x10 + (offset + i);
-			std::string off = Converter::DecToHex(offset + i, HexSize::_16Bit);
+			std::string off = Converter::DecToHex(offset + i, SIZE::WORD);
 			std::cout << address << '-' << off << ":[" << "\x1B[32m" + Converter::DecToHex(mem[physcialAddress]) + "\x1B[0m]" << '\n';
 		}
 	}
@@ -72,7 +72,7 @@ _16Bit Memory::Get16Bit(const int loc)
 
 int Memory::PhysicalAddress(const std::string& mem)
 {
-	const std::string& exp = mem.substr(1, mem.length() - 2);//Removing []
+	const std::string& exp = Utility::IsByteMemory(mem) ? mem.substr(1, mem.length() - 2) : mem.substr(2, mem.length() - 3);//Removing []/W[]
 	std::vector<std::string> afterSplit = Utility::SplitBy(exp, '+');
 	int physicalAddress = 0;
 	const std::string& first = afterSplit.front();

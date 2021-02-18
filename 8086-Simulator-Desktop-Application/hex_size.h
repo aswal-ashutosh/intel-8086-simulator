@@ -1,6 +1,6 @@
 #pragma once
-enum class HexSize
+enum class SIZE
 {
-	_8Bit,
-	_16Bit,
+	BYTE,
+	WORD,
 };

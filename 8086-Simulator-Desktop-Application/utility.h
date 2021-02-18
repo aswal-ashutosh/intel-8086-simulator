@@ -5,6 +5,7 @@
 #include"error_handler.h"
 #include<sstream>
 #include"operands.h"
+#include"hex_size.h"
 
 class Utility
 {
@@ -17,7 +18,13 @@ public:
 	static void Capitalize(std::string&);
 
 	//To check whether the operand is Memory or not
-	static bool IsMemory(const std::string&);
+	static bool IsValidMemory(const std::string&);
+
+	//To check if the memory is word memory
+	static bool IsWordMemory(const std::string&);
+
+	//To check if the memory is byte memory
+	static bool IsByteMemory(const std::string&);
 
 	//To check whether the oeprand is an 8-Bit register
 	static bool Is8BitRegister(const std::string&);
@@ -38,10 +45,14 @@ public:
 	static std::vector<std::string> SplitBy(const std::string&, const char&);
 
 	//Function to check whether the data is 8bit-hex or 16-bitHex
-	static std::string HexSize(const std::string&);
+	static const SIZE HexSize(const std::string&);
 
 	//Function to extract hex data from memory expression, it will return true if exp only contain hex data
 	static bool ExtractHexFromMemExp(const std::string&, std::string&);
+
+	//Helper function to fetch the MOD_RM_INFO from MOD_RM map
+	//It will convert the expersion given in memory([exp]) in the form of key requried for MOD_RM map
+	static std::string ExpressionForModRM(const std::string&);
 
 	//Function to check whether the operand count is equal to expected count or not
 	static bool IsValidOperandCount(const Operand&, int);
@@ -92,9 +103,21 @@ void Utility::Capitalize(std::string& s)
 	}
 }
 
-bool Utility::IsMemory(const std::string& s)
+bool Utility::IsValidMemory(const std::string& s)
 {
-	return s.front() == '[' && s.back() == ']';
+	if (s.size() < 4) { return false; }
+
+	return (s.front() == '[' && s.back() == ']') || (s.substr(0, 2) == "W[" && s.back() == ']');
+}
+
+bool Utility::IsWordMemory(const std::string& s)
+{
+	return (s.substr(0, 2) == "W[" && s.back() == ']');
+}
+
+bool Utility::IsByteMemory(const std::string& s)
+{
+	return (s.front() == '[' && s.back() == ']');
 }
 
 bool Utility::Is8BitRegister(const std::string& reg)
@@ -198,32 +221,26 @@ std::vector<std::string> Utility::SplitBy(const std::string& s, const char& del 
 	return res;
 }
 
-std::string Utility::HexSize(const std::string& hex)
+const SIZE Utility::HexSize(const std::string& hex)
 {
-	if (hex.length() > 5)
-	{
-		Error::LOG("Unexpected Size @HexSize\n");
-	}
-
-	//xH-xxH
 	_16Bit data = HexToDec(hex);
 	if (data >= 0x00 && data <= 0xff)
 	{
-		return "8";
+		return SIZE::BYTE;
 	}
 	else
 	{
 		//data > 0xff && data <= 0xffff
-		return "16";
+		return SIZE::WORD;
 	}
-
+	//[ToDo:REMOVE]
 	Error::LOG("Unexpected Case @HexSize\n");
 }
 
 
 bool Utility::ExtractHexFromMemExp(const std::string& mem, std::string& hex)
 {
-	const std::string & exp = mem.substr(1, mem.length() - 2);//Removing []
+	const std::string & exp = IsByteMemory(mem) ? mem.substr(1, mem.length() - 2) : mem.substr(2, mem.length() - 3);//Removing []/W[]
 
 	const std::vector<std::string>& afterSplit = Utility::SplitBy(exp, '+');
 
@@ -239,6 +256,57 @@ bool Utility::ExtractHexFromMemExp(const std::string& mem, std::string& hex)
 	hex = "";
 	return false;
 }
+
+std::string Utility::ExpressionForModRM(const std::string& mem)
+{
+	const std::string& exp = IsByteMemory(mem) ? mem.substr(1, mem.length() - 2) : mem.substr(2, mem.length() - 3);//Removing []/W[]
+
+	const std::vector<std::string>& afterSplit = Utility::SplitBy(exp, '+');
+
+	//If there is only data then it will be considered as 16bit displacement even if it is containing 8bit only
+	if (afterSplit.size() == 1 && Utility::IsValidHex(afterSplit.front()))
+	{
+		return "[d16]";
+	}
+
+	std::string res;
+
+	for (const std::string& s : afterSplit)
+	{
+		if (Utility::IsValidHex(s))
+		{
+			if (res.empty())
+			{
+				if (Utility::HexSize(s) == SIZE::BYTE)
+				{
+					res += "d8";
+				}
+				else
+				{
+					res += "d16";
+				}
+			}
+			else
+			{
+				if (Utility::HexSize(s) == SIZE::BYTE)
+				{
+					res += "+d8";
+				}
+				else
+				{
+					res += "+d16";
+				}
+			}
+		}
+		else
+		{
+			res += res.empty() ? s : "+" + s;
+		}
+	}
+
+	return '[' + res + ']';
+}
+
 
 
 bool Utility::IsValidOperandCount(const Operand& op, int expected_count)

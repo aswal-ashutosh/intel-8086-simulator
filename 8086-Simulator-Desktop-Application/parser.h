@@ -8,6 +8,7 @@
 #include"8086.h"
 #include"memory.h"
 #include"instruction.h"
+#include"error_handler.h"
 
 
 class Parser
@@ -170,40 +171,18 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 		}
 		else if (x == '[')
 		{
-			if (!token.empty())
+			bool end = false;
+			for (int k = i; k < line.length(); ++k)
 			{
-				//error
-				std::cout << "Error: Unexpcted character before [\n";
-			}
-			bool OK = false;
-			std::string exp;
-			for (int j = i + 1; j < (int)line.length(); ++j)
-			{
-				if (line[j] == ']')
-				{			
-					if (ValidateAndFormatMemoryExp(exp))
-					{
-						token = '[' + exp + ']';
-						OK = true;
-						i = j;
-						break;
-					}
-					else
-					{
-						//error
-						std::cout << "Invalid Exp\n";
-						exit(0);
-					}
+				token.push_back(line[k]);
+				if (line[k] == ']')
+				{
+					end = true;
+					i = k;
+					break;
 				}
-				exp.push_back(line[j]);
 			}
-
-			if (!OK)
-			{
-				//error
-				std::cout << "ERROR\n";
-				exit(0);
-			}
+			if (!end) { Error::LOG("Expected Memory @ Tokenize\n"); }
 		}
 		else
 		{
@@ -216,12 +195,45 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 		Tokens.push_back(token);
 	}
 
+
 	//Dont forget to remove capitalization for label
 	for (std::string& s : Tokens)
 	{
 		Utility::Capitalize(s);
 	}
 
+
+	//Formatting Memory
+	for (std::string& s : Tokens)
+	{
+		if (Utility::IsValidMemory(s))
+		{
+			if (Utility::IsWordMemory(s))
+			{
+				std::string exp = s.substr(2, s.length() - 3);
+				if (ValidateAndFormatMemoryExp(exp))
+				{
+					s = "W[" + exp + "]";
+				}
+				else
+				{
+					Error::LOG("Invalid Memory Expression @Tokenization\n");
+				}
+			}
+			else
+			{
+				std::string exp = s.substr(1, s.length() - 2);
+				if (ValidateAndFormatMemoryExp(exp))
+				{
+					s = "[" + exp + "]";
+				}
+				else
+				{
+					Error::LOG("Invalid Memory Expression @Tokenization\n");
+				}
+			}
+		}
+	}
 	return Tokens;
 }
 
@@ -264,45 +276,6 @@ bool Parser::Read(const std::string& FILE_PATH)
 			instruction.operand = { tokens[1], tokens[3] };
 
 		Program.push_back(instruction);
-
-		////Compile
-		//if (tokens.front() == "MOV")
-		//{
-		//	ProgramManager::MOV(op);
-		//	Mnemonic::MOV(op.first, op.second);
-		//}
-		//else if(tokens.front() == "ADD")
-		//{
-		//	ProgramManager::ADD(op);
-		//	Mnemonic::ADD(op.first, op.second);
-		//}
-		//else if (tokens.front() == "XOR")
-		//{
-		//	ProgramManager::XOR(op);
-		//	//Mnemonic::ADC(op.first, op.second);
-		//}
-
-		//Data Initialize
-		/*Register::REG16(REGISTER::DS, 0x1000);
-		Register::REG16(REGISTER::DI, 0x0100);
-		Register::REG16(REGISTER::AX, 0xABCD);*/
-
-
-		//Run
-		//Mnemonic::MOV(op.first, op.second);
-
-		
-
-		/*Memory::SetData(MemData(0x3333, 0x33), MemData(0x3335, 0xff));
-		
-		/*Register::REG16(op.second, 0x1f33);
-		Mnemonic::MOV(op.first, op.second);
-		std::cout << "AL:" << Converter::DecToHex(Register::REG16(op.second), Type::_16) << '\n';*/
 	}
-
-	//View
-	/*std::cout << "\x1B[36m\n==============[OUTPUT]==============\x1B[0m\n\n";
-	Memory::DebugMem(0x1000, 0x3333, 2);
-	Register::PrintAll();*/
 	return true;
 }
