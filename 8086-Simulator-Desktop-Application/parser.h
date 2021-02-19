@@ -277,6 +277,8 @@ bool Parser::Read(const std::string& FILE_PATH)
 			|| tokens.front() == "IDIV" 
 			|| tokens.front() == "NEG"
 			|| tokens.front() == "NOT"
+			|| tokens.front() == "DEC"
+			|| tokens.front() == "INC"
 		)
 			instruction.operand = { tokens[1], "" };
 		else

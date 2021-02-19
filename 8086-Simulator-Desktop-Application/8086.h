@@ -106,6 +106,16 @@ class ProgramExecutor
 	static bool NOT_CASE_3(const std::string&);
 	static bool NOT_CASE_4(const std::string&);
 
+	static bool DEC_CASE_1(const std::string&);
+	static bool DEC_CASE_2(const std::string&);
+	static bool DEC_CASE_3(const std::string&);
+	static bool DEC_CASE_4(const std::string&);
+
+	static bool INC_CASE_1(const std::string&);
+	static bool INC_CASE_2(const std::string&);
+	static bool INC_CASE_3(const std::string&);
+	static bool INC_CASE_4(const std::string&);
+
 	static bool CMP_CASE_1(const std::string&, const std::string&);
 	static bool CMP_CASE_2(const std::string&, const std::string&);
 	static bool CMP_CASE_3(const std::string&, const std::string&);
@@ -144,6 +154,11 @@ class ProgramExecutor
 	static void UpdateFlags_NEG_8Bit(const Byte);
 	static void UpdateFlags_NEG_16Bit(const _16Bit);
 
+	static void UpdateFlags_DEC_8Bit(const Byte);
+	static void UpdateFlags_DEC_16Bit(const _16Bit);
+	static void UpdateFlags_INC_8Bit(const Byte);
+	static void UpdateFlags_INC_16Bit(const _16Bit);
+
 public:
 	static void LoadCallBacks();
 	static bool Execute(const std::vector<Instruction>&);
@@ -164,6 +179,8 @@ public:
 	static bool CMP(const Operand&);
 	static bool NEG(const Operand&);
 	static bool NOT(const Operand&);
+	static bool DEC(const Operand&);
+	static bool INC(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -185,6 +202,8 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::CMP] = CMP;
 	CallBacks[MNEMONIC::NEG] = NEG;
 	CallBacks[MNEMONIC::NOT] = NOT;
+	CallBacks[MNEMONIC::DEC] = DEC;
+	CallBacks[MNEMONIC::INC] = INC;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -645,7 +664,47 @@ void ProgramExecutor::UpdateFlags_NEG_16Bit(const _16Bit Data)
 	_16Bit Result = -Data;
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
 	Register::SetFlag(Register::FLAG::SF, Result & (1 << 15)); //Sign Flag
+	Register::SetFlag(Register::FLAG::ZF, Result == 0x0000); //Zero Flag
+}
+
+void ProgramExecutor::UpdateFlags_DEC_8Bit(const Byte Data)
+{
+	Register::SetFlag(Register::FLAG::AF, (Data & 0x0f) < 0x01);//Auxiliary Carry Flag
+	Register::SetFlag(Register::FLAG::OF, Data == (Byte)0x80);//Overflow Flag
+	Byte Result = Data - 1;
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
+	Register::SetFlag(Register::FLAG::SF, Result & (1 << 7)); //Sign Flag
 	Register::SetFlag(Register::FLAG::ZF, Result == 0x00); //Zero Flag
+}
+
+void ProgramExecutor::UpdateFlags_DEC_16Bit(const _16Bit Data)
+{
+	Register::SetFlag(Register::FLAG::AF, (Data & 0x000f) < 0x0001);//Auxiliary Carry Flag
+	Register::SetFlag(Register::FLAG::OF, Data == (_16Bit)0x8000);//Overflow Flag
+	_16Bit Result = Data - 1;
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
+	Register::SetFlag(Register::FLAG::SF, Result & (1 << 15)); //Sign Flag
+	Register::SetFlag(Register::FLAG::ZF, Result == 0x0000); //Zero Flag
+}
+
+void ProgramExecutor::UpdateFlags_INC_8Bit(const Byte Data)
+{
+	Register::SetFlag(Register::FLAG::AF, (Data & 0x0f) + 0x01 > 0x0f);//Auxiliary Carry Flag
+	Register::SetFlag(Register::FLAG::OF, Data == (Byte)0x7f);//Overflow Flag
+	Byte Result = Data + 1;
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
+	Register::SetFlag(Register::FLAG::SF, Result & (1 << 7)); //Sign Flag
+	Register::SetFlag(Register::FLAG::ZF, Result == 0x00); //Zero Flag
+}
+
+void ProgramExecutor::UpdateFlags_INC_16Bit(const _16Bit Data)
+{
+	Register::SetFlag(Register::FLAG::AF, (Data & 0x000f) + 0x0001 > 0x000f);//Auxiliary Carry Flag
+	Register::SetFlag(Register::FLAG::OF, Data == (_16Bit)0x7fff);//Overflow Flag
+	_16Bit Result = Data + 1;
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
+	Register::SetFlag(Register::FLAG::SF, Result & (1 << 15)); //Sign Flag
+	Register::SetFlag(Register::FLAG::ZF, Result == 0x0000); //Zero Flag
 }
 
 //[TODO] Updating IP
@@ -2489,7 +2548,6 @@ bool ProgramExecutor::NEG_CASE_2(const std::string& MEM16)
 	return true;
 }
 
-
 bool ProgramExecutor::NEG_CASE_3(const std::string& REG8)
 {
 	//Case-3: NEG REG8
@@ -2499,7 +2557,6 @@ bool ProgramExecutor::NEG_CASE_3(const std::string& REG8)
 	return true;
 }
 
-
 bool ProgramExecutor::NEG_CASE_4(const std::string& REG16)
 {
 	//Case-4: NEG REG16
@@ -2508,7 +2565,6 @@ bool ProgramExecutor::NEG_CASE_4(const std::string& REG16)
 	UpdateFlags_NEG_16Bit(Data);
 	return true;
 }
-
 
 bool ProgramExecutor::NEG(const Operand& operand)
 {
@@ -2594,4 +2650,153 @@ bool ProgramExecutor::NOT(const Operand& operand)
 	}
 
 	return Error::LOG("Execution Failed @NOT\n");
+}
+
+/*<-------------------------------------------DEC------------------------------->*/
+//The CF flag is not affected.The OF, SF, ZF, AF, and PF flags are set according to the result.
+
+bool ProgramExecutor::DEC_CASE_1(const std::string& MEM8)
+{
+	//Case-1: DEC []
+	int Padd = Memory::PhysicalAddress(MEM8);
+	Byte Data = Memory::Get8Bit(Padd);
+	Memory::Set8Bit(Padd, Data - 1);
+	UpdateFlags_DEC_8Bit(Data);
+	return true;
+
+}
+
+bool ProgramExecutor::DEC_CASE_2(const std::string& MEM16)
+{
+	//Case-2: DEC W[]
+	int Padd = Memory::PhysicalAddress(MEM16);
+	_16Bit Data = Memory::Get16Bit(Padd);
+	Memory::Set16Bit(Padd, Data - 1);
+	UpdateFlags_DEC_16Bit(Data);
+	return true;
+}
+
+bool ProgramExecutor::DEC_CASE_3(const std::string& REG8)
+{
+	//Case-3: DEC REG8
+	Byte Data = Register::REG8(REG8);
+	Register::REG8(REG8, Data - 1);
+	UpdateFlags_DEC_8Bit(Data);
+	return true;
+}
+
+bool ProgramExecutor::DEC_CASE_4(const std::string& REG16)
+{
+	//Case-4: DEC REG16
+	_16Bit Data = Register::REG16(REG16);
+	Register::REG16(REG16, Data - 1);
+	UpdateFlags_DEC_16Bit(Data);
+	return true;
+}
+
+bool ProgramExecutor::DEC(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected 1 Operand @DEC\n");
+	}
+
+	std::string OP = operand.first;
+
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-1: DEC []
+		return DEC_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
+	{
+		//Case-2: DEC W[]
+		return DEC_CASE_2(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		//Case-3: DEC REG8
+		return DEC_CASE_3(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		//Case-4: DEC REG16
+		return DEC_CASE_4(OP);
+	}
+
+	return Error::LOG("Wrong Syntax @DEC\n");
+}
+
+/*<-------------------------------INC------------------------------>*/
+//The CF flag is not affected. The OF, SF, ZF, AF, and PF flags are set according to the result.
+
+bool ProgramExecutor::INC_CASE_1(const std::string& MEM8)
+{
+	//Case-1: INC []
+	int Padd = Memory::PhysicalAddress(MEM8);
+	Byte Data = Memory::Get8Bit(Padd);
+	Memory::Set8Bit(Padd, Data + 1);
+	UpdateFlags_INC_8Bit(Data);
+	return true;
+}
+
+bool ProgramExecutor::INC_CASE_2(const std::string& MEM16)
+{
+	//Case-2: INC W[]
+	int Padd = Memory::PhysicalAddress(MEM16);
+	_16Bit Data = Memory::Get16Bit(Padd);
+	Memory::Set16Bit(Padd, Data + 1);
+	UpdateFlags_INC_16Bit(Data);
+	return true;
+}
+
+bool ProgramExecutor::INC_CASE_3(const std::string& REG8)
+{
+	//Case-3: INC REG8
+	Byte Data = Register::REG8(REG8);
+	Register::REG8(REG8, Data + 1);
+	UpdateFlags_INC_8Bit(Data);
+	return true;
+}
+
+bool ProgramExecutor::INC_CASE_4(const std::string& REG16)
+{
+	//Case-4: INC REG16
+	_16Bit Data = Register::REG16(REG16);
+	Register::REG16(REG16, Data + 1);
+	UpdateFlags_INC_16Bit(Data);
+	return true;
+}
+
+bool ProgramExecutor::INC(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected 1 Operand @INC\n");
+	}
+
+	std::string OP = operand.first;
+
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-1: INC []
+		return INC_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
+	{
+		//Case-2: INC W[]
+		return INC_CASE_2(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		//Case-3: INC REG8
+		return INC_CASE_3(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		//Case-4: INC REG16
+		return INC_CASE_4(OP);
+	}
+
+	return Error::LOG("Wrong Syntax @INC\n");
 }
