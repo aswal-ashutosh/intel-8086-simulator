@@ -1,2 +1,2 @@
-mov al, 01h
-dec al    
+mov al, 80h
+sbb al, 80h

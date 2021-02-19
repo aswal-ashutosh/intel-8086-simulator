@@ -229,30 +229,30 @@ bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
 
 
 /*<-------------------------------------------FLAG UPDATE----------------------------------->*/
-
+/*
+	If 2 Two's Complement numbers are added, and they both have the same sign, then
+	overflow occurs if and only if the result has the opposite sign. Overflow nerver occurs
+	when adding operands with different signs.
+*/
 void ProgramExecutor::UpdateFlags_ADD_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
 {
 	Register::SetFlag(Register::FLAG::CF, Result > 0x00ff); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) + (OP2 & 0x0f) > 0x0f); //Auxillary Carry Flag
 	Byte Result8Bit = (Byte)Result; //Truncating Extra Bits
-
-	//Over Flow Flag
+	Register::SetFlag(Register::FLAG::OF, (OP1 ^ Result8Bit) & (OP2 ^ Result8Bit) & 0x80);//Overflow Flag
 	/*
-		If 2 Two's Complement numbers are added, and they both have the same sign, then
-		overflow occurs if and only if the result has the opposite sign. Overflow nerver occurs
-		when adding operands with different signs.
+		Same as above one line for Overflow flag
+		if ((OP1 & (1 << 7)) ^ (OP2 & (1 << 7)))
+		{
+			//Different Sign
+			Register::SetFlag(Register::FLAG::OF, false);
+		}
+		else
+		{
+			//Same Sign
+			Register::SetFlag(Register::FLAG::OF, (Result8Bit & (1 << 7)) ^ (OP1 & (1 << 7)));
+		}
 	*/
-	if ((OP1 & (1 << 7)) ^ (OP2 & (1 << 7)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, false);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, (Result8Bit & (1 << 7)) ^ (OP1 & (1 << 7)));
-	}
-
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result8Bit) & 1)); //Parity Flag
 
 	Register::SetFlag(Register::FLAG::SF, Result8Bit & (1 << 7)); //Sign Flag
@@ -269,32 +269,9 @@ void ProgramExecutor::UpdateFlags_ADC_8Bit(const Byte OP1, const Byte OP2, const
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) + (OP2 & 0x0f) > 0x0f); //Auxillary Carry Flag
 	Byte Result8Bit = (Byte)Result; //Truncating Extra Bits
 
-	//Over Flow Flag
-	_16Bit MidWAyResult = _16Bit(OP2) + _16Bit(oldCF);
-	bool MidWayOF = false;
-	if ((OP2 & (1 << 7)) ^ (Byte(oldCF) & (1 << 7)))
-	{
-		MidWayOF = false;
-	}
-	else
-	{
-		MidWayOF = (MidWAyResult & (1 << 7)) ^ (OP2 & (1 << 7));
-	}
-
-	MidWAyResult = Byte(MidWAyResult); //Truncating Extra Bits
-
-	_16Bit ResFinal = OP1 + MidWAyResult;
-
-	if ((OP1 & (1 << 7)) ^ (MidWAyResult & (1 << 7)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, MidWayOF);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, MidWayOF | (bool)((ResFinal & (1 << 7)) ^ (OP1 & (1 << 7))));
-	}
+	Byte OP2_CF = OP2 + oldCF;
+	bool MidWayOF = (OP2 ^ OP2_CF) & ((Byte)oldCF ^ OP2_CF) & 0x80;
+	Register::SetFlag(Register::FLAG::OF, MidWayOF | (bool)((OP1 ^ Result8Bit) & (OP2_CF ^ Result8Bit) & 0x80));//Over Flow Flag
 
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result8Bit) & 1)); //Parity Flag
 
@@ -307,21 +284,24 @@ void ProgramExecutor::UpdateFlags_ADC_8Bit(const Byte OP1, const Byte OP2, const
 
 void ProgramExecutor::UpdateFlags_ADD_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
 {
-	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
+	Register::SetFlag(Register::FLAG::CF, Result > 0x0000ffff); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) + (OP2 & 0x000f) > 0x000f); //Auxillary Carry Flag
 	_16Bit Result16Bit = (_16Bit)Result; //Truncating Extra Bits
 
-	//Over Flow Flag
-	if ((OP1 & (1 << 15)) ^ (OP2 & (1 << 15)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, false);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, (Result16Bit & (1 << 15)) ^ (OP1 & (1 << 15)));
-	}
+	Register::SetFlag(Register::FLAG::OF, (OP1 ^ Result16Bit) & (OP2 ^ Result16Bit) & 0x8000);//Over Flow Flag
+	/*
+		Same as above one line for Overflow flag
+		if ((OP1 & (1 << 15)) ^ (OP2 & (1 << 15)))
+		{
+			//Different Sign
+			Register::SetFlag(Register::FLAG::OF, false);
+		}
+		else
+		{
+			//Same Sign
+			Register::SetFlag(Register::FLAG::OF, (Result16Bit & (1 << 15)) ^ (OP1 & (1 << 15)));
+		}
+	*/
 
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result16Bit) & 1)); //Parity Flag
 
@@ -335,38 +315,14 @@ void ProgramExecutor::UpdateFlags_ADD_16Bit(const _16Bit OP1, const _16Bit OP2, 
 void ProgramExecutor::UpdateFlags_ADC_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
-	Register::SetFlag(Register::FLAG::CF, Result > 0xffff); //Carry Flag
+	Register::SetFlag(Register::FLAG::CF, Result > 0x0000ffff); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) + (OP2 & 0x000f) > 0x000f); //Auxillary Carry Flag
 	_16Bit Result16Bit = (_16Bit)Result; //Truncating Extra Bits
 
-	//Over Flow Flag
-	uint32_t MidWayResult = uint32_t(OP2) + uint32_t(oldCF);
-	bool WidWayOF = false;
-
-	if ((OP2 & (1 << 15)) ^ (_16Bit(oldCF) & (1 << 15)))
-	{
-		WidWayOF = false;
-	}
-	else
-	{
-		WidWayOF = (MidWayResult & (1 << 15)) ^ (OP2 & (1 << 15));
-	}
-
-	MidWayResult = _16Bit(MidWayResult); //Truncating Extra Bits
-
-	uint32_t ResFinal = OP1 + MidWayResult;
-
-	if ((OP1 & (1 << 15)) ^ (MidWayResult & (1 << 15)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, WidWayOF);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, WidWayOF | (bool)((ResFinal & (1 << 15)) ^ (OP1 & (1 << 15))));
-	}
-
+	_16Bit OP2_CF = OP2 + oldCF;
+	bool MidWayOF = (OP2 ^ OP2_CF) & ((_16Bit)oldCF ^ OP2_CF) & 0x8000;
+	Register::SetFlag(Register::FLAG::OF, MidWayOF | (bool)((OP1 ^ Result16Bit) & (OP2_CF ^ Result16Bit) & 0x8000));
+	
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result16Bit) & 1)); //Parity Flag
 
 	Register::SetFlag(Register::FLAG::SF, Result16Bit & (1 << 15)); //Sign Flag
@@ -383,24 +339,18 @@ void ProgramExecutor::UpdateFlags_SUB_8Bit(const Byte OP1, const Byte OP2, const
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) < (OP2 & 0x0f)); //Auxillary Carry Flag
 	Byte Result8Bit = (Byte)Result; //Truncating Extra Bits
 
-	//Over Flow Flag
-	/*
-		If 2 Two's Complement numbers are subtracted, and their signs are different, then
-		overflow occurs if and only if the result has the same sign as the subtrahend.
-										OR
-		We can just calculate it by considering it the sum of OP1 and 2s complement of OP2
-	*/
+	Register::SetFlag(Register::FLAG::OF, (OP1 ^ Result8Bit) & (_2SC ^ Result8Bit) & 0x80);//Overflow Flag
 
-	if ((OP1 & (1 << 7)) ^ (_2SC & (1 << 7)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, false);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, (Result8Bit & (1 << 7)) ^ (OP1 & (1 << 7)));
-	}
+	//if ((OP1 & (1 << 7)) ^ (_2SC & (1 << 7)))
+	//{
+	//	//Different Sign
+	//	Register::SetFlag(Register::FLAG::OF, false);
+	//}
+	//else
+	//{
+	//	//Same Sign
+	//	Register::SetFlag(Register::FLAG::OF, (Result8Bit & (1 << 7)) ^ (OP1 & (1 << 7)));
+	//}
 
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result8Bit) & 1)); //Parity Flag
 
@@ -418,17 +368,18 @@ void ProgramExecutor::UpdateFlags_SUB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
 	_16Bit Result16Bit = (_16Bit)Result; //Truncating Extra Bits
 
-	//Over Flow Flag
-	if ((OP1 & (1 << 15)) ^ (_2SC & (1 << 15)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, false);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, (Result16Bit & (1 << 15)) ^ (OP1 & (1 << 15)));
-	}
+	Register::SetFlag(Register::FLAG::OF, (OP1 ^ Result16Bit) & (_2SC ^ Result16Bit) & 0x8000);//Over Flow Flag
+
+	//if ((OP1 & (1 << 15)) ^ (_2SC & (1 << 15)))
+	//{
+	//	//Different Sign
+	//	Register::SetFlag(Register::FLAG::OF, false);
+	//}
+	//else
+	//{
+	//	//Same Sign
+	//	Register::SetFlag(Register::FLAG::OF, (Result16Bit & (1 << 15)) ^ (OP1 & (1 << 15)));
+	//}
 
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result16Bit) & 1)); //Parity Flag
 
@@ -442,38 +393,16 @@ void ProgramExecutor::UpdateFlags_SUB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
-	Byte _2SC = -OP2;
+	Byte _2SC_OP2 = -OP2;
 	Byte _2SC_CF = oldCF ? 0xff : 0x00;
-	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::CF, OP1 < (OP2 + oldCF)); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x0f) < (OP2 & 0x0f)); //Auxillary Carry Flag
 	Byte Result8Bit = (Byte)Result; //Truncating Extra Bits
 
-	//Over Flow Flag
-	_16Bit MidWAyResult = _16Bit(_2SC) + _16Bit(_2SC_CF);
-	bool MidWayOF = false;
-	if ((_2SC & (1 << 7)) ^ (_2SC_CF & (1 << 7)))
-	{
-		MidWayOF = false;
-	}
-	else
-	{
-		MidWayOF = (MidWAyResult & (1 << 7)) ^ (_2SC & (1 << 7));
-	}
-
-	MidWAyResult = Byte(MidWAyResult); //Truncating Extra Bits
-
-	_16Bit ResFinal = OP1 + MidWAyResult;
-
-	if ((OP1 & (1 << 7)) ^ (MidWAyResult & (1 << 7)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, MidWayOF);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, MidWayOF | (bool)((ResFinal & (1 << 7)) ^ (OP1 & (1 << 7))));
-	}
+	
+	Byte _2SC_OP2_CF = _2SC_OP2 + _2SC_CF;
+	bool MidWayOF = (_2SC_OP2 ^ _2SC_OP2_CF) & (_2SC_CF ^ _2SC_OP2_CF) & 0x80;
+	Register::SetFlag(Register::FLAG::OF, MidWayOF | (bool)((OP1 ^ Result8Bit) & (_2SC_OP2_CF ^ Result8Bit) & 0x80));//Overflow Flag
 
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result8Bit) & 1)); //Parity Flag
 
@@ -487,39 +416,15 @@ void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const
 void ProgramExecutor::UpdateFlags_SBB_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
-	_16Bit _2SC = -OP2;
+	_16Bit _2SC_OP2 = -OP2;
 	_16Bit _2SC_CF = oldCF ? 0xffff : 0x0000;
-	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
+	Register::SetFlag(Register::FLAG::CF, OP1 < (OP2 + oldCF)); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
 	_16Bit Result16Bit = (_16Bit)Result; //Truncating Extra Bits
 
-	//Over Flow Flag
-	uint32_t MidWayResult = uint32_t(_2SC) + uint32_t(_2SC_CF);
-	bool WidWayOF = false;
-
-	if ((_2SC & (1 << 15)) ^ (_2SC_CF & (1 << 15)))
-	{
-		WidWayOF = false;
-	}
-	else
-	{
-		WidWayOF = (MidWayResult & (1 << 15)) ^ (_2SC & (1 << 15));
-	}
-
-	MidWayResult = _16Bit(MidWayResult); //Truncating Extra Bits
-
-	uint32_t ResFinal = OP1 + MidWayResult;
-
-	if ((OP1 & (1 << 15)) ^ (MidWayResult & (1 << 15)))
-	{
-		//Different Sign
-		Register::SetFlag(Register::FLAG::OF, WidWayOF);
-	}
-	else
-	{
-		//Same Sign
-		Register::SetFlag(Register::FLAG::OF, WidWayOF | (bool)((ResFinal & (1 << 15)) ^ (OP1 & (1 << 15))));
-	}
+	_16Bit _2SC_OP2_CF = _2SC_OP2 + _2SC_CF;
+	bool MidWayOF = (_2SC_OP2 ^ _2SC_OP2_CF) & (_2SC_CF ^ _2SC_OP2_CF) & 0x8000;
+	Register::SetFlag(Register::FLAG::OF, MidWayOF | (bool)((OP1 ^ Result16Bit) & (_2SC_OP2_CF ^ Result16Bit) & 0x8000));//Overflow Flag
 
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result16Bit) & 1)); //Parity Flag
 
