@@ -57,7 +57,7 @@ public:
 	//Function to check whether the operand count is equal to expected count or not
 	static bool IsValidOperandCount(const Operand&, int);
 
-	static int SetBitCount(int);
+	static int SetBitCount(uint32_t);
 };
 
 _16Bit Utility::HexToDec(const std::string& data)
@@ -316,7 +316,7 @@ bool Utility::IsValidOperandCount(const Operand& op, int expected_count)
 	return count == expected_count;
 }
 
-int Utility::SetBitCount(int number)
+int Utility::SetBitCount(uint32_t number)
 {
 	int c = 0;
 	while (number)

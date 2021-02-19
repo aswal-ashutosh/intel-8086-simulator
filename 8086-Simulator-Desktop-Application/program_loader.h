@@ -68,6 +68,11 @@ class ProgramLoader
 	static bool IDIV_CASE_3(std::string&);
 	static bool IDIV_CASE_4(std::string&);
 
+	static bool NEG_CASE_1(std::string&);
+	static bool NEG_CASE_2(std::string&);
+	static bool NEG_CASE_3(std::string&);
+	static bool NEG_CASE_4(std::string&);
+
 public:
 	static void LoadCallBacks();
 	static bool Load(const std::vector<Instruction>&);
@@ -86,6 +91,7 @@ public:
 	static bool IMUL(const Operand&);
 	static bool DIV(const Operand&);
 	static bool IDIV(const Operand&);
+	static bool NEG(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -105,6 +111,7 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::OR] = OR;
 	CallBacks[MNEMONIC::XOR] = XOR;
 	CallBacks[MNEMONIC::CMP] = CMP;
+	CallBacks[MNEMONIC::NEG] = NEG;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -2019,4 +2026,160 @@ bool ProgramLoader::IDIV(const Operand& operand)
 	}
 
 	return Error::LOG("Syntax Error @IDIV\n");
+}
+
+/*<------------------------------NEG---------------------------------------------------->*/
+
+bool ProgramLoader::NEG_CASE_1(std::string& MEM8)
+{
+	//Case-1: NEG []
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00011000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		OUT << "F6" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @NEG_CASE_1\n");
+	}
+	return true;
+
+}
+
+
+bool ProgramLoader::NEG_CASE_2(std::string& MEM16)
+{
+	//Case-2: NEG W[]
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = info.mod << 6;
+		B2 |= 0b00011000;
+		B2 |= info.rm;
+		const std::string& hB2 = Converter::DecToHex(B2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+
+		OUT << "F7" << ' ' << hB2.substr(0, 2);
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				if (Utility::HexSize(displacement) == SIZE::BYTE)
+				{
+					OUT << ' ' << displacement.substr(2, 2) << '\n';
+				}
+				else
+				{
+					OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+				}
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @NEG_CASE_2\n");
+	}
+	return true;
+}
+
+
+bool ProgramLoader::NEG_CASE_3(std::string& REG8)
+{
+	//Case-3: NEG REG8
+	Byte B2 = 0b11011000;
+	B2 |= REG_CODE.find(REG8)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+
+bool ProgramLoader::NEG_CASE_4(std::string& REG16)
+{
+	//Case-4: NEG REG16
+	Byte B2 = 0b11011000;
+	B2 |= REG_CODE.find(REG16)->second;
+	const std::string& hB2 = Converter::DecToHex(B2);
+	OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
+	return true;
+}
+
+
+bool ProgramLoader::NEG(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected 1 Operand @NEG\n");
+	}
+
+	std::string OP = operand.first;
+
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-1: NEG []
+		return NEG_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
+	{
+		//Case-2: NEG W[]
+		return NEG_CASE_2(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		//Case-3: NEG REG8
+		return NEG_CASE_3(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		//Case-4: NEG REG16
+		return NEG_CASE_4(OP);
+	}
+
+	return Error::LOG("Syntax Error @NEG\n");
 }
