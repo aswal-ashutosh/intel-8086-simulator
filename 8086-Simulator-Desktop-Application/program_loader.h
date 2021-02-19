@@ -1546,7 +1546,7 @@ bool ProgramLoader::MUL(const Operand& operand)
 		//Case-1: MUL []
 		return MUL_CASE_1(OP);
 	}
-	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: MUL W[]
 		return MUL_CASE_2(OP);
@@ -1698,7 +1698,7 @@ bool ProgramLoader::IMUL(const Operand& operand)
 		//Case-1: IMUL []
 		return IMUL_CASE_1(OP);
 	}
-	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: IMUL W[]
 		return IMUL_CASE_2(OP);
@@ -1850,7 +1850,7 @@ bool ProgramLoader::DIV(const Operand& operand)
 		//Case-1: DIV []
 		return DIV_CASE_1(OP);
 	}
-	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: DIV W[]
 		return DIV_CASE_2(OP);
@@ -2002,7 +2002,7 @@ bool ProgramLoader::IDIV(const Operand& operand)
 		//Case-1: IDIV []
 		return IDIV_CASE_1(OP);
 	}
-	else if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: IDIV W[]
 		return IDIV_CASE_2(OP);

@@ -1,2 +1,4 @@
-mov w[1234h], AX
-mov W[si + bx + 12h], 2134h
+mov ax, ffffh
+mov dx, ffffh
+mov [1234h], ffffh
+imul w[1234h]

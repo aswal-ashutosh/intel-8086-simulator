@@ -172,7 +172,7 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 		else if (x == '[')
 		{
 			bool end = false;
-			for (int k = i; k < line.length(); ++k)
+			for (int k = i; k < (int)line.length(); ++k)
 			{
 				token.push_back(line[k]);
 				if (line[k] == ']')

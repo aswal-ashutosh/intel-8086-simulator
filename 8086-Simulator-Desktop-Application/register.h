@@ -122,6 +122,7 @@ bool Register::GetFlag(const FLAG& X)
 
 void Register::PrintAll()
 {
+	std::cout << "\n.....................................\n\n";
 	for (const std::pair<const std::string, Byte>& R : _REG8)
 	{
 		const std::string& data = Converter::DecToHex(R.second);
@@ -237,7 +238,9 @@ Byte Register::REG8(const std::string& R)
 	}
 	else
 	{
+		//[TODO]::REMOVE DEBUG In final version
 		Error::Debug(R + " is not 8-Bit Register @ Getter\n");
+		return -1;
 	}
 }
 
@@ -249,7 +252,9 @@ _16Bit Register::REG16(const std::string& R)
 	}
 	else
 	{
+		//[TODO]::REMOVE DEBUG In final version
 		Error::Debug(R + " is not 16-Bit Register @ Getter\n");
+		return -1;
 	}
 }
 
