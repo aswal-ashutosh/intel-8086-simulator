@@ -1,2 +1,4 @@
-mov al, 12h
-neg al
+mov [1235h], abh
+mov W[1234h], 00h
+not W[1234h]
+mov ax, [1234h]

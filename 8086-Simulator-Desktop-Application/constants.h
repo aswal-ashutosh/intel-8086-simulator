@@ -18,6 +18,7 @@ namespace MNEMONIC
 	const std::string DIV = "DIV";
 	const std::string IDIV = "IDIV";
 	const std::string NEG = "NEG";
+	const std::string NOT = "NOT";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =

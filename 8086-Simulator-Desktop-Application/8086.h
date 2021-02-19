@@ -101,6 +101,11 @@ class ProgramExecutor
 	static bool NEG_CASE_3(const std::string&);
 	static bool NEG_CASE_4(const std::string&);
 
+	static bool NOT_CASE_1(const std::string&);
+	static bool NOT_CASE_2(const std::string&);
+	static bool NOT_CASE_3(const std::string&);
+	static bool NOT_CASE_4(const std::string&);
+
 	static bool CMP_CASE_1(const std::string&, const std::string&);
 	static bool CMP_CASE_2(const std::string&, const std::string&);
 	static bool CMP_CASE_3(const std::string&, const std::string&);
@@ -158,6 +163,7 @@ public:
 	static bool XOR(const Operand&);
 	static bool CMP(const Operand&);
 	static bool NEG(const Operand&);
+	static bool NOT(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -178,6 +184,7 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::XOR] = XOR;
 	CallBacks[MNEMONIC::CMP] = CMP;
 	CallBacks[MNEMONIC::NEG] = NEG;
+	CallBacks[MNEMONIC::NOT] = NOT;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -2472,7 +2479,6 @@ bool ProgramExecutor::NEG_CASE_1(const std::string& MEM8)
 	return true;
 }
 
-
 bool ProgramExecutor::NEG_CASE_2(const std::string& MEM16)
 {
 	//Case-2: NEG W[]
@@ -2530,4 +2536,62 @@ bool ProgramExecutor::NEG(const Operand& operand)
 	}
 
 	return Error::LOG("Execution Failed @NEG\n");
+}
+
+/*<----------------------------------NOT------------------------------------------------>*/
+
+//No flags are affected
+
+bool ProgramExecutor::NOT_CASE_1(const std::string& MEM8)
+{
+	//Case-1: NOT []
+	int Padd = Memory::PhysicalAddress(MEM8);
+	Memory::Set8Bit(Padd, ~Memory::Get8Bit(Padd));
+	return true;
+}
+bool ProgramExecutor::NOT_CASE_2(const std::string& MEM16)
+{
+	//Case-2: NOT W[]
+	int Padd = Memory::PhysicalAddress(MEM16);
+	Memory::Set16Bit(Padd, ~Memory::Get16Bit(Padd));
+	return true;
+}
+bool ProgramExecutor::NOT_CASE_3(const std::string& REG8)
+{
+	//Case-3: NOT REG8
+	Register::REG8(REG8, ~Register::REG8(REG8));
+	return true;
+}
+bool ProgramExecutor::NOT_CASE_4(const std::string& REG16)
+{
+	//Case-4: NOT REG16
+	Register::REG16(REG16, ~Register::REG16(REG16));
+	return true;
+}
+bool ProgramExecutor::NOT(const Operand& operand)
+{
+	std::string OP = operand.first;
+
+	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
+	{
+		//Case-1: NOT []
+		return NOT_CASE_1(OP);
+	}
+	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
+	{
+		//Case-2: NOT W[]
+		return NOT_CASE_2(OP);
+	}
+	else if (Utility::Is8BitRegister(OP))
+	{
+		//Case-3: NOT REG8
+		return NOT_CASE_3(OP);
+	}
+	else if (Utility::Is16BitRegister(OP))
+	{
+		//Case-4: NOT REG16
+		return NOT_CASE_4(OP);
+	}
+
+	return Error::LOG("Execution Failed @NOT\n");
 }
