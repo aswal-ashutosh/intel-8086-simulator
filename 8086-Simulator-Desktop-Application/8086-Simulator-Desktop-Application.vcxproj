@@ -20,17 +20,31 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="8086.h" />
+    <ClInclude Include="add_adc.h" />
+    <ClInclude Include="and_or_xor.h" />
+    <ClInclude Include="cmp.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="converter.h" />
+    <ClInclude Include="daa.h" />
+    <ClInclude Include="dec.h" />
+    <ClInclude Include="div_idiv.h" />
     <ClInclude Include="error_handler.h" />
+    <ClInclude Include="inc.h" />
     <ClInclude Include="instruction.h" />
+    <ClInclude Include="instruction_set.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="mod_rm.h" />
+    <ClInclude Include="mov.h" />
+    <ClInclude Include="mul_imul.h" />
+    <ClInclude Include="neg.h" />
+    <ClInclude Include="not.h" />
     <ClInclude Include="operands.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="program_loader.h" />
     <ClInclude Include="register.h" />
     <ClInclude Include="hex_size.h" />
+    <ClInclude Include="shl_sal.h" />
+    <ClInclude Include="sub_sbb.h" />
     <ClInclude Include="typedef.h" />
     <ClInclude Include="utility.h" />
   </ItemGroup>

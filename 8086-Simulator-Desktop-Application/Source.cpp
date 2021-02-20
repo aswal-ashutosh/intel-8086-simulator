@@ -1,7 +1,7 @@
 #include"parser.h"
-#include"8086.h"
 #include"program_loader.h"
 #include<iostream>
+#include"instruction_set.h"
 
 int main()
 {
@@ -9,8 +9,8 @@ int main()
 	ProgramExecutor::LoadCallBacks();
 	Parser::Read("test.txt");
 	ProgramLoader::Load(Parser::GetProgram());
-	/*ProgramExecutor::Execute(Parser::GetProgram());
-	Register::PrintAll();*/
+	ProgramExecutor::Execute(Parser::GetProgram());
+	Register::PrintAll();
 	//Memory::DebugMem(0x0000, 0x1234, 2);
 	return 0;
 }

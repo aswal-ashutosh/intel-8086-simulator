@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Instruction Set">
+      <UniqueIdentifier>{c1128710-fdb1-4d84-9cef-cf9a240e41ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="register.h">
@@ -56,6 +59,48 @@
     </ClInclude>
     <ClInclude Include="program_loader.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mov.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="instruction_set.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="add_adc.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="sub_sbb.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="mul_imul.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="div_idiv.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="and_or_xor.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="cmp.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="neg.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="not.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="dec.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="inc.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="daa.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="shl_sal.h">
+      <Filter>Header Files\Instruction Set</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
