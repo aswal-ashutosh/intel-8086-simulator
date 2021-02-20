@@ -1,3 +1,9 @@
-mov al, 50h
-add al, 50h
-daa
+ror bl, 01h
+ror bl, cl
+ror ax, 01h
+ror ax, cl
+ror [bx + si], 01h
+ror [bx + si + 33h], cl
+ror W[bx + si], 01h
+ror W[bx + si + 33h], cl
+ror W[bx + si + 3312h], cl

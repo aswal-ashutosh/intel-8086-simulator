@@ -33,6 +33,8 @@ class ProgramLoader
 	static bool MOV_CASE_14(std::string&, std::string&);
 	static bool MOV_CASE_15(std::string&, std::string&);
 
+	//AAACOSSX generate machine code for => ADD, ADC, AND, CMP, OR, SUB, SBB, XOR
+	static bool AAACOSSX(const Operand&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_1(std::string&, std::string&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_2(std::string&, std::string&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_3(std::string&, std::string&, const Byte, const Byte);
@@ -45,8 +47,7 @@ class ProgramLoader
 	static bool AAACOSSX_CASE_10(std::string&, std::string&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_11(std::string&, std::string&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_12(std::string&, std::string&, const Byte, const Byte);
-	//AAACOSSX generate machine code for => ADD, ADC, AND, CMP, OR, SUB, SBB, XOR
-	static bool AAACOSSX(const Operand&, const Byte, const Byte);
+
 
 	static bool MUL_CASE_1(std::string&);
 	static bool MUL_CASE_2(std::string&);
@@ -88,6 +89,17 @@ class ProgramLoader
 	static bool INC_CASE_3(std::string&);
 	static bool INC_CASE_4(std::string&);
 
+	//Will Generate Machine Code for Shifting and rotation related instruction
+	static bool ROTATE_SHIFT(const Operand&, Byte);
+	static bool ROTATE_SHIFT_CASE_1(std::string&, std::string&, Byte);
+	static bool ROTATE_SHIFT_CASE_2(std::string&, Byte);
+	static bool ROTATE_SHIFT_CASE_3(std::string&, std::string&, Byte);
+	static bool ROTATE_SHIFT_CASE_4(std::string&, Byte);
+	static bool ROTATE_SHIFT_CASE_5(std::string&, std::string&, Byte);
+	static bool ROTATE_SHIFT_CASE_6(std::string&, Byte);
+	static bool ROTATE_SHIFT_CASE_7(std::string&, std::string&, Byte);
+	static bool ROTATE_SHIFT_CASE_8(std::string&, Byte);
+
 public:
 	static void LoadCallBacks();
 	static bool Load(const std::vector<Instruction>&);
@@ -111,6 +123,15 @@ public:
 	static bool DEC(const Operand&);
 	static bool INC(const Operand&);
 	static bool DAA(const Operand&);
+	static bool SHL(const Operand&);
+	static bool SAL(const Operand&);
+	static bool SHR(const Operand&);
+	static bool SAR(const Operand&);
+	static bool RCL(const Operand&);
+	static bool RCR(const Operand&);
+	static bool ROL(const Operand&);
+	static bool ROR(const Operand&);
+
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -135,6 +156,14 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::DEC] = DEC;
 	CallBacks[MNEMONIC::INC] = INC;
 	CallBacks[MNEMONIC::DAA] = DAA;
+	CallBacks[MNEMONIC::SHL] = SHL;
+	CallBacks[MNEMONIC::SAL] = SAL;
+	CallBacks[MNEMONIC::SHR] = SHR;
+	CallBacks[MNEMONIC::SAR] = SAR;
+	CallBacks[MNEMONIC::RCL] = RCL;
+	CallBacks[MNEMONIC::RCR] = RCR;
+	CallBacks[MNEMONIC::ROL] = ROL;
+	CallBacks[MNEMONIC::ROR] = ROR;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -2671,7 +2700,364 @@ bool ProgramLoader::DAA(const Operand& operand)
 	{
 		return Error::LOG("Expected 1 Operand @DAA\n");
 	}
-
 	OUT << "27\n";
 	return true;
+}
+
+/*<-----------------------------------SHL---------------------------->*/
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_1(std::string& REG8, std::string& IMMD8, Byte REG)
+{
+	//Case-1 REG8, IMMD8
+	//D0, xxREGxxx => IMMD8 Time
+	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG8)->second;
+	const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+	int count = Converter::HexToDec(IMMD8);
+	if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+	while (count--)
+	{
+		OUT << "D0 " << HexB2 << '\n';
+	}
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_2(std::string& REG8, Byte REG)
+{
+	//Case-2 REG8, CL
+	//D2, xxREGxxx
+	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG8)->second;
+	const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+	OUT << "D2 " << HexB2 << '\n';
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_3(std::string& REG16, std::string& IMMD8, Byte REG)
+{
+	//Case-3 REG16, IMMD8
+	//D1, xxREGxxx => IMMD8 Time
+	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG16)->second;
+	const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+	int count = Converter::HexToDec(IMMD8);
+	if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+	while (count--)
+	{
+		OUT << "D1 " << HexB2 << '\n';
+	}
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_4(std::string& REG16, Byte REG)
+{
+	//Case-4 REG16, CL
+	//D2, xxREGxxx
+	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG16)->second;
+	const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+	OUT << "D3 " << HexB2 << '\n';
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_5(std::string& MEM8, std::string& IMMD8, Byte REG)
+{
+	//Case-5 [], IMMD8
+	//D0, xxREGxxx, Disp(if any) => IMMD8 Time
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+
+		Byte B2 = (info.mod << 6) | REG | info.rm;
+		const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		std::string Dis;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if(onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				Dis = displacement.substr(2, 2) + ' ' + displacement.substr(0, 2);
+			}
+			else
+			{
+				Dis = displacement.substr(2, 2);
+			}
+		}
+
+		int count = Converter::HexToDec(IMMD8);
+		if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+		while (count--)
+		{
+			OUT << "D0 " << HexB2 << ' ' << Dis << '\n';
+		}
+
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @SHIFT_CASE_5\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_6(std::string& MEM8, Byte REG)
+{
+	//Case-6 [], CL
+	//D2, xxREGxxx, Disp(if any)
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = (info.mod << 6) | REG | info.rm;
+		const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		std::string Dis;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				Dis = displacement.substr(2, 2) + ' ' + displacement.substr(0, 2);
+			}
+			else
+			{
+				Dis = displacement.substr(2, 2);
+			}
+		}
+		OUT << "D2 " << HexB2 << ' ' << Dis << '\n';
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @SHIFT_CASE_6\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_7(std::string& MEM16, std::string& IMMD8, Byte REG)
+{
+	//Case-7 W[], IMMD8
+	//D1, xxREGxxx, Disp(if any) => IMMD8 Time
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM16);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+
+		Byte B2 = (info.mod << 6) | REG | info.rm;
+		const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
+
+		std::string Dis;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				Dis = displacement.substr(2, 2) + ' ' + displacement.substr(0, 2);
+			}
+			else
+			{
+				Dis = displacement.substr(2, 2);
+			}
+		}
+
+		int count = Converter::HexToDec(IMMD8);
+		if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+		while (count--)
+		{
+			OUT << "D1 " << HexB2 << ' ' << Dis << '\n';
+		}
+
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @SHIFT_CASE_5\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT_CASE_8(std::string& MEM8, Byte REG)
+{
+	//Case-8 W[], CL
+	//D3, xxREGxxx, Disp(if any)
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+		Byte B2 = (info.mod << 6) | REG | info.rm;
+		const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
+
+		std::string displacement = "";
+		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+		std::string Dis;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				Dis = displacement.substr(2, 2) + ' ' + displacement.substr(0, 2);
+			}
+			else
+			{
+				Dis = displacement.substr(2, 2);
+			}
+		}
+		OUT << "D3 " << HexB2 << ' ' << Dis << '\n';
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @SHIFT_CASE_6\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
+{
+	std::string OP1 = operand.first;
+	std::string OP2 = operand.second;
+	
+	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2))
+	{
+		//Case-1 REG8, IMMD8
+		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		{
+			return ROTATE_SHIFT_CASE_1(OP1, OP2, REG);
+		}
+		else
+		{
+			return Error::LOG("Only 8 Bit data allowed!\n");
+		}
+	}
+	else if(Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-2 REG8, CL
+		if (OP2 == REGISTER::CL)
+		{
+			return ROTATE_SHIFT_CASE_2(OP1, REG);
+		}
+		else
+		{
+			return Error::LOG("Only CL is allowed!\n");
+		}
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2))
+	{
+		//Case-3 REG16, IMMD8
+		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		{
+			return ROTATE_SHIFT_CASE_3(OP1, OP2, REG);
+		}
+		else
+		{
+			return Error::LOG("Only 8 Bit data allowed!\n");
+		}
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-4 REG16, CL
+		if (OP2 == REGISTER::CL)
+		{
+			return ROTATE_SHIFT_CASE_4(OP1, REG);
+		}
+		else
+		{
+			return Error::LOG("Only CL is allowed!\n");
+		}
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2))
+	{
+		//Case-5 [], IMMD8
+		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		{
+			return ROTATE_SHIFT_CASE_5(OP1, OP2, REG);
+		}
+		else
+		{
+			return Error::LOG("Only 8 Bit data allowed!\n");
+		}
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-6 [], CL
+		if (OP2 == REGISTER::CL)
+		{
+			return ROTATE_SHIFT_CASE_6(OP1, REG);
+		}
+		else
+		{
+			return Error::LOG("Only CL is allowed!\n");
+		}
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2))
+	{
+		//Case-7 W[], IMMD8
+		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		{
+			return ROTATE_SHIFT_CASE_7(OP1, OP2, REG);
+		}
+		else
+		{
+			return Error::LOG("Only 8 Bit data allowed!\n");
+		}
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-8 W[], CL
+		if (OP2 == REGISTER::CL)
+		{
+			return ROTATE_SHIFT_CASE_8(OP1, REG);
+		}
+		else
+		{
+			return Error::LOG("Only CL is allowed!\n");
+		}
+	}
+	return false;
+}
+
+bool ProgramLoader::SHL(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00100000) ? true : Error::LOG("Wrong Syntax @SHL\n");
+}
+bool ProgramLoader::SAL(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00100000) ? true : Error::LOG("Wrong Syntax @SAL\n");
+}
+bool ProgramLoader::SHR(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00101000) ? true : Error::LOG("Wrong Syntax @SHR\n");
+}
+bool ProgramLoader::SAR(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00111000) ? true : Error::LOG("Wrong Syntax @SAR\n");
+}
+
+bool ProgramLoader::RCL(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00010000) ? true : Error::LOG("Wrong Syntax @RCL\n");
+}
+bool ProgramLoader::RCR(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00011000) ? true : Error::LOG("Wrong Syntax @RCR\n");
+}
+bool ProgramLoader::ROL(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00000000) ? true : Error::LOG("Wrong Syntax @ROL\n");
+}
+bool ProgramLoader::ROR(const Operand& operand)
+{
+	return ROTATE_SHIFT(operand, 0b00001000) ? true : Error::LOG("Wrong Syntax @ROR\n");
 }

@@ -22,6 +22,14 @@ namespace MNEMONIC
 	const std::string DEC = "DEC";
 	const std::string INC = "INC";
 	const std::string DAA = "DAA";
+	const std::string SHL = "SHL";
+	const std::string SAL = "SAL";
+	const std::string SHR = "SHR";
+	const std::string SAR = "SAR";
+	const std::string RCL = "RCL";
+	const std::string RCR = "RCR";
+	const std::string ROL = "ROL";
+	const std::string ROR = "ROR";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =

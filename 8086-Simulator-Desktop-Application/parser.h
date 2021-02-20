@@ -270,24 +270,27 @@ bool Parser::Read(const std::string& FILE_PATH)
 		instruction.LineNumber = nLineNumber;
 		instruction.Mnemonic = tokens.front();
 
-		if(
-			tokens.front() == "MUL" 
-			|| tokens.front() == "IMUL" 
-			|| tokens.front() == "DIV" 
-			|| tokens.front() == "IDIV" 
+		if (
+			tokens.front() == "MUL"
+			|| tokens.front() == "IMUL"
+			|| tokens.front() == "DIV"
+			|| tokens.front() == "IDIV"
 			|| tokens.front() == "NEG"
 			|| tokens.front() == "NOT"
 			|| tokens.front() == "DEC"
 			|| tokens.front() == "INC"
-		)
+			)
+		{
 			instruction.operand = { tokens[1], "" };
+		}
 		else if (tokens.front() == "DAA")
 		{
 			//nothing
 		}
 		else
+		{
 			instruction.operand = { tokens[1], tokens[3] };
-
+		}
 		Program.push_back(instruction);
 	}
 	return true;
