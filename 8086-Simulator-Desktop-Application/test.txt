@@ -1,2 +1,3 @@
-mov al, 80h
-sbb al, 80h
+mov al, 50h
+add al, 50h
+daa

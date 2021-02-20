@@ -281,6 +281,10 @@ bool Parser::Read(const std::string& FILE_PATH)
 			|| tokens.front() == "INC"
 		)
 			instruction.operand = { tokens[1], "" };
+		else if (tokens.front() == "DAA")
+		{
+			//nothing
+		}
 		else
 			instruction.operand = { tokens[1], tokens[3] };
 

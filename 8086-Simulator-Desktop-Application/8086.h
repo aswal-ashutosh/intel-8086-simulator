@@ -181,6 +181,7 @@ public:
 	static bool NOT(const Operand&);
 	static bool DEC(const Operand&);
 	static bool INC(const Operand&);
+	static bool DAA(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -204,6 +205,7 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::NOT] = NOT;
 	CallBacks[MNEMONIC::DEC] = DEC;
 	CallBacks[MNEMONIC::INC] = INC;
+	CallBacks[MNEMONIC::DAA] = DAA;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
@@ -2601,11 +2603,6 @@ bool ProgramExecutor::DEC_CASE_4(const std::string& REG16)
 
 bool ProgramExecutor::DEC(const Operand& operand)
 {
-	if (!Utility::IsValidOperandCount(operand, 1))
-	{
-		return Error::LOG("Expected 1 Operand @DEC\n");
-	}
-
 	std::string OP = operand.first;
 
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
@@ -2675,11 +2672,6 @@ bool ProgramExecutor::INC_CASE_4(const std::string& REG16)
 
 bool ProgramExecutor::INC(const Operand& operand)
 {
-	if (!Utility::IsValidOperandCount(operand, 1))
-	{
-		return Error::LOG("Expected 1 Operand @INC\n");
-	}
-
 	std::string OP = operand.first;
 
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
@@ -2704,4 +2696,35 @@ bool ProgramExecutor::INC(const Operand& operand)
 	}
 
 	return Error::LOG("Wrong Syntax @INC\n");
+}
+
+/*<------------------------DAA---------------------->*/
+
+bool ProgramExecutor::DAA(const Operand& operand)
+{
+	_16Bit AL = Register::REG8(REGISTER::AL);
+	if ((AL & 0xf) > 9 || Register::GetFlag(Register::FLAG::AF))
+	{
+		AL += 0x06;
+		Register::SetFlag(Register::FLAG::AF, true);
+	}
+
+	//If carry is already set than don't change it, else check for its status(May be it become set after adding 0x06 in LSN).
+	Register::SetFlag(Register::FLAG::CF, Register::GetFlag(Register::FLAG::CF) | (bool)(AL > 0xff));
+	
+	if (((AL & 0xf0) >> 4) > 9 || Register::GetFlag(Register::FLAG::CF))
+	{
+		AL += 0x60;
+		Register::SetFlag(Register::FLAG::CF, true);
+	}
+
+	AL = (Byte)AL;
+
+	Register::REG8(REGISTER::AL, AL);
+	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(AL) & 1)); //Parity Flag
+	Register::SetFlag(Register::FLAG::SF, AL & (1 << 7)); //Sign Flag
+	Register::SetFlag(Register::FLAG::ZF, AL == 0x00); //Zero Flag
+
+	//Overflow is undefined
+	return true;
 }

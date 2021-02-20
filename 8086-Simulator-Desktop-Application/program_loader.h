@@ -110,6 +110,7 @@ public:
 	static bool NOT(const Operand&);
 	static bool DEC(const Operand&);
 	static bool INC(const Operand&);
+	static bool DAA(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -133,6 +134,7 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::NOT] = NOT;
 	CallBacks[MNEMONIC::DEC] = DEC;
 	CallBacks[MNEMONIC::INC] = INC;
+	CallBacks[MNEMONIC::DAA] = DAA;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -2659,4 +2661,17 @@ bool ProgramLoader::INC(const Operand& operand)
 	}
 
 	return Error::LOG("Wrong Syntax @INC\n");
+}
+
+/*<-------------------------DAA------------------------------->*/
+
+bool ProgramLoader::DAA(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 0))
+	{
+		return Error::LOG("Expected 1 Operand @DAA\n");
+	}
+
+	OUT << "27\n";
+	return true;
 }
