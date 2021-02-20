@@ -29,6 +29,9 @@
     <ClInclude Include="dec.h" />
     <ClInclude Include="div_idiv.h" />
     <ClInclude Include="error_handler.h" />
+    <ClInclude Include="rcl.h" />
+    <ClInclude Include="sar.h" />
+    <ClInclude Include="shr.h" />
     <ClInclude Include="inc.h" />
     <ClInclude Include="instruction.h" />
     <ClInclude Include="instruction_set.h" />

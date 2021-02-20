@@ -2926,6 +2926,11 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_8(std::string& MEM8, Byte REG)
 
 bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 {
+	if (!Utility::IsValidOperandCount(operand, 2))
+	{
+		return Error::LOG("Expected 1 Operand @Roation/Shift\n");
+	}
+
 	std::string OP1 = operand.first;
 	std::string OP2 = operand.second;
 	

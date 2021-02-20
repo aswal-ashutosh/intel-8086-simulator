@@ -129,6 +129,42 @@ class ProgramExecutor
 	static bool CMP_CASE_11(const std::string&, const std::string&);
 	static bool CMP_CASE_12(const std::string&, const std::string&);
 
+	static bool SHL_SAL_CASE_1(const std::string&, const std::string&);
+	static bool SHL_SAL_CASE_2(const std::string&);
+	static bool SHL_SAL_CASE_3(const std::string&, const std::string&);
+	static bool SHL_SAL_CASE_4(const std::string&);
+	static bool SHL_SAL_CASE_5(const std::string&, const std::string&);
+	static bool SHL_SAL_CASE_6(const std::string&);
+	static bool SHL_SAL_CASE_7(const std::string&, const std::string&);
+	static bool SHL_SAL_CASE_8(const std::string&);
+
+	static bool SHR_CASE_1(const std::string&, const std::string&);
+	static bool SHR_CASE_2(const std::string&);
+	static bool SHR_CASE_3(const std::string&, const std::string&);
+	static bool SHR_CASE_4(const std::string&);
+	static bool SHR_CASE_5(const std::string&, const std::string&);
+	static bool SHR_CASE_6(const std::string&);
+	static bool SHR_CASE_7(const std::string&, const std::string&);
+	static bool SHR_CASE_8(const std::string&);
+
+	static bool SAR_CASE_1(const std::string&, const std::string&);
+	static bool SAR_CASE_2(const std::string&);
+	static bool SAR_CASE_3(const std::string&, const std::string&);
+	static bool SAR_CASE_4(const std::string&);
+	static bool SAR_CASE_5(const std::string&, const std::string&);
+	static bool SAR_CASE_6(const std::string&);
+	static bool SAR_CASE_7(const std::string&, const std::string&);
+	static bool SAR_CASE_8(const std::string&);
+
+	static bool RCL_CASE_1(const std::string&, const std::string&);
+	static bool RCL_CASE_2(const std::string&);
+	static bool RCL_CASE_3(const std::string&, const std::string&);
+	static bool RCL_CASE_4(const std::string&);
+	static bool RCL_CASE_5(const std::string&, const std::string&);
+	static bool RCL_CASE_6(const std::string&);
+	static bool RCL_CASE_7(const std::string&, const std::string&);
+	static bool RCL_CASE_8(const std::string&);
+
 	//Functions to update flag register after executing a instruction
 	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_ADD_16Bit(const _16Bit, const _16Bit, const uint32_t);
@@ -159,6 +195,18 @@ class ProgramExecutor
 	static void UpdateFlags_INC_8Bit(const Byte);
 	static void UpdateFlags_INC_16Bit(const _16Bit);
 
+	static void UpdateFlags_SHL_SAL_8Bit(const Byte, int);
+	static void UpdateFlags_SHL_SAL_16Bit(const _16Bit, int);
+
+	static void UpdateFlags_SHR_8Bit(const Byte, const Byte, int);
+	static void UpdateFlags_SHR_16Bit(const _16Bit, const _16Bit, int);
+
+	static void UpdateFlags_SAR_8Bit(const Byte, int);
+	static void UpdateFlags_SAR_16Bit(const _16Bit, int);
+
+	static void UpdateFlags_RCL_8Bit(const Byte, int);
+	static void UpdateFlags_RCL_16Bit(const _16Bit, int);
+
 public:
 	static void LoadCallBacks();
 	static bool Execute(const std::vector<Instruction>&);
@@ -183,6 +231,9 @@ public:
 	static bool INC(const Operand&);
 	static bool DAA(const Operand&);
 	static bool SHL_SAL(const Operand&);
+	static bool SHR(const Operand&);
+	static bool SAR(const Operand&);
+	static bool RCL(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -207,6 +258,11 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::DEC] = DEC;
 	CallBacks[MNEMONIC::INC] = INC;
 	CallBacks[MNEMONIC::DAA] = DAA;
+	CallBacks[MNEMONIC::SAL] = SHL_SAL;
+	CallBacks[MNEMONIC::SHL] = SHL_SAL;
+	CallBacks[MNEMONIC::SHR] = SHR;
+	CallBacks[MNEMONIC::SAR] = SAR;
+	CallBacks[MNEMONIC::RCL] = RCL;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)

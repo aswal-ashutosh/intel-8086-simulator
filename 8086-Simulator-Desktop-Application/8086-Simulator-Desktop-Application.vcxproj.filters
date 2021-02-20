@@ -102,6 +102,15 @@
     <ClInclude Include="shl_sal.h">
       <Filter>Header Files\Instruction Set</Filter>
     </ClInclude>
+    <ClInclude Include="shr.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="sar.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="rcl.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">

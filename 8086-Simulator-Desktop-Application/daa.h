@@ -21,7 +21,7 @@ bool ProgramExecutor::DAA(const Operand& operand)
 
 	AL = (Byte)AL;
 
-	Register::REG8(REGISTER::AL, AL);
+	Register::REG8(REGISTER::AL, (Byte)AL);
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(AL) & 1)); //Parity Flag
 	Register::SetFlag(Register::FLAG::SF, AL & (1 << 7)); //Sign Flag
 	Register::SetFlag(Register::FLAG::ZF, AL == 0x00); //Zero Flag
