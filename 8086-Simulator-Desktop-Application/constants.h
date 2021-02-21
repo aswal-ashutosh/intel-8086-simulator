@@ -33,6 +33,7 @@ namespace MNEMONIC
 	const std::string STC = "STC";
 	const std::string CLC = "CLC";
 	const std::string CMC = "CMC";
+	const std::string XCHG = "XCHG";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =
@@ -41,10 +42,10 @@ const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =
 	{"[BX+DI]",		{0b00, 0b001}},
 	{"[BP+SI]",		{0b00, 0b010}},
 	{"[BP+DI]",		{0b00, 0b011}},
-	{"[SI]",			{0b00, 0b100}},
-	{"[DI]",			{0b00, 0b101}},
-	{"[d16]",			{0b00, 0b110}},
-	{"[BX]",			{0b00, 0b111}},
+	{"[SI]",		{0b00, 0b100}},
+	{"[DI]",		{0b00, 0b101}},
+	{"[d16]",		{0b00, 0b110}},
+	{"[BX]",		{0b00, 0b111}},
 
 	{"[BX+SI+d8]",	{0b01, 0b000}},
 	{"[BX+DI+d8]",	{0b01, 0b001}},
@@ -59,10 +60,10 @@ const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =
 	{"[BX+DI+d16]",	{0b10, 0b001}},
 	{"[BP+SI+d16]",	{0b10, 0b010}},
 	{"[BP+DI+d16]",	{0b10, 0b011}},
-	{"[SI+d16]",		{0b10, 0b100}},
-	{"[DI+d16]",		{0b10, 0b101}},
-	{"[BP+d16]",		{0b10, 0b110}},
-	{"[BX+d16]",		{0b10, 0b111}},
+	{"[SI+d16]",	{0b10, 0b100}},
+	{"[DI+d16]",	{0b10, 0b101}},
+	{"[BP+d16]",	{0b10, 0b110}},
+	{"[BX+d16]",	{0b10, 0b111}},
 						   
 	{"AL",			{0b11, 0b000}},
 	{"CL",			{0b11, 0b001}},

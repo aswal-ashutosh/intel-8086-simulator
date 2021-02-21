@@ -33,6 +33,13 @@ class ProgramLoader
 	static bool MOV_CASE_14(std::string&, std::string&);
 	static bool MOV_CASE_15(std::string&, std::string&);
 
+	static bool XCHG_CASE_1(std::string&, std::string&);
+	static bool XCHG_CASE_2(std::string&, std::string&);
+	static bool XCHG_CASE_3(std::string&, std::string&);
+	static bool XCHG_CASE_4(std::string&, std::string&);
+	static bool XCHG_CASE_5(std::string&, std::string&);
+	static bool XCHG_CASE_6(std::string&, std::string&);
+
 	//AAACOSSX generate machine code for => ADD, ADC, AND, CMP, OR, SUB, SBB, XOR
 	static bool AAACOSSX(const Operand&, const Byte, const Byte);
 	static bool AAACOSSX_CASE_1(std::string&, std::string&, const Byte, const Byte);
@@ -106,6 +113,7 @@ public:
 
 
 	static bool MOV(const Operand&);
+	static bool XCHG(const Operand&);
 	static bool ADD(const Operand&);
 	static bool ADC(const Operand&);
 	static bool AND(const Operand&);
@@ -169,6 +177,7 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::STC] = STC;
 	CallBacks[MNEMONIC::CLC] = CLC;
 	CallBacks[MNEMONIC::CMC] = CMC;
+	CallBacks[MNEMONIC::XCHG] = XCHG;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -853,6 +862,214 @@ bool ProgramLoader::MOV(const Operand& operand)
 	return Error::LOG("Wrong Syntax @ MOV\n");
 }
 
+/*<------------------------XCHG------------------->*/
+
+bool ProgramLoader::XCHG_CASE_1(std::string& REG8_D, std::string& REG8_S)
+{
+	//Case-1 REG8, REG8
+	//86 / r	XCHG r8, r / m8
+	const MOD_RM_INFO& info = MOD_RM.find(REG8_S)->second;
+	Byte B2 = (info.mod << 6) | (REG_CODE.find(REG8_D)->second << 3) | info.rm;
+	const std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
+	OUT << "86 " << HexB2 << '\n';
+	return true;
+}
+
+bool ProgramLoader::XCHG_CASE_2(std::string& MEM8, std::string& REG8)
+{
+	//Case-2 [], REG8
+	//86 /r	XCHG r/m8, r8
+
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+
+		Byte B2 = (info.mod << 6) | (REG_CODE.find(REG8)->second << 3) | info.rm;
+
+		std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
+
+		OUT << "86 " << HexB2;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				OUT << ' ' << displacement.substr(2, 2) << '\n';
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @XCHG_CASE_2\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::XCHG_CASE_3(std::string& REG8, std::string& MEM8)
+{
+	//Case-3 REG8, []
+	//86 / r	XCHG r8, r / m8
+
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM8);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+
+		Byte B2 = (info.mod << 6) | (REG_CODE.find(REG8)->second << 3) | info.rm;
+
+		std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
+
+		OUT << "86 " << HexB2;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				OUT << ' ' << displacement.substr(2, 2) << '\n';
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @XCHG_CASE_3\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::XCHG_CASE_4(std::string& REG16_D, std::string& REG16_S)
+{
+	//Case-4 REG16, REG16
+	//SPECIAL CASE AX, REG16 OR REG16, AX => 0x80 + REG_CODE(REG)
+	if (REG16_D == REGISTER::AX)
+	{
+		Byte B = 0x90 + REG_CODE.find(REG16_S)->second;
+		OUT << Converter::DecToHex(B).substr(0, 2) << '\n';
+	}
+	else if (REG16_S == REGISTER::AX)
+	{
+		Byte B = 0x90 + REG_CODE.find(REG16_D)->second;
+		OUT << Converter::DecToHex(B).substr(0, 2) << '\n';
+	}
+	else
+	{
+		//87 /r	XCHG r16, r/m16
+		const MOD_RM_INFO& info = MOD_RM.find(REG16_S)->second;
+		Byte B2 = (info.mod << 6) | (REG_CODE.find(REG16_D)->second << 3) | info.rm;
+		const std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
+		OUT << "87 " << HexB2 << '\n';
+	}
+	return true;
+}
+
+bool ProgramLoader::XCHG_CASE_5(std::string& REG16, std::string& MEM)
+{
+	///Case-5 REG16, []/W[]
+	//87 /r	XCHG r16, r/m16
+
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+
+		Byte B2 = (info.mod << 6) | (REG_CODE.find(REG16)->second << 3) | info.rm;
+
+		std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
+
+		OUT << "87 " << HexB2;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				OUT << ' ' << displacement.substr(2, 2) << '\n';
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @XCHG_CASE_5\n");
+	}
+	return true;
+}
+
+bool ProgramLoader::XCHG_CASE_6(std::string& MEM, std::string& REG16)
+{
+	//Case-6 []/W[], REG16
+	//87 /r	XCHG r/m16, r16
+	std::string displacement = "";
+	bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
+
+	const std::string& fExp = Utility::ExpressionForModRM(MEM);
+	if (MOD_RM.count(fExp))
+	{
+		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
+
+		Byte B2 = (info.mod << 6) | (REG_CODE.find(REG16)->second << 3) | info.rm;
+
+		std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
+
+		OUT << "87 " << HexB2;
+
+		if (!displacement.empty())
+		{
+			Utility::Format16Bit(displacement);
+			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			{
+				OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
+			}
+			else
+			{
+				OUT << ' ' << displacement.substr(2, 2) << '\n';
+			}
+		}
+		else
+		{
+			OUT << '\n';
+		}
+	}
+	else
+	{
+		return Error::LOG("Invalid [EXP] @XCHG_CASE_6\n");
+	}
+	return true;
+}
 /*<-------------------------------------AAACOSSX-------------------------------------->*/
 
 bool ProgramLoader::AAACOSSX_CASE_1(std::string& REG8_D, std::string& REG8_S, const Byte OFFSET, const Byte REG)
@@ -3101,4 +3318,64 @@ bool ProgramLoader::CMC(const Operand& operand)
 	}
 	OUT << "F5\n";
 	return true;
+}
+
+/*<-------------------XCHG------------------->*/
+
+bool ProgramLoader::XCHG(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 2))
+	{
+		return Error::LOG("Expected No Operand @XCHG\n");
+	}
+	std::string OP1 = operand.first;
+	std::string OP2 = operand.second;
+
+	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-1 REG8, REG8
+		return XCHG_CASE_1(OP1, OP2);
+	}
+	else if (Utility::IsValidMemory(OP1) &&  Utility::Is8BitRegister(OP2))
+	{
+		//Case-2 [], REG8
+		if (Utility::IsByteMemory(OP1))
+		{
+			return XCHG_CASE_2(OP1, OP2);
+		}
+		else
+		{
+			return Error::LOG("Both operand must be of same size\n");
+		}
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2))
+	{
+		//Case-3 REG8, []
+		if (Utility::IsByteMemory(OP2))
+		{
+			return XCHG_CASE_3(OP1, OP2);
+		}
+		else
+		{
+			return Error::LOG("Both operand must be of same size\n");
+		}
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		//Case-4 REG16, REG16
+		//SPECIAL CASE AX, REG16 OR REG16, AX
+		return XCHG_CASE_4(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
+	{
+		//Case-5 REG16, []/W[]
+		return XCHG_CASE_5(OP1, OP2);
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		//Case-6 []/W[], REG16
+		return XCHG_CASE_6(OP1, OP2);
+	}
+
+	return Error::LOG("Invalid Syntax @XCHG\n");
 }
