@@ -1,2 +1,3 @@
-mov al, 0ABh
-rol al, 04h
+stc
+clc
+cmc

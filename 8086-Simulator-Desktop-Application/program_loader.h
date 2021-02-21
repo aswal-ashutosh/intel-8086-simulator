@@ -131,7 +131,9 @@ public:
 	static bool RCR(const Operand&);
 	static bool ROL(const Operand&);
 	static bool ROR(const Operand&);
-
+	static bool STC(const Operand&);
+	static bool CLC(const Operand&);
+	static bool CMC(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -164,6 +166,9 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::RCR] = RCR;
 	CallBacks[MNEMONIC::ROL] = ROL;
 	CallBacks[MNEMONIC::ROR] = ROR;
+	CallBacks[MNEMONIC::STC] = STC;
+	CallBacks[MNEMONIC::CLC] = CLC;
+	CallBacks[MNEMONIC::CMC] = CMC;
 }
 
 bool ProgramLoader::Load(const std::vector<Instruction>& Program)
@@ -3065,4 +3070,35 @@ bool ProgramLoader::ROL(const Operand& operand)
 bool ProgramLoader::ROR(const Operand& operand)
 {
 	return ROTATE_SHIFT(operand, 0b00001000) ? true : Error::LOG("Wrong Syntax @ROR\n");
+}
+
+/*<------------------------Carry Flag Manuplators------------------------------->*/
+bool ProgramLoader::STC(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 0))
+	{
+		return Error::LOG("Expected No Operand @STC\n");
+	}
+	OUT << "F9\n";
+	return true;
+}
+
+bool ProgramLoader::CLC(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 0))
+	{
+		return Error::LOG("Expected No Operand CLC\n");
+	}
+	OUT << "F8\n";
+	return true;
+}
+
+bool ProgramLoader::CMC(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 0))
+	{
+		return Error::LOG("Expected No Operand @CMC\n");
+	}
+	OUT << "F5\n";
+	return true;
 }

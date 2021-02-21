@@ -30,6 +30,9 @@ namespace MNEMONIC
 	const std::string RCR = "RCR";
 	const std::string ROL = "ROL";
 	const std::string ROR = "ROR";
+	const std::string STC = "STC";
+	const std::string CLC = "CLC";
+	const std::string CMC = "CMC";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =

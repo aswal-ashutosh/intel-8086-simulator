@@ -22,6 +22,7 @@
     <ClInclude Include="8086.h" />
     <ClInclude Include="add_adc.h" />
     <ClInclude Include="and_or_xor.h" />
+    <ClInclude Include="carry_manipulators.h" />
     <ClInclude Include="cmp.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="converter.h" />

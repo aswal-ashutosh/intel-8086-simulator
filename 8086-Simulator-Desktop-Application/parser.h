@@ -283,7 +283,12 @@ bool Parser::Read(const std::string& FILE_PATH)
 		{
 			instruction.operand = { tokens[1], "" };
 		}
-		else if (tokens.front() == "DAA")
+		else if (
+			tokens.front() == "DAA" 
+			|| tokens.front() == "STC"
+			|| tokens.front() == "CLC"
+			|| tokens.front() == "CMC"
+			)
 		{
 			//nothing
 		}

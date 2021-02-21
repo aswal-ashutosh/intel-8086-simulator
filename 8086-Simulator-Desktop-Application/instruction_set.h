@@ -18,3 +18,4 @@
 #include"rcr.h"
 #include"rol.h"
 #include"ror.h"
+#include"carry_manipulators.h"

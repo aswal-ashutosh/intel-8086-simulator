@@ -272,6 +272,9 @@ public:
 	static bool RCR(const Operand&);
 	static bool ROL(const Operand&);
 	static bool ROR(const Operand&);
+	static bool STC(const Operand&);
+	static bool CLC(const Operand&);
+	static bool CMC(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -304,6 +307,9 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::RCR] = RCR;
 	CallBacks[MNEMONIC::ROL] = ROL;
 	CallBacks[MNEMONIC::ROR] = ROR;
+	CallBacks[MNEMONIC::STC] = STC;
+	CallBacks[MNEMONIC::CLC] = CLC;
+	CallBacks[MNEMONIC::CMC] = CMC;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
