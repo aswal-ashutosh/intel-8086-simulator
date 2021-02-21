@@ -165,6 +165,33 @@ class ProgramExecutor
 	static bool RCL_CASE_7(const std::string&, const std::string&);
 	static bool RCL_CASE_8(const std::string&);
 
+	static bool RCR_CASE_1(const std::string&, const std::string&);
+	static bool RCR_CASE_2(const std::string&);
+	static bool RCR_CASE_3(const std::string&, const std::string&);
+	static bool RCR_CASE_4(const std::string&);
+	static bool RCR_CASE_5(const std::string&, const std::string&);
+	static bool RCR_CASE_6(const std::string&);
+	static bool RCR_CASE_7(const std::string&, const std::string&);
+	static bool RCR_CASE_8(const std::string&);
+
+	static bool ROL_CASE_1(const std::string&, const std::string&);
+	static bool ROL_CASE_2(const std::string&);
+	static bool ROL_CASE_3(const std::string&, const std::string&);
+	static bool ROL_CASE_4(const std::string&);
+	static bool ROL_CASE_5(const std::string&, const std::string&);
+	static bool ROL_CASE_6(const std::string&);
+	static bool ROL_CASE_7(const std::string&, const std::string&);
+	static bool ROL_CASE_8(const std::string&);
+
+	static bool ROR_CASE_1(const std::string&, const std::string&);
+	static bool ROR_CASE_2(const std::string&);
+	static bool ROR_CASE_3(const std::string&, const std::string&);
+	static bool ROR_CASE_4(const std::string&);
+	static bool ROR_CASE_5(const std::string&, const std::string&);
+	static bool ROR_CASE_6(const std::string&);
+	static bool ROR_CASE_7(const std::string&, const std::string&);
+	static bool ROR_CASE_8(const std::string&);
+
 	//Functions to update flag register after executing a instruction
 	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_ADD_16Bit(const _16Bit, const _16Bit, const uint32_t);
@@ -207,6 +234,14 @@ class ProgramExecutor
 	static void UpdateFlags_RCL_8Bit(const Byte, int);
 	static void UpdateFlags_RCL_16Bit(const _16Bit, int);
 
+	static void UpdateFlags_RCR_8Bit(const Byte, int);
+	static void UpdateFlags_RCR_16Bit(const _16Bit, int);
+
+	static void UpdateFlags_ROL_8Bit(const Byte, int);
+	static void UpdateFlags_ROL_16Bit(const _16Bit, int);
+
+	static void UpdateFlags_ROR_8Bit(const Byte, int);
+	static void UpdateFlags_ROR_16Bit(const _16Bit, int);
 public:
 	static void LoadCallBacks();
 	static bool Execute(const std::vector<Instruction>&);
@@ -234,6 +269,9 @@ public:
 	static bool SHR(const Operand&);
 	static bool SAR(const Operand&);
 	static bool RCL(const Operand&);
+	static bool RCR(const Operand&);
+	static bool ROL(const Operand&);
+	static bool ROR(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -263,6 +301,9 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::SHR] = SHR;
 	CallBacks[MNEMONIC::SAR] = SAR;
 	CallBacks[MNEMONIC::RCL] = RCL;
+	CallBacks[MNEMONIC::RCR] = RCR;
+	CallBacks[MNEMONIC::ROL] = ROL;
+	CallBacks[MNEMONIC::ROR] = ROR;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)

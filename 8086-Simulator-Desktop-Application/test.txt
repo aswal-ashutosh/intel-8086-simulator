@@ -1,2 +1,2 @@
 mov al, 0ABh
-rcl al, 04h
+rol al, 04h

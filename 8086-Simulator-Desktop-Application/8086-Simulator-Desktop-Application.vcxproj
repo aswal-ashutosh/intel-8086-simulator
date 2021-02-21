@@ -30,6 +30,9 @@
     <ClInclude Include="div_idiv.h" />
     <ClInclude Include="error_handler.h" />
     <ClInclude Include="rcl.h" />
+    <ClInclude Include="rcr.h" />
+    <ClInclude Include="rol.h" />
+    <ClInclude Include="ror.h" />
     <ClInclude Include="sar.h" />
     <ClInclude Include="shr.h" />
     <ClInclude Include="inc.h" />

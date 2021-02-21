@@ -111,6 +111,15 @@
     <ClInclude Include="rcl.h">
       <Filter>Header Files\Instruction Set</Filter>
     </ClInclude>
+    <ClInclude Include="rcr.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="rol.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="ror.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">

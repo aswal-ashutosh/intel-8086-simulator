@@ -15,3 +15,6 @@
 #include"shr.h";
 #include"sar.h"
 #include"rcl.h"
+#include"rcr.h"
+#include"rol.h"
+#include"ror.h"
