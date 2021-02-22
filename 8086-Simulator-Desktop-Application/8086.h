@@ -192,6 +192,13 @@ class ProgramExecutor
 	static bool ROR_CASE_7(const std::string&, const std::string&);
 	static bool ROR_CASE_8(const std::string&);
 
+	static bool XCHG_CASE_1(std::string&, std::string&);
+	static bool XCHG_CASE_2(std::string&, std::string&);
+	static bool XCHG_CASE_3(std::string&, std::string&);
+	static bool XCHG_CASE_4(std::string&, std::string&);
+	static bool XCHG_CASE_5(std::string&, std::string&);
+	static bool XCHG_CASE_6(std::string&, std::string&);
+
 	//Functions to update flag register after executing a instruction
 	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const _16Bit);
 	static void UpdateFlags_ADD_16Bit(const _16Bit, const _16Bit, const uint32_t);
@@ -275,6 +282,7 @@ public:
 	static bool STC(const Operand&);
 	static bool CLC(const Operand&);
 	static bool CMC(const Operand&);
+	static bool XCHG(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
@@ -310,6 +318,7 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::STC] = STC;
 	CallBacks[MNEMONIC::CLC] = CLC;
 	CallBacks[MNEMONIC::CMC] = CMC;
+	CallBacks[MNEMONIC::XCHG] = XCHG;
 }
 
 bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)

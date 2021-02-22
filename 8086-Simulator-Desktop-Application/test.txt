@@ -1,1 +1,2 @@
-xchg al, W[1234h]
+mov [1234h], abcdh
+xchg [1234h], ax

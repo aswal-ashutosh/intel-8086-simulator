@@ -123,6 +123,9 @@
     <ClInclude Include="carry_manipulators.h">
       <Filter>Header Files\Instruction Set</Filter>
     </ClInclude>
+    <ClInclude Include="xchg.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">

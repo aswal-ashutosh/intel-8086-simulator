@@ -1070,6 +1070,64 @@ bool ProgramLoader::XCHG_CASE_6(std::string& MEM, std::string& REG16)
 	}
 	return true;
 }
+
+bool ProgramLoader::XCHG(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 2))
+	{
+		return Error::LOG("Expected No Operand @XCHG\n");
+	}
+	std::string OP1 = operand.first;
+	std::string OP2 = operand.second;
+
+	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-1 REG8, REG8
+		return XCHG_CASE_1(OP1, OP2);
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::Is8BitRegister(OP2))
+	{
+		//Case-2 [], REG8
+		if (Utility::IsByteMemory(OP1))
+		{
+			return XCHG_CASE_2(OP1, OP2);
+		}
+		else
+		{
+			return Error::LOG("Both operand must be of same size\n");
+		}
+	}
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2))
+	{
+		//Case-3 REG8, []
+		if (Utility::IsByteMemory(OP2))
+		{
+			return XCHG_CASE_3(OP1, OP2);
+		}
+		else
+		{
+			return Error::LOG("Both operand must be of same size\n");
+		}
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		//Case-4 REG16, REG16
+		//SPECIAL CASE AX, REG16 OR REG16, AX
+		return XCHG_CASE_4(OP1, OP2);
+	}
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
+	{
+		//Case-5 REG16, []/W[]
+		return XCHG_CASE_5(OP1, OP2);
+	}
+	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
+	{
+		//Case-6 []/W[], REG16
+		return XCHG_CASE_6(OP1, OP2);
+	}
+
+	return Error::LOG("Invalid Syntax @XCHG\n");
+}
 /*<-------------------------------------AAACOSSX-------------------------------------->*/
 
 bool ProgramLoader::AAACOSSX_CASE_1(std::string& REG8_D, std::string& REG8_S, const Byte OFFSET, const Byte REG)
@@ -3318,64 +3376,4 @@ bool ProgramLoader::CMC(const Operand& operand)
 	}
 	OUT << "F5\n";
 	return true;
-}
-
-/*<-------------------XCHG------------------->*/
-
-bool ProgramLoader::XCHG(const Operand& operand)
-{
-	if (!Utility::IsValidOperandCount(operand, 2))
-	{
-		return Error::LOG("Expected No Operand @XCHG\n");
-	}
-	std::string OP1 = operand.first;
-	std::string OP2 = operand.second;
-
-	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
-	{
-		//Case-1 REG8, REG8
-		return XCHG_CASE_1(OP1, OP2);
-	}
-	else if (Utility::IsValidMemory(OP1) &&  Utility::Is8BitRegister(OP2))
-	{
-		//Case-2 [], REG8
-		if (Utility::IsByteMemory(OP1))
-		{
-			return XCHG_CASE_2(OP1, OP2);
-		}
-		else
-		{
-			return Error::LOG("Both operand must be of same size\n");
-		}
-	}
-	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2))
-	{
-		//Case-3 REG8, []
-		if (Utility::IsByteMemory(OP2))
-		{
-			return XCHG_CASE_3(OP1, OP2);
-		}
-		else
-		{
-			return Error::LOG("Both operand must be of same size\n");
-		}
-	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
-	{
-		//Case-4 REG16, REG16
-		//SPECIAL CASE AX, REG16 OR REG16, AX
-		return XCHG_CASE_4(OP1, OP2);
-	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
-	{
-		//Case-5 REG16, []/W[]
-		return XCHG_CASE_5(OP1, OP2);
-	}
-	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
-	{
-		//Case-6 []/W[], REG16
-		return XCHG_CASE_6(OP1, OP2);
-	}
-
-	return Error::LOG("Invalid Syntax @XCHG\n");
 }

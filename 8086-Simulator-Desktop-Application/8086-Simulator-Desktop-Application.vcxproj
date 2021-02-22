@@ -54,6 +54,7 @@
     <ClInclude Include="sub_sbb.h" />
     <ClInclude Include="typedef.h" />
     <ClInclude Include="utility.h" />
+    <ClInclude Include="xchg.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
