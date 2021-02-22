@@ -1,2 +1,5 @@
-mov [1234h], abcdh
-xchg [1234h], ax
+mov ax, bx
+add ax, dx
+daa
+dec ax
+inc dx

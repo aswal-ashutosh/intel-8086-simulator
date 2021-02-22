@@ -108,9 +108,13 @@ class ProgramLoader
 	static bool ROTATE_SHIFT_CASE_8(std::string&, Byte);
 
 public:
+
+	//Function to check wether a string is Mnemonic or not
+	static bool IsValidMnemonic(const std::string& s);
+	static bool IsJumpCallInstruction(const std::string& s);
+
 	static void LoadCallBacks();
 	static bool Load(const std::vector<Instruction>&);
-
 
 	static bool MOV(const Operand&);
 	static bool XCHG(const Operand&);
@@ -200,6 +204,15 @@ bool ProgramLoader::Load(const std::vector<Instruction>& Program)
 	return true;
 }
 
+bool ProgramLoader::IsValidMnemonic(const std::string& s)
+{
+	return CallBacks.count(s);
+}
+
+bool ProgramLoader::IsJumpCallInstruction(const std::string& s)
+{
+	return s == "JMP" || s == "CALL";
+}
 /*<-------------------------------------MOV-------------------------------------->*/
 
 bool ProgramLoader::MOV_CASE_1(std::string& REG8, std::string& IMMD8)

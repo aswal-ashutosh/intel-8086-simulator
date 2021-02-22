@@ -9,6 +9,7 @@
 #include"memory.h"
 #include"instruction.h"
 #include"error_handler.h"
+#include"labels.h"
 
 
 class Parser
@@ -145,7 +146,7 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 
 std::vector<std::string> Parser::Tokenize(const std::string &line)
 {
-	std::vector<std::string> Tokens;
+	std::vector<std::string> TOKENS;
 	std::string token;
 	for (int i = 0; i < (int)line.length(); ++i)
 	{
@@ -154,7 +155,7 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 		{
 			if (!token.empty())
 			{
-				Tokens.push_back(token);
+				TOKENS.push_back(token);
 				token.clear();
 			}
 		}
@@ -163,11 +164,11 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 
 			if (!token.empty())
 			{
-				Tokens.push_back(token);
+				TOKENS.push_back(token);
 				token.clear();
 			}
 
-			Tokens.push_back(",");
+			TOKENS.push_back(",");
 		}
 		else if (x == '[')
 		{
@@ -184,6 +185,15 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 			}
 			if (!end) { Error::LOG("Expected Memory @ Tokenize\n"); }
 		}
+		else if (x == '#')
+		{
+			if (!token.empty())
+			{
+				TOKENS.push_back(token);
+				token.clear();
+			}
+			break;
+		}
 		else
 		{
 			token.push_back(x);
@@ -192,19 +202,11 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 
 	if (!token.empty())
 	{
-		Tokens.push_back(token);
+		TOKENS.push_back(token);
 	}
-
-
-	//Dont forget to remove capitalization for label
-	for (std::string& s : Tokens)
-	{
-		Utility::Capitalize(s);
-	}
-
 
 	//Formatting Memory
-	for (std::string& s : Tokens)
+	for (std::string& s : TOKENS)
 	{
 		if (Utility::IsValidMemory(s))
 		{
@@ -234,69 +236,131 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 			}
 		}
 	}
-	return Tokens;
+	return TOKENS;
 }
 
 bool Parser::Read(const std::string& FILE_PATH)
 {
-	//Pre work
-	//Register::SetFlag(Register::FLAG::CF, true);
-	//End
+	/*ProgramManager::Clear();
+	Register::Clear();*/
 	std::fstream file;
 	file.open(FILE_PATH, std::ios::in);
-	int nLineNumber = 0;
+	int LineNumber = 0;
 	while (!file.eof())
 	{
-		++nLineNumber;
+		++LineNumber;
 		std::string line;
 		std::getline(file, line);
-		if (line.empty())//[TODO: Line containing sapces or comments]
+		if (line.empty()) { continue; }
+
+		std::vector<std::string> TOKENS = Tokenize(line);
+
+		if (TOKENS.empty())//Lines with comment or white spaces or may be both
 		{
 			continue;
 		}
-		std::vector<std::string> tokens = Tokenize(line);
-		
-		for (const std::string& s : tokens)
+		else
 		{
-			std::cout << s << ' ';
+			for (const std::string& s : TOKENS)
+			{
+				std::cout << s << ' ';
+			}
+			std::cout << '\n';
 		}
-		std::cout << '\n';
-		if (tokens.empty())
+
+		const int TotalTokens = TOKENS.size();
+		int CurrToken = 0;
+
+		if (TotalTokens > 5)//we can have at max 5 token in a line
 		{
-			return Error::LOG("Empty Tokens\n");
+			return Error::LOG("Syntax Error", LineNumber);
+		}
+
+		if (TOKENS[CurrToken].back() == ':')
+		{
+			const std::string& s = TOKENS[CurrToken];
+			if (Utility::IsLabel(s))
+			{
+				const std::string label = s.substr(0, s.size() - 1);
+				if (!Label::Add(label, Program.size()))
+				{
+					return false;
+				}
+				++CurrToken;
+			}
+			else
+			{
+				return Error::LOG("'" + TOKENS[CurrToken] + "' is not a valid label name", LineNumber);
+			}
 		}
 
 		Instruction instruction;
-		instruction.LineNumber = nLineNumber;
-		instruction.Mnemonic = tokens.front();
+		instruction.LineNumber = LineNumber;
 
-		if (
-			tokens.front() == "MUL"
-			|| tokens.front() == "IMUL"
-			|| tokens.front() == "DIV"
-			|| tokens.front() == "IDIV"
-			|| tokens.front() == "NEG"
-			|| tokens.front() == "NOT"
-			|| tokens.front() == "DEC"
-			|| tokens.front() == "INC"
-			)
+		//Checking for mnemonic
+		if (CurrToken < TotalTokens)
 		{
-			instruction.operand = { tokens[1], "" };
+			std::string& s = TOKENS[CurrToken];
+			Utility::Capitalize(s);
+			if (ProgramLoader::IsValidMnemonic(s))
+			{
+				instruction.Mnemonic = s;
+				++CurrToken;
+			}
+			else
+			{
+				return Error::LOG("Expected a Mnemonic", LineNumber);
+			}
 		}
-		else if (
-			tokens.front() == "DAA" 
-			|| tokens.front() == "STC"
-			|| tokens.front() == "CLC"
-			|| tokens.front() == "CMC"
-			)
+
+		//First operand
+		if (CurrToken < TotalTokens)
 		{
-			//nothing
+			std::string& s = TOKENS[CurrToken];
+			/*First operand can be a label name.
+			So we don't have to change it into upper case form as labels are case sensitive.*/
+			if (!ProgramLoader::IsJumpCallInstruction(instruction.Mnemonic))
+			{
+				Utility::Capitalize(s);
+			}
+			instruction.operand.first = s;
+			++CurrToken;
 		}
-		else
+
+		/*If there are two operands then there should be a ',' in between.*/
+		bool bComma = false;
+		if (CurrToken < TotalTokens)
 		{
-			instruction.operand = { tokens[1], tokens[3] };
+			std::string& s = TOKENS[CurrToken];
+			if (s == ",")
+			{
+				bComma = true;
+				++CurrToken;
+			}
+			else
+			{
+				return Error::LOG("Syntax Error", LineNumber);
+			}
 		}
+
+		//Second Operand
+		if (CurrToken < TotalTokens)
+		{
+			std::string& s = TOKENS[CurrToken];
+			Utility::Capitalize(s);
+			instruction.operand.second = s;
+			++CurrToken;
+		}
+		else if (bComma)
+		{
+			//There must be an opeands after comma
+			return Error::LOG("Syntax Error", LineNumber);
+		}
+		//if (CurrToken < TotalTokens) //If there are still token left (after second operands), it must be a syntax error
+		//{
+		//	return Error::Throw(ERROR_TYPE::SYNTAX);
+		//}
 		Program.push_back(instruction);
 	}
-	return true;
+	return Program.empty() ? Error::LOG("Empty File\n") : true;
 }

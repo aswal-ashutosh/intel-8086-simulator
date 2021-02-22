@@ -6,9 +6,17 @@
 class Error
 {
 public:
-	static bool LOG(const std::string& e)
+	static bool LOG(const std::string& e, const int linenNumber = -1)
 	{
-		std::cout << "\x1B[31mERROR\x1B[0m::" + e;
+		if (linenNumber != -1)
+		{
+			std::cout << "\x1B[31mERROR\x1B[0m::" + e + " Line: " + std::to_string(linenNumber);
+		}
+		else
+		{
+			std::cout << "\x1B[31mERROR\x1B[0m::" + e;
+		}
+		
 		exit(0);//To be removed
 		return false;
 	}

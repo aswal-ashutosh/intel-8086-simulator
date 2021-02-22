@@ -57,6 +57,9 @@ public:
 	//Function to check whether the operand count is equal to expected count or not
 	static bool IsValidOperandCount(const Operand&, int);
 
+	//Function to check wherther the string can be considered as Label or not
+	static bool IsLabel(const std::string& s);
+
 	static int SetBitCount(uint32_t);
 };
 
@@ -325,4 +328,9 @@ int Utility::SetBitCount(uint32_t number)
 		number >>= 1;
 	}
 	return c;
+}
+
+bool Utility::IsLabel(const std::string& s)
+{
+	return s.size() > 1 && s.back() == ':';
 }

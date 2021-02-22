@@ -7,7 +7,6 @@
 
 struct Instruction
 {
-	std::string Label;
 	std::string Mnemonic;
 	Operand operand;
 	int LineNumber;
