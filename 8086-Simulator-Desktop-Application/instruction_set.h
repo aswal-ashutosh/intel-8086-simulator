@@ -12,7 +12,7 @@
 #include"inc.h"
 #include"daa.h"
 #include"shl_sal.h"
-#include"shr.h";
+#include"shr.h"
 #include"sar.h"
 #include"rcl.h"
 #include"rcr.h"

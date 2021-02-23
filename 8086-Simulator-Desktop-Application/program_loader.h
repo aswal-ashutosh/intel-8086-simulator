@@ -8,6 +8,8 @@
 #include<unordered_map>
 #include"instruction.h"
 #include"hex_size.h"
+#include"labels.h"
+#include<iomanip>
 
 
 std::fstream OUT("machine_code.txt", std::ios::out);
@@ -113,6 +115,8 @@ class ProgramLoader
 
 public:
 
+	static void HandleForwardReferencing();
+
 	//Function to check wether a string is Mnemonic or not
 	static bool IsValidMnemonic(const std::string& s);
 	static bool IsJumpCallInstruction(const std::string& s);
@@ -155,6 +159,7 @@ public:
 	static bool STC(const Operand&);
 	static bool CLC(const Operand&);
 	static bool CMC(const Operand&);
+	static bool JMP(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -212,6 +217,158 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::CLC] = CLC;
 	CallBacks[MNEMONIC::CMC] = CMC;
 	CallBacks[MNEMONIC::XCHG] = XCHG;
+	CallBacks[MNEMONIC::JMP] = JMP;
+}
+
+
+void ProgramLoader::HandleForwardReferencing()
+{
+	//Assigning Offset to all
+	unsigned int Offset = 0;
+	std::unordered_map<std::string, std::vector<int>> Pos;
+	std::unordered_map<std::string, SIZE> ExpectedLocationSize;
+	for (int i = 0; i < (int)Program.size(); ++i)
+	{
+		Instruction& ins = Program[i];
+		ins.Offset = Offset;
+		if (ins.MachineCode.empty()) //Instruction with label
+		{
+
+			//[Todo:Remove in Release]Assertion
+			if (!Label::IsValidLabel(ins.operand.first))
+			{
+				Error::LOG("Expected Label @F.R");
+			}
+
+			//Either the instruction will be of 2 byte(1Byte for Address) or 3 byte(2 Byte for address) depending on Label address
+			//Which is not known yet
+			//Assuming the instruction of 2 byte(1Byte Address) which will be corrected later
+			ExpectedLocationSize[ins.operand.first] = SIZE::BYTE;
+			Offset += 2;
+			Pos[ins.operand.first].push_back(i);
+		}
+		else
+		{
+			Offset += ins.MachineCode.size();
+		}
+	}
+
+	
+	const std::unordered_map<std::string, int> Labels = Label::GetLabels();
+
+	//Lamda to calculate the size of location
+	auto Size = [](const unsigned int Offset)->SIZE
+	{
+		if (Offset >= 0x00 && Offset <= 0xff)
+		{
+			return SIZE::BYTE;
+		}
+		else if (Offset > 0xff && Offset <= 0xffff)
+		{
+			return SIZE::WORD;
+		}
+		else
+		{
+			//ToDo[Remove in release]
+			Error::LOG("Lamda doesn't expect this size\n");
+			return SIZE::WORD;
+		}
+	};
+
+	bool NeedToBalance = true;
+	while (NeedToBalance)
+	{
+		NeedToBalance = false;//Assuming
+		for (const std::pair<const std::string, int>& x : Labels)
+		{
+			const std::string& label = x.first;
+			const int Index = x.second;
+			if (Size(Program[Index].Offset) != ExpectedLocationSize[label])
+			{
+				NeedToBalance = true;
+				ExpectedLocationSize[label] = Size(Program[Index].Offset);
+				//We have assumed Byte size but it's found different => Word size => So we need to increment offset of each
+				//instruction after it.
+				for (int start : Pos[label])
+				{
+					for (int k = start + 1; k < (int)Program.size(); ++k)
+					{
+						Program[k].Offset += 1;
+					}
+				}
+			}
+		}
+	}
+
+	for (const std::pair<const std::string, int>& x : Labels)
+	{
+		const std::string& label = x.first;
+		const Word Address = Program[x.second].Offset;
+		for (int Idx : Pos[label])
+		{
+			//Add more
+			if (Program[Idx].Mnemonic == MNEMONIC::JMP)
+			{
+				if (ExpectedLocationSize[label] == SIZE::BYTE)
+				{
+					//Short jmp
+					Program[Idx].MachineCode.push_back(0xEB);
+					Program[Idx].MachineCode.push_back((Byte)(Address & 0x00ff));
+				}
+				else
+				{
+					//near jmp
+					Program[Idx].MachineCode.push_back(0xE9);
+					Program[Idx].MachineCode.push_back((Byte)(Address & 0x00ff));
+					Program[Idx].MachineCode.push_back((Byte)((Address & 0xff00) >> 8));
+				}
+			}
+			else
+			{
+
+			}
+		}
+	}
+
+	for (const Instruction& Ins : Program)
+	{
+		OUT << Converter::DecToHex(Ins.Offset, SIZE::WORD).substr(0, 4) << ": ";
+		std::string OPCODE;
+		for (int i = 0, k = 0; i < (int)Ins.MachineCode.size(); ++i)
+		{
+			OPCODE += Converter::DecToHex(Ins.MachineCode[i]).substr(0, 2) + ' ';
+			if (++k == 6)
+			{
+				k = 0;
+				OUT << std::left << std::setw(18) << OPCODE;
+				OPCODE.clear();
+				if (i + 1 < (int)Ins.MachineCode.size())
+				{
+					
+					OUT << "\n      ";
+				}
+			}
+		}
+		if (!OPCODE.empty())
+		{
+			OUT << std::left << std::setw(18) << OPCODE;
+		}
+		
+
+		std::string CODE;
+		CODE += "\t[" + Ins.Mnemonic;
+		if (!Ins.operand.first.empty())
+		{
+			CODE += ' ' + Ins.operand.first;
+			
+		}
+		if (!Ins.operand.second.empty())
+		{
+			CODE += ' ' + Ins.operand.second;
+		}
+		CODE += "]\n";
+		OUT << CODE;
+	}
 }
 
 bool ProgramLoader::Load()
@@ -233,8 +390,10 @@ bool ProgramLoader::Load()
 			return Error::LOG(CurrIns.Mnemonic + " is not implemented yet! @ Load\n");
 		}
 	}
+	HandleForwardReferencing();
 	return true;
 }
+
 
 bool ProgramLoader::IsValidMnemonic(const std::string& s)
 {
@@ -3513,4 +3672,18 @@ bool ProgramLoader::CMC(const Operand& operand)
 	//OUT << "F5\n";
 	Program[CurrInstructionIndex].MachineCode.push_back(0xF5);
 	return true;
+}
+
+/*<----------------------------JMP------------------------------------------>*/
+bool ProgramLoader::JMP(const Operand& operand)
+{
+	//Machine code will be produce later(When handling forward referencing
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", CurrInstructionIndex);
+	}
 }

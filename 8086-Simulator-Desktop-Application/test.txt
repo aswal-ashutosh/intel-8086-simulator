@@ -1,5 +1,3 @@
-mov ax, bx
-add ax, dx
+ror al, 0Ah
+mov al, bl
 daa
-dec ax
-inc dx

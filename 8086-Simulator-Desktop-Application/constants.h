@@ -34,6 +34,7 @@ namespace MNEMONIC
 	const std::string CLC = "CLC";
 	const std::string CMC = "CMC";
 	const std::string XCHG = "XCHG";
+	const std::string JMP = "JMP";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =

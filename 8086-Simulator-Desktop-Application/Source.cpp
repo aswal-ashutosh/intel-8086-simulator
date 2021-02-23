@@ -9,8 +9,8 @@ int main()
 	ProgramExecutor::LoadCallBacks();
 	Parser::Read("test.txt");
 	ProgramLoader::Load();
-	ProgramExecutor::Execute(ProgramLoader::GetProgram());
-	Register::PrintAll();
+	/*ProgramExecutor::Execute(ProgramLoader::GetProgram());
+	Register::PrintAll();*/
 	//Memory::DebugMem(0x0000, 0x1234, 2);
 	return 0;
 }

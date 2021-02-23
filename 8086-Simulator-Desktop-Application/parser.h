@@ -277,6 +277,10 @@ bool Parser::Read(const std::string& FILE_PATH)
 				{
 					return false;
 				}
+				if (TotalTokens == 1)//Just Label
+				{
+					continue;
+				}
 				++CurrToken;
 			}
 			else

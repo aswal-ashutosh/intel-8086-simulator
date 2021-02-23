@@ -9,6 +9,14 @@ class Label
 
 public:
 	static bool Add(const std::string&, const int);
+
+	//Will check whether there exist label with such name with atleast one instruction
+	static bool IsValidLabel(const std::string&);
+
+	//Will return the mapped value to the label
+	static int IndexOf(const std::string& label);
+
+	static const std::unordered_map<std::string, int>& GetLabels();
 };
 
 std::unordered_map<std::string, int> Label::_Label;
@@ -22,4 +30,19 @@ bool Label::Add(const std::string& Label_String, const int index)
 	}
 	_Label[Label_String] = index;
 	return true;
+}
+
+bool Label::IsValidLabel(const std::string& label)
+{
+	return _Label.count(label);
+}
+
+int Label::IndexOf(const std::string& label)
+{
+	return _Label[label];
+}
+
+const std::unordered_map<std::string, int>& Label::GetLabels()
+{
+	return _Label;
 }

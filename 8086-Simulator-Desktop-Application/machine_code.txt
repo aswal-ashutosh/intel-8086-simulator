@@ -1,0 +1,6 @@
+0000: D0 C8 D0 C8 D0 C8 
+      D0 C8 D0 C8 D0 C8 
+      D0 C8 D0 C8 D0 C8 
+      D0 C8             	[ROR AL 0AH]
+0014: 8A C3             	[MOV AL BL]
+0016: 27                	[DAA]
