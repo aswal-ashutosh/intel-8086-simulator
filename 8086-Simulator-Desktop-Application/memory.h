@@ -13,11 +13,11 @@ public:
 
 	//Setters
 	static void Set8Bit(const int, const Byte);
-	static void Set16Bit(const int, const _16Bit);
+	static void Set16Bit(const int, const Word);
 
 	//Getters
 	static Byte Get8Bit(const int);
-	static _16Bit Get16Bit(const int);
+	static Word Get16Bit(const int);
 	
 	static void DebugMem(int s, int offset, int cnt)
 	{
@@ -43,7 +43,7 @@ void Memory::Set8Bit(const int loc, const Byte data)
 	mem[loc] = data;
 }
 
-void Memory::Set16Bit(const int loc, const _16Bit data)
+void Memory::Set16Bit(const int loc, const Word data)
 {
 	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Set16Bit\n"); }
 	Byte Lbyte = data & 0x00ff;
@@ -60,13 +60,13 @@ Byte Memory::Get8Bit(const int loc)
 	return mem[loc];
 }
 
-_16Bit Memory::Get16Bit(const int loc)
+Word Memory::Get16Bit(const int loc)
 {
 	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Get16Bit\n"); }
 	int pAddressL = loc;
 	int pAddressH = loc + 1 > 0xfffff ? 0x00000 : loc + 1;	//Address should be in range[00000H-FFFFFH]
-	_16Bit HigherData = mem[pAddressH];
-	_16Bit LowerData = mem[pAddressL];
+	Word HigherData = mem[pAddressH];
+	Word LowerData = mem[pAddressL];
 	return (HigherData << 8) | LowerData;
 }
 

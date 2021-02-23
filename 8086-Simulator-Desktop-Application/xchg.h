@@ -45,8 +45,8 @@ bool ProgramExecutor::XCHG_CASE_3(std::string& REG8, std::string& MEM8)
 bool ProgramExecutor::XCHG_CASE_4(std::string& REG16_D, std::string& REG16_S)
 {
 	//Case-4 REG16, REG16
-	_16Bit D = Register::REG16(REG16_D);
-	_16Bit S = Register::REG16(REG16_S);
+	Word D = Register::REG16(REG16_D);
+	Word S = Register::REG16(REG16_S);
 	D = D ^ S;
 	S = D ^ S;
 	D = D ^ S;
@@ -59,8 +59,8 @@ bool ProgramExecutor::XCHG_CASE_5(std::string& REG16, std::string& MEM)
 {
 	///Case-5 REG16, []/W[]
 	int Padd = Memory::PhysicalAddress(MEM);
-	_16Bit D = Register::REG16(REG16);
-	_16Bit S = Memory::Get16Bit(Padd);
+	Word D = Register::REG16(REG16);
+	Word S = Memory::Get16Bit(Padd);
 	D = D ^ S;
 	S = D ^ S;
 	D = D ^ S;
@@ -73,8 +73,8 @@ bool ProgramExecutor::XCHG_CASE_6(std::string& MEM, std::string& REG16)
 {
 	//Case-6 []/W[], REG16
 	int Padd = Memory::PhysicalAddress(MEM);
-	_16Bit D = Memory::Get16Bit(Padd);
-	_16Bit S = Register::REG16(REG16);
+	Word D = Memory::Get16Bit(Padd);
+	Word S = Register::REG16(REG16);
 	D = D ^ S;
 	S = D ^ S;
 	D = D ^ S;

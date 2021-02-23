@@ -9,8 +9,9 @@
 
 class ProgramExecutor
 {
-	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
+	int CurrInstruction = 0;
 
+	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
 	static bool MOV_CASE_1(const std::string&, const std::string&);
 	static bool MOV_CASE_2(const std::string&, const std::string&);
 	static bool MOV_CASE_3(const std::string&, const std::string&);
@@ -200,55 +201,55 @@ class ProgramExecutor
 	static bool XCHG_CASE_6(std::string&, std::string&);
 
 	//Functions to update flag register after executing a instruction
-	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const _16Bit);
-	static void UpdateFlags_ADD_16Bit(const _16Bit, const _16Bit, const uint32_t);
-	static void UpdateFlags_ADC_8Bit(const Byte, const Byte, const _16Bit);
-	static void UpdateFlags_ADC_16Bit(const _16Bit, const _16Bit, const uint32_t);
-	static void UpdateFlags_SUB_8Bit(const Byte, const Byte, const _16Bit);
-	static void UpdateFlags_SUB_16Bit(const _16Bit, const _16Bit, const uint32_t);
-	static void UpdateFlags_SBB_8Bit(const Byte, const Byte, const _16Bit);
-	static void UpdateFlags_SBB_16Bit(const _16Bit, const _16Bit, const uint32_t);
+	static void UpdateFlags_ADD_8Bit(const Byte, const Byte, const Word);
+	static void UpdateFlags_ADD_16Bit(const Word, const Word, const uint32_t);
+	static void UpdateFlags_ADC_8Bit(const Byte, const Byte, const Word);
+	static void UpdateFlags_ADC_16Bit(const Word, const Word, const uint32_t);
+	static void UpdateFlags_SUB_8Bit(const Byte, const Byte, const Word);
+	static void UpdateFlags_SUB_16Bit(const Word, const Word, const uint32_t);
+	static void UpdateFlags_SBB_8Bit(const Byte, const Byte, const Word);
+	static void UpdateFlags_SBB_16Bit(const Word, const Word, const uint32_t);
 
-	static void UpdateFlags_CMP_8Bit(const Byte, const Byte, const _16Bit);
-	static void UpdateFlags_CMP_16Bit(const _16Bit, const _16Bit, const uint32_t);
+	static void UpdateFlags_CMP_8Bit(const Byte, const Byte, const Word);
+	static void UpdateFlags_CMP_16Bit(const Word, const Word, const uint32_t);
 
 
 	//Will update flags for AND, XOR & OR
 	static void UpdateFlags_LOGIC_8Bit(const Byte);
-	static void UpdateFlags_LOGIC_16Bit(const _16Bit);
+	static void UpdateFlags_LOGIC_16Bit(const Word);
 
 	//Will also Update the flags for IMUL
 	static void UpdateFlags_MUL_8Bit();
 	static void UpdateFlags_MUL_16Bit();
 	
 	static void UpdateFlags_NEG_8Bit(const Byte);
-	static void UpdateFlags_NEG_16Bit(const _16Bit);
+	static void UpdateFlags_NEG_16Bit(const Word);
 
 	static void UpdateFlags_DEC_8Bit(const Byte);
-	static void UpdateFlags_DEC_16Bit(const _16Bit);
+	static void UpdateFlags_DEC_16Bit(const Word);
 	static void UpdateFlags_INC_8Bit(const Byte);
-	static void UpdateFlags_INC_16Bit(const _16Bit);
+	static void UpdateFlags_INC_16Bit(const Word);
 
 	static void UpdateFlags_SHL_SAL_8Bit(const Byte, int);
-	static void UpdateFlags_SHL_SAL_16Bit(const _16Bit, int);
+	static void UpdateFlags_SHL_SAL_16Bit(const Word, int);
 
 	static void UpdateFlags_SHR_8Bit(const Byte, const Byte, int);
-	static void UpdateFlags_SHR_16Bit(const _16Bit, const _16Bit, int);
+	static void UpdateFlags_SHR_16Bit(const Word, const Word, int);
 
 	static void UpdateFlags_SAR_8Bit(const Byte, int);
-	static void UpdateFlags_SAR_16Bit(const _16Bit, int);
+	static void UpdateFlags_SAR_16Bit(const Word, int);
 
 	static void UpdateFlags_RCL_8Bit(const Byte, int);
-	static void UpdateFlags_RCL_16Bit(const _16Bit, int);
+	static void UpdateFlags_RCL_16Bit(const Word, int);
 
 	static void UpdateFlags_RCR_8Bit(const Byte, int);
-	static void UpdateFlags_RCR_16Bit(const _16Bit, int);
+	static void UpdateFlags_RCR_16Bit(const Word, int);
 
 	static void UpdateFlags_ROL_8Bit(const Byte, int);
-	static void UpdateFlags_ROL_16Bit(const _16Bit, int);
+	static void UpdateFlags_ROL_16Bit(const Word, int);
 
 	static void UpdateFlags_ROR_8Bit(const Byte, int);
-	static void UpdateFlags_ROR_16Bit(const _16Bit, int);
+	static void UpdateFlags_ROR_16Bit(const Word, int);
 public:
 	static void LoadCallBacks();
 	static bool Execute(const std::vector<Instruction>&);

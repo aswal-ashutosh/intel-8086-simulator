@@ -14,7 +14,7 @@
 
 class Parser
 {
-	static std::vector<Instruction> Program;
+	
 public:
 	//Will format the memroy expression and also check for possible error.
 	static bool ValidateAndFormatMemoryExp(std::string&);
@@ -24,16 +24,7 @@ public:
 
 	//Will Read, check & load the source code for further execution
 	static bool Read(const std::string&);
-
-	static const std::vector<Instruction>& GetProgram();
 };
-
-std::vector<Instruction> Parser::Program;
-
-const std::vector<Instruction>& Parser::GetProgram()
-{
-	return Program;
-}
 
 bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 {
@@ -282,7 +273,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 			if (Utility::IsLabel(s))
 			{
 				const std::string label = s.substr(0, s.size() - 1);
-				if (!Label::Add(label, Program.size()))
+				if (!Label::Add(label, ProgramLoader::ProgramSize()))
 				{
 					return false;
 				}
@@ -360,7 +351,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 		//{
 		//	return Error::Throw(ERROR_TYPE::SYNTAX);
 		//}
-		Program.push_back(instruction);
+		ProgramLoader::AddInstruction(instruction);
 	}
-	return Program.empty() ? Error::LOG("Empty File\n") : true;
+	return ProgramLoader::ProgramSize() == 0 ? Error::LOG("Empty File\n") : true;
 }

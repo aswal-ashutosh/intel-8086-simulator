@@ -9,7 +9,7 @@
 
 class Utility
 {
-	static _16Bit HexToDec(const std::string&);
+	static Word HexToDec(const std::string&);
 public:
 	//To check whether a string is representing a valid hex number or not
 	static bool IsValidHex(const std::string &);
@@ -63,10 +63,10 @@ public:
 	static int SetBitCount(uint32_t);
 };
 
-_16Bit Utility::HexToDec(const std::string& data)
+Word Utility::HexToDec(const std::string& data)
 {
 	std::stringstream ss(data.substr(0, data.length() - 1));
-	_16Bit res = 0;
+	Word res = 0;
 	ss >> std::hex >> res;
 	return res;
 }
@@ -226,7 +226,7 @@ std::vector<std::string> Utility::SplitBy(const std::string& s, const char& del 
 
 const SIZE Utility::HexSize(const std::string& hex)
 {
-	_16Bit data = HexToDec(hex);
+	Word data = HexToDec(hex);
 	if (data >= 0x00 && data <= 0xff)
 	{
 		return SIZE::BYTE;

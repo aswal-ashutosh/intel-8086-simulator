@@ -24,7 +24,7 @@ void ProgramExecutor::UpdateFlags_SHR_8Bit(const Byte OldData, const Byte NewDat
 	Register::SetFlag(Register::FLAG::ZF, NewData == 0x00); //Zero Flag
 }
 
-void ProgramExecutor::UpdateFlags_SHR_16Bit(const _16Bit OldData, const _16Bit NewData, int count)
+void ProgramExecutor::UpdateFlags_SHR_16Bit(const Word OldData, const Word NewData, int count)
 {
 	if (count == 0) { return; }
 
@@ -80,8 +80,8 @@ bool ProgramExecutor::SHR_CASE_3(const std::string& REG16, const std::string& IM
 	//Case-3 REG16, IMMD8
 	int count = Converter::HexToDec(IMMD8);
 	int TCount = count;
-	_16Bit OldData = Register::REG16(REG16);
-	_16Bit Data = OldData;
+	Word OldData = Register::REG16(REG16);
+	Word Data = OldData;
 	while (TCount--)
 	{
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
@@ -97,8 +97,8 @@ bool ProgramExecutor::SHR_CASE_4(const std::string& REG16)
 	//Case-4 REG16, CL
 	int count = Register::REG8(REGISTER::CL);
 	int TCount = count;
-	_16Bit OldData = Register::REG16(REG16);
-	_16Bit Data = OldData;
+	Word OldData = Register::REG16(REG16);
+	Word Data = OldData;
 	while (TCount--)
 	{
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
@@ -151,8 +151,8 @@ bool ProgramExecutor::SHR_CASE_7(const std::string& MEM16, const std::string& IM
 	int count = Converter::HexToDec(IMMD8);
 	int TCount = count;
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit OldData = Memory::Get16Bit(Padd);
-	_16Bit Data = OldData;
+	Word OldData = Memory::Get16Bit(Padd);
+	Word Data = OldData;
 	while (TCount--)
 	{
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
@@ -169,8 +169,8 @@ bool ProgramExecutor::SHR_CASE_8(const std::string& MEM16)
 	int count = Register::REG8(REGISTER::CL);
 	int TCount = count;
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit OldData = Memory::Get16Bit(Padd);
-	_16Bit Data = OldData;
+	Word OldData = Memory::Get16Bit(Padd);
+	Word Data = OldData;
 	while (TCount--)
 	{
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));

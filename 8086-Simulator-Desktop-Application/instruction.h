@@ -10,5 +10,6 @@ struct Instruction
 	std::string Mnemonic;
 	Operand operand;
 	int LineNumber;
-	_16Bit Offset;
+	Word Offset;
+	std::vector<Byte> MachineCode;
 };

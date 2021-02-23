@@ -7,7 +7,7 @@
 	when adding operands with different signs.
 */
 
-void ProgramExecutor::UpdateFlags_SUB_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
+void ProgramExecutor::UpdateFlags_SUB_8Bit(const Byte OP1, const Byte OP2, const Word Result)
 {
 	Byte _2SC = -OP2;
 	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
@@ -36,12 +36,12 @@ void ProgramExecutor::UpdateFlags_SUB_8Bit(const Byte OP1, const Byte OP2, const
 	/*[TODO][DF]*/
 }
 
-void ProgramExecutor::UpdateFlags_SUB_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
+void ProgramExecutor::UpdateFlags_SUB_16Bit(const Word OP1, const Word OP2, const uint32_t Result)
 {
-	_16Bit _2SC = -OP2;
+	Word _2SC = -OP2;
 	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
-	_16Bit Result16Bit = (_16Bit)Result; //Truncating Extra Bits
+	Word Result16Bit = (Word)Result; //Truncating Extra Bits
 
 	Register::SetFlag(Register::FLAG::OF, (OP1 ^ Result16Bit) & (_2SC ^ Result16Bit) & 0x8000);//Over Flow Flag
 
@@ -65,7 +65,7 @@ void ProgramExecutor::UpdateFlags_SUB_16Bit(const _16Bit OP1, const _16Bit OP2, 
 	/*[TODO][DF]*/
 }
 
-void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
+void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const Word Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
 	Byte _2SC_OP2 = -OP2;
@@ -88,16 +88,16 @@ void ProgramExecutor::UpdateFlags_SBB_8Bit(const Byte OP1, const Byte OP2, const
 	/*[TODO][DF]*/
 }
 
-void ProgramExecutor::UpdateFlags_SBB_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
+void ProgramExecutor::UpdateFlags_SBB_16Bit(const Word OP1, const Word OP2, const uint32_t Result)
 {
 	bool oldCF = Register::GetFlag(Register::FLAG::CF);
-	_16Bit _2SC_OP2 = -OP2;
-	_16Bit _2SC_CF = oldCF ? 0xffff : 0x0000;
+	Word _2SC_OP2 = -OP2;
+	Word _2SC_CF = oldCF ? 0xffff : 0x0000;
 	Register::SetFlag(Register::FLAG::CF, OP1 < (OP2 + oldCF)); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
-	_16Bit Result16Bit = (_16Bit)Result; //Truncating Extra Bits
+	Word Result16Bit = (Word)Result; //Truncating Extra Bits
 
-	_16Bit _2SC_OP2_CF = _2SC_OP2 + _2SC_CF;
+	Word _2SC_OP2_CF = _2SC_OP2 + _2SC_CF;
 	bool MidWayOF = (_2SC_OP2 ^ _2SC_OP2_CF) & (_2SC_CF ^ _2SC_OP2_CF) & 0x8000;
 	Register::SetFlag(Register::FLAG::OF, MidWayOF | (bool)((OP1 ^ Result16Bit) & (_2SC_OP2_CF ^ Result16Bit) & 0x8000));//Overflow Flag
 
@@ -118,7 +118,7 @@ bool ProgramExecutor::SUB_CASE_1(const std::string& REG8_D, const std::string& R
 	Byte X = Register::REG8(REG8_D);
 	Byte Y = Register::REG8(REG8_S);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xff; //2s complement of 1
@@ -141,7 +141,7 @@ bool ProgramExecutor::SUB_CASE_2(const std::string& REG8, const std::string& MEM
 	Byte X = Register::REG8(REG8);
 	Byte Y = Memory::Get8Bit(Memory::PhysicalAddress(MEM8));
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xff; //2s complement of 1
@@ -165,7 +165,7 @@ bool ProgramExecutor::SUB_CASE_3(const std::string& MEM8, const std::string& REG
 	Byte X = Memory::Get8Bit(PAdd);
 	Byte Y = Register::REG8(REG8);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xff; //2s complement of 1
@@ -185,15 +185,15 @@ bool ProgramExecutor::SUB_CASE_3(const std::string& MEM8, const std::string& REG
 bool ProgramExecutor::SUB_CASE_4(const std::string& REG16_D, const std::string& REG16_S, const bool SBB = false)
 {
 	//Case-4: REG16, REG16
-	_16Bit X = Register::REG16(REG16_D);
-	_16Bit Y = Register::REG16(REG16_S);
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16_D);
+	Word Y = Register::REG16(REG16_S);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xffff;//2sc complement of 1
 	}
-	Register::REG16(REG16_D, (_16Bit)Result);
+	Register::REG16(REG16_D, (Word)Result);
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);
@@ -208,15 +208,15 @@ bool ProgramExecutor::SUB_CASE_4(const std::string& REG16_D, const std::string& 
 bool ProgramExecutor::SUB_CASE_5(const std::string& REG16, const std::string& MEM, const bool SBB = false)
 {
 	//Case-5: REG16, []/W[]
-	_16Bit X = Register::REG16(REG16);
-	_16Bit Y = Memory::Get16Bit(Memory::PhysicalAddress(MEM));
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16);
+	Word Y = Memory::Get16Bit(Memory::PhysicalAddress(MEM));
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xffff;//2sc complement of 1
 	}
-	Register::REG16(REG16, (_16Bit)Result);
+	Register::REG16(REG16, (Word)Result);
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);
@@ -232,15 +232,15 @@ bool ProgramExecutor::SUB_CASE_6(const std::string& MEM, const std::string& REG1
 {
 	//Case-6: []/W[], REG16
 	int PAdd = Memory::PhysicalAddress(MEM);
-	_16Bit X = Memory::Get16Bit(PAdd);
-	_16Bit Y = Register::REG16(REG16);
-	_16Bit _2SC = -Y;
+	Word X = Memory::Get16Bit(PAdd);
+	Word Y = Register::REG16(REG16);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xffff;//2sc complement of 1
 	}
-	Memory::Set16Bit(PAdd, (_16Bit)Result);
+	Memory::Set16Bit(PAdd, (Word)Result);
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);
@@ -259,7 +259,7 @@ bool ProgramExecutor::SUB_CASE_7(const std::string& MEM8, const std::string& IMM
 	Byte X = Memory::Get8Bit(PAdd);
 	Byte Y = (Byte)Converter::HexToDec(IMMD8);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xff; //2s complement of 1
@@ -280,15 +280,15 @@ bool ProgramExecutor::SUB_CASE_8(const std::string& MEM, const std::string& IMMD
 {
 	//Case-8: []/W[], IMMD16
 	int PAdd = Memory::PhysicalAddress(MEM);
-	_16Bit X = Memory::Get16Bit(PAdd);
-	_16Bit Y = Converter::HexToDec(IMMD16);
-	_16Bit _2SC = -Y;
+	Word X = Memory::Get16Bit(PAdd);
+	Word Y = Converter::HexToDec(IMMD16);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xffff;//2sc complement of 1
 	}
-	Memory::Set16Bit(PAdd, (_16Bit)Result);
+	Memory::Set16Bit(PAdd, (Word)Result);
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);
@@ -306,7 +306,7 @@ bool ProgramExecutor::SUB_CASE_9(const std::string& REG8, const std::string& IMM
 	Byte X = Register::REG8(REG8);
 	Byte Y = (Byte)Converter::HexToDec(IMMD8);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xff; //2s complement of 1
@@ -326,15 +326,15 @@ bool ProgramExecutor::SUB_CASE_9(const std::string& REG8, const std::string& IMM
 bool ProgramExecutor::SUB_CASE_10(const std::string& REG16, const std::string& IMMD16, const bool SBB = false)
 {
 	//Case-10: REG16, IMMD16
-	_16Bit X = Register::REG16(REG16);
-	_16Bit Y = Converter::HexToDec(IMMD16);
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16);
+	Word Y = Converter::HexToDec(IMMD16);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xffff;//2sc complement of 1
 	}
-	Register::REG16(REG16, (_16Bit)Result);
+	Register::REG16(REG16, (Word)Result);
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);
@@ -349,15 +349,15 @@ bool ProgramExecutor::SUB_CASE_10(const std::string& REG16, const std::string& I
 bool ProgramExecutor::SUB_CASE_11(const std::string& REG16, const std::string& IMMD8, const bool SBB = false)
 {
 	//Case-11: REG16, IMMD8
-	_16Bit X = Register::REG16(REG16);
-	_16Bit Y = Converter::HexToDec(IMMD8);
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16);
+	Word Y = Converter::HexToDec(IMMD8);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xffff;//2sc complement of 1
 	}
-	Register::REG16(REG16, (_16Bit)Result);
+	Register::REG16(REG16, (Word)Result);
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);
@@ -373,15 +373,15 @@ bool ProgramExecutor::SUB_CASE_12(const std::string& MEM16, const std::string& I
 {
 	//Case-12: W[], IMMD8
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit X = Memory::Get16Bit(Padd);
-	_16Bit Y = Converter::HexToDec(IMMD8);
-	_16Bit _2SC = -Y;
+	Word X = Memory::Get16Bit(Padd);
+	Word Y = Converter::HexToDec(IMMD8);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	if (SBB && Register::GetFlag(Register::FLAG::CF))
 	{
 		Result += 0xffff;//2sc complement of 1
 	}
-	Memory::Set16Bit(Padd, (_16Bit)Result);
+	Memory::Set16Bit(Padd, (Word)Result);
 	if (SBB)
 	{
 		UpdateFlags_SBB_16Bit(X, Y, Result);

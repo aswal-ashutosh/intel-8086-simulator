@@ -23,7 +23,7 @@ void ProgramExecutor::UpdateFlags_ROL_8Bit(const Byte Result, int count)
 	//else not defined => (keeping it same)
 }
 
-void ProgramExecutor::UpdateFlags_ROL_16Bit(const _16Bit Result, int count)
+void ProgramExecutor::UpdateFlags_ROL_16Bit(const Word Result, int count)
 {
 	if (count != 0)
 	{
@@ -76,12 +76,12 @@ bool ProgramExecutor::ROL_CASE_3(const std::string& REG16, const std::string& IM
 	//Case-3 REG16, IMMD8
 	int RealCount = Converter::HexToDec(IMMD8);
 	int OptimalCount = RealCount % 16;//We can consider this as rotating a array of size 16(Will be same after every 16N rotation) 
-	_16Bit Data = Register::REG16(REG16);
+	Word Data = Register::REG16(REG16);
 	while (OptimalCount--)
 	{
 		bool MSB = bool(Data & 0x8000);
 		Data <<= 1;
-		Data |= (_16Bit)MSB;
+		Data |= (Word)MSB;
 	}
 	Register::REG16(REG16, Data);
 	UpdateFlags_ROL_16Bit(Data, RealCount);
@@ -93,12 +93,12 @@ bool ProgramExecutor::ROL_CASE_4(const std::string& REG16)
 	//Case-4 REG16, CL
 	int RealCount = Register::REG8(REGISTER::CL);
 	int OptimalCount = RealCount % 16;
-	_16Bit Data = Register::REG16(REG16);
+	Word Data = Register::REG16(REG16);
 	while (OptimalCount--)
 	{
 		bool MSB = bool(Data & 0x8000);
 		Data <<= 1;
-		Data |= (_16Bit)MSB;
+		Data |= (Word)MSB;
 	}
 	Register::REG16(REG16, Data);
 	UpdateFlags_ROL_16Bit(Data, RealCount);
@@ -147,12 +147,12 @@ bool ProgramExecutor::ROL_CASE_7(const std::string& MEM16, const std::string& IM
 	int RealCount = Converter::HexToDec(IMMD8);
 	int OptimalCount = RealCount % 16;
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit Data = Memory::Get16Bit(Padd);
+	Word Data = Memory::Get16Bit(Padd);
 	while (OptimalCount--)
 	{
 		bool MSB = bool(Data & 0x8000);
 		Data <<= 1;
-		Data |= (_16Bit)MSB;
+		Data |= (Word)MSB;
 	}
 	Memory::Set16Bit(Padd, Data);
 	UpdateFlags_ROL_16Bit(Data, RealCount);
@@ -165,12 +165,12 @@ bool ProgramExecutor::ROL_CASE_8(const std::string& MEM16)
 	int RealCount = Register::REG8(REGISTER::CL);
 	int OptimalCount = RealCount % 16;
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit Data = Memory::Get16Bit(Padd);
+	Word Data = Memory::Get16Bit(Padd);
 	while (OptimalCount--)
 	{
 		bool MSB = bool(Data & 0x8000);
 		Data <<= 1;
-		Data |= (_16Bit)MSB;
+		Data |= (Word)MSB;
 	}
 	Memory::Set16Bit(Padd, Data);
 	UpdateFlags_ROL_16Bit(Data, RealCount);

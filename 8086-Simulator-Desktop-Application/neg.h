@@ -17,12 +17,12 @@ void ProgramExecutor::UpdateFlags_NEG_8Bit(const Byte Data)
 	Register::SetFlag(Register::FLAG::ZF, Result == 0x00); //Zero Flag
 }
 
-void ProgramExecutor::UpdateFlags_NEG_16Bit(const _16Bit Data)
+void ProgramExecutor::UpdateFlags_NEG_16Bit(const Word Data)
 {
 	Register::SetFlag(Register::FLAG::CF, Data != 0);//Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (Data & 0x000f) != 0);//Auxiliary Carry Flag
-	Register::SetFlag(Register::FLAG::OF, Data == (_16Bit)0x8000);//Overflow Flag
-	_16Bit Result = -Data;
+	Register::SetFlag(Register::FLAG::OF, Data == (Word)0x8000);//Overflow Flag
+	Word Result = -Data;
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
 	Register::SetFlag(Register::FLAG::SF, Result & (1 << 15)); //Sign Flag
 	Register::SetFlag(Register::FLAG::ZF, Result == 0x0000); //Zero Flag
@@ -44,7 +44,7 @@ bool ProgramExecutor::NEG_CASE_2(const std::string& MEM16)
 {
 	//Case-2: NEG W[]
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit Data = Memory::Get16Bit(Padd);
+	Word Data = Memory::Get16Bit(Padd);
 	Memory::Set16Bit(Padd, -Data);
 	UpdateFlags_NEG_16Bit(Data);
 	return true;
@@ -62,7 +62,7 @@ bool ProgramExecutor::NEG_CASE_3(const std::string& REG8)
 bool ProgramExecutor::NEG_CASE_4(const std::string& REG16)
 {
 	//Case-4: NEG REG16
-	_16Bit Data = Register::REG16(REG16);
+	Word Data = Register::REG16(REG16);
 	Register::REG16(REG16, -Data);
 	UpdateFlags_NEG_16Bit(Data);
 	return true;

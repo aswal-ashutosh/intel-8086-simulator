@@ -20,7 +20,7 @@ void ProgramExecutor::UpdateFlags_LOGIC_8Bit(const Byte Result)
 
 }
 
-void ProgramExecutor::UpdateFlags_LOGIC_16Bit(const _16Bit Result)
+void ProgramExecutor::UpdateFlags_LOGIC_16Bit(const Word Result)
 {
 	/*
 	The OF and CF flags are cleared.
@@ -87,7 +87,7 @@ bool ProgramExecutor::LOGIC_CASE_3(const std::string& MEM8, const std::string& R
 bool ProgramExecutor::LOGIC_CASE_4(const std::string& REG16_D, const std::string& REG16_S, const LOGIC& OPERATION)
 {
 	//Case-4: REG16, REG16
-	_16Bit Result = 0;
+	Word Result = 0;
 	switch (OPERATION)
 	{
 	case LOGIC::AND: Result = Register::REG16(REG16_D) & Register::REG16(REG16_S); break;
@@ -102,7 +102,7 @@ bool ProgramExecutor::LOGIC_CASE_4(const std::string& REG16_D, const std::string
 bool ProgramExecutor::LOGIC_CASE_5(const std::string& REG16, const std::string& MEM, const LOGIC& OPERATION)
 {
 	//Case-5: REG16, []/W[]
-	_16Bit Result = 0;
+	Word Result = 0;
 	switch (OPERATION)
 	{
 	case LOGIC::AND: Result = Register::REG16(REG16) & Memory::Get16Bit(Memory::PhysicalAddress(MEM)); break;
@@ -118,7 +118,7 @@ bool ProgramExecutor::LOGIC_CASE_6(const std::string& MEM, const std::string& RE
 {
 	//Case-6: []/W[], REG16
 	int PAdd = Memory::PhysicalAddress(MEM);
-	_16Bit Result = 0;
+	Word Result = 0;
 	switch (OPERATION)
 	{
 	case LOGIC::AND: Result = Memory::Get16Bit(PAdd) & Register::REG16(REG16); break;
@@ -150,7 +150,7 @@ bool ProgramExecutor::LOGIC_CASE_8(const std::string& MEM, const std::string& IM
 {
 	//Case-8: []/W[], IMMD16
 	int PAdd = Memory::PhysicalAddress(MEM);
-	_16Bit Result = 0;
+	Word Result = 0;
 	switch (OPERATION)
 	{
 	case LOGIC::AND: Result = Memory::Get16Bit(PAdd) & Converter::HexToDec(IMMD16); break;
@@ -180,7 +180,7 @@ bool ProgramExecutor::LOGIC_CASE_9(const std::string& REG8, const std::string& I
 bool ProgramExecutor::LOGIC_CASE_10(const std::string& REG16, const std::string& IMMD16, const LOGIC& OPERATION)
 {
 	//Case-10: REG16, IMMD16
-	_16Bit Result = 0;
+	Word Result = 0;
 	switch (OPERATION)
 	{
 	case LOGIC::AND: Result = Register::REG16(REG16) & Converter::HexToDec(IMMD16); break;
@@ -195,7 +195,7 @@ bool ProgramExecutor::LOGIC_CASE_10(const std::string& REG16, const std::string&
 bool ProgramExecutor::LOGIC_CASE_11(const std::string& REG16, const std::string& IMMD8, const LOGIC& OPERATION)
 {
 	//Case-11: REG16, IMMD8
-	_16Bit Result = 0;
+	Word Result = 0;
 	switch (OPERATION)
 	{
 	case LOGIC::AND: Result = Register::REG16(REG16) & Converter::HexToDec(IMMD8); break;
@@ -210,7 +210,7 @@ bool ProgramExecutor::LOGIC_CASE_11(const std::string& REG16, const std::string&
 bool ProgramExecutor::LOGIC_CASE_12(const std::string& MEM16, const std::string& IMMD8, const LOGIC& OPERATION)
 {
 	//Case-12: W[], IMMD8
-	_16Bit Result = 0;
+	Word Result = 0;
 	int PAdd = Memory::PhysicalAddress(MEM16);
 	switch (OPERATION)
 	{

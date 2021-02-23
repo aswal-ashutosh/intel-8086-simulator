@@ -1,7 +1,7 @@
 #pragma once
 #include"8086.h"
 
-void ProgramExecutor::UpdateFlags_CMP_8Bit(const Byte OP1, const Byte OP2, const _16Bit Result)
+void ProgramExecutor::UpdateFlags_CMP_8Bit(const Byte OP1, const Byte OP2, const Word Result)
 {
 	Byte _2SC = -OP2;
 	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
@@ -36,12 +36,12 @@ void ProgramExecutor::UpdateFlags_CMP_8Bit(const Byte OP1, const Byte OP2, const
 	/*[TODO][DF]*/
 }
 
-void ProgramExecutor::UpdateFlags_CMP_16Bit(const _16Bit OP1, const _16Bit OP2, const uint32_t Result)
+void ProgramExecutor::UpdateFlags_CMP_16Bit(const Word OP1, const Word OP2, const uint32_t Result)
 {
-	_16Bit _2SC = -OP2;
+	Word _2SC = -OP2;
 	Register::SetFlag(Register::FLAG::CF, OP1 < OP2); //Carry Flag
 	Register::SetFlag(Register::FLAG::AF, (OP1 & 0x000f) < (OP2 & 0x000f)); //Auxillary Carry Flag
-	_16Bit Result16Bit = Result; //Truncating Extra Bits
+	Word Result16Bit = Result; //Truncating Extra Bits
 
 	//Over Flow Flag
 	if ((OP1 & (1 << 15)) ^ (_2SC & (1 << 15)))
@@ -70,7 +70,7 @@ bool ProgramExecutor::CMP_CASE_1(const std::string& REG8_D, const std::string& R
 	Byte X = Register::REG8(REG8_D);
 	Byte Y = Register::REG8(REG8_S);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	UpdateFlags_CMP_8Bit(X, Y, Result);
 	return true;
 }
@@ -81,7 +81,7 @@ bool ProgramExecutor::CMP_CASE_2(const std::string& REG8, const std::string& MEM
 	Byte X = Register::REG8(REG8);
 	Byte Y = Memory::Get8Bit(Memory::PhysicalAddress(MEM8));
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	UpdateFlags_CMP_8Bit(X, Y, Result);
 	return true;
 }
@@ -93,7 +93,7 @@ bool ProgramExecutor::CMP_CASE_3(const std::string& MEM, const std::string& REG8
 	Byte X = Memory::Get8Bit(PAdd);
 	Byte Y = Register::REG8(REG8);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	UpdateFlags_CMP_8Bit(X, Y, Result);
 	return true;
 }
@@ -101,9 +101,9 @@ bool ProgramExecutor::CMP_CASE_3(const std::string& MEM, const std::string& REG8
 bool ProgramExecutor::CMP_CASE_4(const std::string& REG16_D, const std::string& REG16_S)
 {
 	//Case-4: REG16, REG16
-	_16Bit X = Register::REG16(REG16_D);
-	_16Bit Y = Register::REG16(REG16_S);
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16_D);
+	Word Y = Register::REG16(REG16_S);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	UpdateFlags_CMP_16Bit(X, Y, Result);
 	return true;
@@ -112,9 +112,9 @@ bool ProgramExecutor::CMP_CASE_4(const std::string& REG16_D, const std::string& 
 bool ProgramExecutor::CMP_CASE_5(const std::string& REG16, const std::string& MEM)
 {
 	//Case-5: REG16, []/W[]
-	_16Bit X = Register::REG16(REG16);
-	_16Bit Y = Memory::Get16Bit(Memory::PhysicalAddress(MEM));
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16);
+	Word Y = Memory::Get16Bit(Memory::PhysicalAddress(MEM));
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	UpdateFlags_CMP_16Bit(X, Y, Result);
 	return true;
@@ -124,9 +124,9 @@ bool ProgramExecutor::CMP_CASE_6(const std::string& MEM, const std::string& REG1
 {
 	//Case-6: []/W[], REG16
 	int PAdd = Memory::PhysicalAddress(MEM);
-	_16Bit X = Memory::Get16Bit(PAdd);
-	_16Bit Y = Register::REG16(REG16);
-	_16Bit _2SC = -Y;
+	Word X = Memory::Get16Bit(PAdd);
+	Word Y = Register::REG16(REG16);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	UpdateFlags_CMP_16Bit(X, Y, Result);
 	return true;
@@ -139,7 +139,7 @@ bool ProgramExecutor::CMP_CASE_7(const std::string& MEM8, const std::string& IMM
 	Byte X = Memory::Get8Bit(PAdd);
 	Byte Y = (Byte)Converter::HexToDec(IMMD8);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	UpdateFlags_CMP_8Bit(X, Y, Result);
 	return true;
 }
@@ -148,9 +148,9 @@ bool ProgramExecutor::CMP_CASE_8(const std::string& MEM, const std::string& REG1
 {
 	//Case-8: []/W[], IMMD16
 	int PAdd = Memory::PhysicalAddress(MEM);
-	_16Bit X = Memory::Get16Bit(PAdd);
-	_16Bit Y = Converter::HexToDec(REG16);
-	_16Bit _2SC = -Y;
+	Word X = Memory::Get16Bit(PAdd);
+	Word Y = Converter::HexToDec(REG16);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	UpdateFlags_CMP_16Bit(X, Y, Result);
 	return true;
@@ -162,7 +162,7 @@ bool ProgramExecutor::CMP_CASE_9(const std::string& REG8, const std::string& IMM
 	Byte X = Register::REG8(REG8);
 	Byte Y = (Byte)Converter::HexToDec(IMMD8);
 	Byte _2SC = -Y;
-	_16Bit Result = _16Bit(X) + _16Bit(_2SC);
+	Word Result = Word(X) + Word(_2SC);
 	UpdateFlags_CMP_8Bit(X, Y, Result);
 	return true;
 }
@@ -170,9 +170,9 @@ bool ProgramExecutor::CMP_CASE_9(const std::string& REG8, const std::string& IMM
 bool ProgramExecutor::CMP_CASE_10(const std::string& REG16, const std::string& IMMD16)
 {
 	//Case-10: REG16, IMMD16
-	_16Bit X = Register::REG16(REG16);
-	_16Bit Y = Converter::HexToDec(IMMD16);
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16);
+	Word Y = Converter::HexToDec(IMMD16);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	UpdateFlags_CMP_16Bit(X, Y, Result);
 	return true;
@@ -181,9 +181,9 @@ bool ProgramExecutor::CMP_CASE_10(const std::string& REG16, const std::string& I
 bool ProgramExecutor::CMP_CASE_11(const std::string& REG16, const std::string& IMMD8)
 {
 	//Case-11: REG16, IMMD8
-	_16Bit X = Register::REG16(REG16);
-	_16Bit Y = Converter::HexToDec(IMMD8);
-	_16Bit _2SC = -Y;
+	Word X = Register::REG16(REG16);
+	Word Y = Converter::HexToDec(IMMD8);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	UpdateFlags_CMP_16Bit(X, Y, Result);
 	return true;
@@ -193,9 +193,9 @@ bool ProgramExecutor::CMP_CASE_12(const std::string& MEM16, const std::string& I
 {
 	//Case-12: W[], IMMD8
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit X = Memory::Get16Bit(Padd);
-	_16Bit Y = Converter::HexToDec(IMMD8);
-	_16Bit _2SC = -Y;
+	Word X = Memory::Get16Bit(Padd);
+	Word Y = Converter::HexToDec(IMMD8);
+	Word _2SC = -Y;
 	uint32_t Result = uint32_t(X) + uint32_t(_2SC);
 	UpdateFlags_CMP_16Bit(X, Y, Result);
 	return true;

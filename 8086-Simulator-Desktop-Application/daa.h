@@ -3,7 +3,7 @@
 
 bool ProgramExecutor::DAA(const Operand& operand)
 {
-	_16Bit AL = Register::REG8(REGISTER::AL);
+	Word AL = Register::REG8(REGISTER::AL);
 	if ((AL & 0xf) > 9 || Register::GetFlag(Register::FLAG::AF))
 	{
 		AL += 0x06;

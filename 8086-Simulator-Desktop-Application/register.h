@@ -5,16 +5,16 @@
 
 class Register
 {
-	static _16Bit _IP;
+	static Word _IP;
 
 	static std::unordered_map<std::string, Byte> _REG8;		//For 8-Bit Parts of 16-Bit Registers
-	static std::unordered_map<std::string, _16Bit> _REG16;	//For 16-Bit Registers
+	static std::unordered_map<std::string, Word> _REG16;	//For 16-Bit Registers
 
 	/*<<<<<<<<<<<<<<HELPER FUNCTIONS>>>>>>>>>>>>>>>>*/
 
 	//Function to Sync 8 Bit Register with 16Bit Register and vice-e-versa
-	static void Sync16BitWith8Bit(_16Bit&, const Byte&, const bool);	//When 8-Bit Get Changed, bool = true -> R8 are Higer 8-Bit else Lower 8-Bit
-	static void Sync8BitWith16Bit(const _16Bit&, Byte&, Byte&);			//When 16-Bit Get Changed
+	static void Sync16BitWith8Bit(Word&, const Byte&, const bool);	//When 8-Bit Get Changed, bool = true -> R8 are Higer 8-Bit else Lower 8-Bit
+	static void Sync8BitWith16Bit(const Word&, Byte&, Byte&);			//When 16-Bit Get Changed
 
 	//Return true if register is a 16Bit General Purposer Register
 	static bool IsGenReg16(const std::string&);
@@ -34,20 +34,20 @@ class Register
 		[][][][][OF][DF][IF][TF][SF][ZF][][AF][][PF][][CF]
 	*/
 	
-	static _16Bit Flag;
+	static Word Flag;
 
 public:
 
 	/*GETTERS*/
 	static Byte REG8(const std::string&);
-	static _16Bit REG16(const std::string&);
+	static Word REG16(const std::string&);
 
 	/*SETTERS*/
 	static void REG8(const std::string&, const Byte);
-	static void REG16(const std::string&, const _16Bit);
+	static void REG16(const std::string&, const Word);
 
-	static void IP_INC(const _16Bit&); /*Function to increment IP*/
-	static void IP(const _16Bit&);
+	static void IP_INC(const Word&); /*Function to increment IP*/
+	static void IP(const Word&);
 
 	//Testing Functions
 	static void PrintAll();
@@ -69,8 +69,8 @@ public:
 	static bool GetFlag(const FLAG&);
 };
 
-_16Bit Register::_IP;
-_16Bit Register::Flag;
+Word Register::_IP;
+Word Register::Flag;
 
 std::unordered_map<std::string, Byte> Register::_REG8 =
 {
@@ -84,7 +84,7 @@ std::unordered_map<std::string, Byte> Register::_REG8 =
 	{REGISTER::DH, 0},
 };
 
-std::unordered_map<std::string, _16Bit> Register::_REG16 =
+std::unordered_map<std::string, Word> Register::_REG16 =
 {
 	{REGISTER::CS, 0},
 	{REGISTER::DS, 0},
@@ -107,17 +107,17 @@ void Register::SetFlag(const FLAG& X, const bool& state)
 {
 	if (state)
 	{
-		Flag |= _16Bit(X);
+		Flag |= Word(X);
 	}
 	else
 	{
-		Flag &= ~_16Bit(X);
+		Flag &= ~Word(X);
 	}
 }
 
 bool Register::GetFlag(const FLAG& X)
 {
-	return Flag & _16Bit(X);
+	return Flag & Word(X);
 }
 
 void Register::PrintAll()
@@ -129,7 +129,7 @@ void Register::PrintAll()
 		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
 	}
 
-	for (const std::pair<const std::string, _16Bit>& R : _REG16)
+	for (const std::pair<const std::string, Word>& R : _REG16)
 	{
 		const std::string& data = Converter::DecToHex(R.second, SIZE::WORD);
 		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
@@ -144,24 +144,24 @@ void Register::PrintAll()
 	std::cout << "CF:[" << (GetFlag(FLAG::CF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "]\n";
 }
 
-void Register::Sync16BitWith8Bit(_16Bit& R16, const Byte& R8, const bool high)
+void Register::Sync16BitWith8Bit(Word& R16, const Byte& R8, const bool high)
 {
 	for (int i = 0, k = high ? 8 : 0; i < 8; ++i, ++k)
 	{
 		if (R8 & (1 << i))
 		{
 			//i-th bit is set
-			R16 |= _16Bit(1) << k;
+			R16 |= Word(1) << k;
 		}
 		else
 		{
 			//i-th bit is reset
-			R16 &= ~(_16Bit(1) << k);
+			R16 &= ~(Word(1) << k);
 		}
 	}
 }
 
-void Register::Sync8BitWith16Bit(const _16Bit& R16, Byte& R8H, Byte& R8L)
+void Register::Sync8BitWith16Bit(const Word& R16, Byte& R8H, Byte& R8L)
 {
 	//Lower
 	for (int i = 0; i < 8; ++i)
@@ -169,12 +169,12 @@ void Register::Sync8BitWith16Bit(const _16Bit& R16, Byte& R8H, Byte& R8L)
 		if (R16 & (1 << i))
 		{
 			//i-th bit is set
-			R8L |= _16Bit(1) << i;
+			R8L |= Word(1) << i;
 		}
 		else
 		{
 			//i-th bit is reset
-			R8L &= ~(_16Bit(1) << i);
+			R8L &= ~(Word(1) << i);
 		}
 	}
 
@@ -183,12 +183,12 @@ void Register::Sync8BitWith16Bit(const _16Bit& R16, Byte& R8H, Byte& R8L)
 		if (R16 & (1 << i))
 		{
 			//i-th bit is set
-			R8H |= _16Bit(1) << (i - 8);
+			R8H |= Word(1) << (i - 8);
 		}
 		else
 		{
 			//i-th bit is reset
-			R8H &= ~(_16Bit(1) << (i - 8));
+			R8H &= ~(Word(1) << (i - 8));
 		}
 	}
 }
@@ -244,7 +244,7 @@ Byte Register::REG8(const std::string& R)
 	}
 }
 
-_16Bit Register::REG16(const std::string& R)
+Word Register::REG16(const std::string& R)
 {
 	if (_REG16.count(R))
 	{
@@ -273,7 +273,7 @@ void Register::REG8(const std::string& R, const Byte data)
 }
 
 
-void Register::REG16(const std::string& R, const _16Bit data)
+void Register::REG16(const std::string& R, const Word data)
 {
 	if (_REG16.count(R))
 	{
@@ -290,6 +290,6 @@ void Register::REG16(const std::string& R, const _16Bit data)
 }
 
 //[TODO]::OVERFLOW CHECKER[May be required]
-void Register::IP_INC(const _16Bit& data) { _IP += data; }/*Function to increment IP*/
-void Register::IP(const _16Bit& data) { _IP = data; }
+void Register::IP_INC(const Word& data) { _IP += data; }/*Function to increment IP*/
+void Register::IP(const Word& data) { _IP = data; }
 

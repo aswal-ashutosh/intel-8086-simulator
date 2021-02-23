@@ -13,7 +13,7 @@ void ProgramExecutor::UpdateFlags_MUL_8Bit()
 void ProgramExecutor::UpdateFlags_MUL_16Bit()
 {
 	//MUL only affects OF and CF based upon the upper half of the result all other flags are undefined
-	_16Bit DX = Register::REG16(REGISTER::DX);
+	Word DX = Register::REG16(REGISTER::DX);
 	Register::SetFlag(Register::FLAG::CF, DX != 0x0000);
 	Register::SetFlag(Register::FLAG::OF, DX != 0x0000);
 }
@@ -23,9 +23,9 @@ void ProgramExecutor::UpdateFlags_MUL_16Bit()
 bool ProgramExecutor::MUL_CASE_1(const std::string& MEM8)
 {
 	//Case-1: MUL []
-	_16Bit multiplicand = Register::REG8(REGISTER::AL);
-	_16Bit mulitplier = Memory::Get8Bit(Memory::PhysicalAddress(MEM8));
-	_16Bit Result = multiplicand * mulitplier;
+	Word multiplicand = Register::REG8(REGISTER::AL);
+	Word mulitplier = Memory::Get8Bit(Memory::PhysicalAddress(MEM8));
+	Word Result = multiplicand * mulitplier;
 	Register::REG16(REGISTER::AX, Result);
 	UpdateFlags_MUL_8Bit();
 	return true;
@@ -37,8 +37,8 @@ bool ProgramExecutor::MUL_CASE_2(const std::string& MEM16)
 	uint32_t multiplicand = Register::REG16(REGISTER::AX);
 	uint32_t mulitplier = Memory::Get16Bit(Memory::PhysicalAddress(MEM16));
 	uint32_t Result = multiplicand * mulitplier;
-	_16Bit UpperHalf = (Result & 0xffff0000) >> 16;
-	_16Bit LowerHalf = (Result & 0x0000ffff);
+	Word UpperHalf = (Result & 0xffff0000) >> 16;
+	Word LowerHalf = (Result & 0x0000ffff);
 	Register::REG16(REGISTER::DX, UpperHalf);
 	Register::REG16(REGISTER::AX, LowerHalf);
 	UpdateFlags_MUL_16Bit();
@@ -48,9 +48,9 @@ bool ProgramExecutor::MUL_CASE_2(const std::string& MEM16)
 bool ProgramExecutor::MUL_CASE_3(const std::string& REG8)
 {
 	//Case-3: MUL REG8
-	_16Bit multiplicand = Register::REG8(REGISTER::AL);
-	_16Bit mulitplier = Register::REG8(REG8);
-	_16Bit Result = multiplicand * mulitplier;
+	Word multiplicand = Register::REG8(REGISTER::AL);
+	Word mulitplier = Register::REG8(REG8);
+	Word Result = multiplicand * mulitplier;
 	Register::REG16(REGISTER::AX, Result);
 	UpdateFlags_MUL_8Bit();
 	return true;
@@ -62,8 +62,8 @@ bool ProgramExecutor::MUL_CASE_4(const std::string& REG16)
 	uint32_t multiplicand = Register::REG16(REGISTER::AX);
 	uint32_t mulitplier = Register::REG16(REG16);
 	uint32_t Result = multiplicand * mulitplier;
-	_16Bit UpperHalf = (Result & 0xffff0000) >> 16;
-	_16Bit LowerHalf = (Result & 0x0000ffff);
+	Word UpperHalf = (Result & 0xffff0000) >> 16;
+	Word LowerHalf = (Result & 0x0000ffff);
 	Register::REG16(REGISTER::DX, UpperHalf);
 	Register::REG16(REGISTER::AX, LowerHalf);
 	UpdateFlags_MUL_16Bit();
@@ -87,8 +87,8 @@ bool ProgramExecutor::IMUL_CASE_2(const std::string& MEM16)
 	int multiplicand = (short)Register::REG16(REGISTER::AX);
 	int mulitplier = (short)Memory::Get16Bit(Memory::PhysicalAddress(MEM16));
 	int Result = multiplicand * mulitplier;
-	_16Bit UpperHalf = (Result & 0xffff0000) >> 16;
-	_16Bit LowerHalf = (Result & 0x0000ffff);
+	Word UpperHalf = (Result & 0xffff0000) >> 16;
+	Word LowerHalf = (Result & 0x0000ffff);
 	Register::REG16(REGISTER::DX, UpperHalf);
 	Register::REG16(REGISTER::AX, LowerHalf);
 	UpdateFlags_MUL_16Bit();
@@ -112,8 +112,8 @@ bool ProgramExecutor::IMUL_CASE_4(const std::string& REG16)
 	int multiplicand = (short)Register::REG16(REGISTER::AX);
 	int mulitplier = (short)Register::REG16(REG16);
 	int Result = multiplicand * mulitplier;
-	_16Bit UpperHalf = (Result & 0xffff0000) >> 16;
-	_16Bit LowerHalf = (Result & 0x0000ffff);
+	Word UpperHalf = (Result & 0xffff0000) >> 16;
+	Word LowerHalf = (Result & 0x0000ffff);
 	Register::REG16(REGISTER::DX, UpperHalf);
 	Register::REG16(REGISTER::AX, LowerHalf);
 	UpdateFlags_MUL_16Bit();

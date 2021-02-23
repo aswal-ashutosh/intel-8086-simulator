@@ -3,11 +3,11 @@
 bool ProgramExecutor::DIV_CASE_1(const std::string& MEM8)
 {
 	//Case-1: DIV []
-	_16Bit divisor = Memory::Get8Bit(Memory::PhysicalAddress(MEM8));
+	Word divisor = Memory::Get8Bit(Memory::PhysicalAddress(MEM8));
 	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
-	_16Bit dividend = Register::REG16(REGISTER::AX);
-	_16Bit quotient = dividend / divisor;
-	_16Bit remainder = dividend % divisor;
+	Word dividend = Register::REG16(REGISTER::AX);
+	Word quotient = dividend / divisor;
+	Word remainder = dividend % divisor;
 	if (quotient > 0xff) { return Error::LOG("Division Error. Result can't be fit in AL\n"); }
 	Register::REG8(REGISTER::AL, (Byte)quotient);
 	Register::REG8(REGISTER::AH, (Byte)remainder);
@@ -35,11 +35,11 @@ bool ProgramExecutor::DIV_CASE_2(const std::string& MEM16)
 bool ProgramExecutor::DIV_CASE_3(const std::string& REG8)
 {
 	//Case-3: DIV REG8
-	_16Bit divisor = Register::REG8(REG8);
+	Word divisor = Register::REG8(REG8);
 	if (divisor == 0) { return Error::LOG("Division By 0\n"); }
-	_16Bit dividend = Register::REG16(REGISTER::AX);
-	_16Bit quotient = dividend / divisor;
-	_16Bit remainder = dividend % divisor;
+	Word dividend = Register::REG16(REGISTER::AX);
+	Word quotient = dividend / divisor;
+	Word remainder = dividend % divisor;
 	if (quotient > 0xff) { return Error::LOG("Division Error. Result can't be fit in AL\n"); }
 	Register::REG8(REGISTER::AL, (Byte)quotient);
 	Register::REG8(REGISTER::AH, (Byte)remainder);

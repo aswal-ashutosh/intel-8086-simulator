@@ -13,7 +13,7 @@ void ProgramExecutor::UpdateFlags_RCR_8Bit(const Byte OldData, int count)
 	//else not defined => (keeping it same)
 }
 
-void ProgramExecutor::UpdateFlags_RCR_16Bit(const _16Bit OldData, int count)
+void ProgramExecutor::UpdateFlags_RCR_16Bit(const Word OldData, int count)
 {
 	if (count == 1)
 	{
@@ -65,14 +65,14 @@ bool ProgramExecutor::RCR_CASE_3(const std::string& REG16, const std::string& IM
 	//Case-3 REG16, IMMD8
 	int RealCount = Converter::HexToDec(IMMD8);
 	int OptimalCount = RealCount % 17;//We can consider this as rotating a array of size 17(Will be same after every 17N rotation) 
-	_16Bit OldData = Register::REG16(REG16);
-	_16Bit Data = OldData;
+	Word OldData = Register::REG16(REG16);
+	Word Data = OldData;
 	while (OptimalCount--)
 	{
 		bool OldCarry = Register::GetFlag(Register::FLAG::CF);
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
-		Data |= (_16Bit)(OldCarry << 15);
+		Data |= (Word)(OldCarry << 15);
 	}
 	Register::REG16(REG16, Data);
 	UpdateFlags_RCR_16Bit(OldData, RealCount);
@@ -84,14 +84,14 @@ bool ProgramExecutor::RCR_CASE_4(const std::string& REG16)
 	//Case-4 REG16, CL
 	int RealCount = Register::REG8(REGISTER::CL);
 	int OptimalCount = RealCount % 17;
-	_16Bit OldData = Register::REG16(REG16);
-	_16Bit Data = OldData;
+	Word OldData = Register::REG16(REG16);
+	Word Data = OldData;
 	while (OptimalCount--)
 	{
 		bool OldCarry = Register::GetFlag(Register::FLAG::CF);
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
-		Data |= (_16Bit)(OldCarry << 15);
+		Data |= (Word)(OldCarry << 15);
 	}
 	Register::REG16(REG16, Data);
 	UpdateFlags_RCR_16Bit(OldData, RealCount);
@@ -144,14 +144,14 @@ bool ProgramExecutor::RCR_CASE_7(const std::string& MEM16, const std::string& IM
 	int RealCount = Converter::HexToDec(IMMD8);
 	int OptimalCount = RealCount % 17;
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit OldData = Memory::Get16Bit(Padd);
-	_16Bit Data = OldData;
+	Word OldData = Memory::Get16Bit(Padd);
+	Word Data = OldData;
 	while (OptimalCount--)
 	{
 		bool OldCarry = Register::GetFlag(Register::FLAG::CF);
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
-		Data |= (_16Bit)(OldCarry << 15);
+		Data |= (Word)(OldCarry << 15);
 	}
 	Memory::Set16Bit(Padd, Data);
 	UpdateFlags_RCR_16Bit(OldData, RealCount);
@@ -164,14 +164,14 @@ bool ProgramExecutor::RCR_CASE_8(const std::string& MEM16)
 	int RealCount = Register::REG8(REGISTER::CL);
 	int OptimalCount = RealCount % 17;
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit OldData = Memory::Get16Bit(Padd);
-	_16Bit Data = OldData;
+	Word OldData = Memory::Get16Bit(Padd);
+	Word Data = OldData;
 	while (OptimalCount--)
 	{
 		bool OldCarry = Register::GetFlag(Register::FLAG::CF);
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
-		Data |= (_16Bit)(OldCarry << 15);
+		Data |= (Word)(OldCarry << 15);
 	}
 	Memory::Set16Bit(Padd, Data);
 	UpdateFlags_RCR_16Bit(OldData, RealCount);

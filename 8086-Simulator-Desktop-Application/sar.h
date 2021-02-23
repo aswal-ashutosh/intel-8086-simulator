@@ -24,7 +24,7 @@ void ProgramExecutor::UpdateFlags_SAR_8Bit(const Byte Result, int count)
 	Register::SetFlag(Register::FLAG::ZF, Result == 0x00); //Zero Flag
 }
 
-void ProgramExecutor::UpdateFlags_SAR_16Bit(const _16Bit Result, int count)
+void ProgramExecutor::UpdateFlags_SAR_16Bit(const Word Result, int count)
 {
 	if (count == 0) { return; }
 
@@ -84,8 +84,8 @@ bool ProgramExecutor::SAR_CASE_3(const std::string& REG16, const std::string& IM
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
 	}
-	Register::REG16(REG16, (_16Bit)Data);
-	UpdateFlags_SAR_16Bit((_16Bit)Data, count);
+	Register::REG16(REG16, (Word)Data);
+	UpdateFlags_SAR_16Bit((Word)Data, count);
 	return true;
 }
 
@@ -100,8 +100,8 @@ bool ProgramExecutor::SAR_CASE_4(const std::string& REG16)
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
 	}
-	Register::REG16(REG16, (_16Bit)Data);
-	UpdateFlags_SAR_16Bit((_16Bit)Data, count);
+	Register::REG16(REG16, (Word)Data);
+	UpdateFlags_SAR_16Bit((Word)Data, count);
 	return true;
 }
 
@@ -151,8 +151,8 @@ bool ProgramExecutor::SAR_CASE_7(const std::string& MEM16, const std::string& IM
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
 	}
-	Memory::Set16Bit(Padd, (_16Bit)Data);
-	UpdateFlags_SAR_16Bit((_16Bit)Data, count);
+	Memory::Set16Bit(Padd, (Word)Data);
+	UpdateFlags_SAR_16Bit((Word)Data, count);
 	return true;
 }
 
@@ -168,8 +168,8 @@ bool ProgramExecutor::SAR_CASE_8(const std::string& MEM16)
 		Register::SetFlag(Register::FLAG::CF, bool(Data & 0x0001));
 		Data >>= 1;
 	}
-	Memory::Set16Bit(Padd, (_16Bit)Data);
-	UpdateFlags_SAR_16Bit((_16Bit)Data, count);
+	Memory::Set16Bit(Padd, (Word)Data);
+	UpdateFlags_SAR_16Bit((Word)Data, count);
 	return true;
 }
 

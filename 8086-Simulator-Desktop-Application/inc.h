@@ -14,11 +14,11 @@ void ProgramExecutor::UpdateFlags_INC_8Bit(const Byte Data)
 	Register::SetFlag(Register::FLAG::ZF, Result == 0x00); //Zero Flag
 }
 
-void ProgramExecutor::UpdateFlags_INC_16Bit(const _16Bit Data)
+void ProgramExecutor::UpdateFlags_INC_16Bit(const Word Data)
 {
 	Register::SetFlag(Register::FLAG::AF, (Data & 0x000f) + 0x0001 > 0x000f);//Auxiliary Carry Flag
-	Register::SetFlag(Register::FLAG::OF, Data == (_16Bit)0x7fff);//Overflow Flag
-	_16Bit Result = Data + 1;
+	Register::SetFlag(Register::FLAG::OF, Data == (Word)0x7fff);//Overflow Flag
+	Word Result = Data + 1;
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(Result) & 1)); //Parity Flag
 	Register::SetFlag(Register::FLAG::SF, Result & (1 << 15)); //Sign Flag
 	Register::SetFlag(Register::FLAG::ZF, Result == 0x0000); //Zero Flag
@@ -38,7 +38,7 @@ bool ProgramExecutor::INC_CASE_2(const std::string& MEM16)
 {
 	//Case-2: INC W[]
 	int Padd = Memory::PhysicalAddress(MEM16);
-	_16Bit Data = Memory::Get16Bit(Padd);
+	Word Data = Memory::Get16Bit(Padd);
 	Memory::Set16Bit(Padd, Data + 1);
 	UpdateFlags_INC_16Bit(Data);
 	return true;
@@ -56,7 +56,7 @@ bool ProgramExecutor::INC_CASE_3(const std::string& REG8)
 bool ProgramExecutor::INC_CASE_4(const std::string& REG16)
 {
 	//Case-4: INC REG16
-	_16Bit Data = Register::REG16(REG16);
+	Word Data = Register::REG16(REG16);
 	Register::REG16(REG16, Data + 1);
 	UpdateFlags_INC_16Bit(Data);
 	return true;
