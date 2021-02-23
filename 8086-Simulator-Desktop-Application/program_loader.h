@@ -160,6 +160,17 @@ public:
 	static bool CLC(const Operand&);
 	static bool CMC(const Operand&);
 	static bool JMP(const Operand&);
+	static bool JC(const Operand&);
+	static bool JNC(const Operand&);
+	static bool JZ_JE(const Operand&);
+	static bool JNZ_JNE(const Operand&);
+	static bool JPE_JP(const Operand&);
+	static bool JPO_JNP(const Operand&);
+	static bool JS(const Operand&);
+	static bool JNS(const Operand&);
+	static bool JO(const Operand&);
+	static bool JNO(const Operand&);
+	static bool CALL(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -218,33 +229,47 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::CMC] = CMC;
 	CallBacks[MNEMONIC::XCHG] = XCHG;
 	CallBacks[MNEMONIC::JMP] = JMP;
+	CallBacks[MNEMONIC::JC] = JC;
+	CallBacks[MNEMONIC::JNC] = JNC;
+	CallBacks[MNEMONIC::JZ] = JZ_JE;
+	CallBacks[MNEMONIC::JE] = JZ_JE;
+	CallBacks[MNEMONIC::JNZ] = JNZ_JNE;
+	CallBacks[MNEMONIC::JNE] = JNZ_JNE;
+	CallBacks[MNEMONIC::JPE] = JPE_JP;
+	CallBacks[MNEMONIC::JP] = JPE_JP;
+	CallBacks[MNEMONIC::JPO] = JPO_JNP;
+	CallBacks[MNEMONIC::JNP] = JPO_JNP;
+	CallBacks[MNEMONIC::JS] = JS;
+	CallBacks[MNEMONIC::JNS] = JNS;
+	CallBacks[MNEMONIC::JO] = JO;
+	CallBacks[MNEMONIC::JNO] = JNO;
+	CallBacks[MNEMONIC::CALL] = CALL;
 }
 
 
 void ProgramLoader::HandleForwardReferencing()
 {
-	//Assigning Offset to all
 	unsigned int Offset = 0;
 	std::unordered_map<std::string, std::vector<int>> Pos;
-	std::unordered_map<std::string, SIZE> ExpectedLocationSize;
+	
 	for (int i = 0; i < (int)Program.size(); ++i)
 	{
 		Instruction& ins = Program[i];
 		ins.Offset = Offset;
-		if (ins.MachineCode.empty()) //Instruction with label
+		/*
+			For JUMP Instructions label address can be of 1 bytes or 2 byte which is not known yet. Assuming the size of label as 1 Byte the size of
+			instruction will be 2 byte. It this assumption is found wrong it will be updated later.
+			For Call label address will always take 2 Byte which means the total size of instruction will be 3 bytes.
+		*/
+		if (ins.Mnemonic == MNEMONIC::CALL)
 		{
-
-			//[Todo:Remove in Release]Assertion
-			if (!Label::IsValidLabel(ins.operand.first))
-			{
-				Error::LOG("Expected Label @F.R");
-			}
-
-			//Either the instruction will be of 2 byte(1Byte for Address) or 3 byte(2 Byte for address) depending on Label address
-			//Which is not known yet
-			//Assuming the instruction of 2 byte(1Byte Address) which will be corrected later
-			ExpectedLocationSize[ins.operand.first] = SIZE::BYTE;
+			Offset += 3;
+			Pos[ins.operand.first].push_back(i);
+		}
+		else if (IsJumpCallInstruction(ins.Mnemonic)) //JUMP instructions
+		{
 			Offset += 2;
+
 			Pos[ins.operand.first].push_back(i);
 		}
 		else
@@ -253,8 +278,14 @@ void ProgramLoader::HandleForwardReferencing()
 		}
 	}
 
-	
 	const std::unordered_map<std::string, int> Labels = Label::GetLabels();
+
+	std::unordered_map<std::string, SIZE> AllocatedSize;
+
+	for (const std::pair<std::string, int> x : Labels)
+	{
+		AllocatedSize[x.first] = SIZE::BYTE;
+	}
 
 	//Lamda to calculate the size of location
 	auto Size = [](const unsigned int Offset)->SIZE
@@ -283,14 +314,17 @@ void ProgramLoader::HandleForwardReferencing()
 		{
 			const std::string& label = x.first;
 			const int Index = x.second;
-			if (Size(Program[Index].Offset) != ExpectedLocationSize[label])
+			if (Size(Program[Index].Offset) != AllocatedSize[label])
 			{
 				NeedToBalance = true;
-				ExpectedLocationSize[label] = Size(Program[Index].Offset);
+				AllocatedSize[label] = Size(Program[Index].Offset);
 				//We have assumed Byte size but it's found different => Word size => So we need to increment offset of each
 				//instruction after it.
+				//But if the the instruction there is call then no need to increment by 1(As already given required size)
 				for (int start : Pos[label])
 				{
+					if (Program[start].Mnemonic == MNEMONIC::CALL) { continue; }
+
 					for (int k = start + 1; k < (int)Program.size(); ++k)
 					{
 						Program[k].Offset += 1;
@@ -307,9 +341,14 @@ void ProgramLoader::HandleForwardReferencing()
 		for (int Idx : Pos[label])
 		{
 			//Add more
-			if (Program[Idx].Mnemonic == MNEMONIC::JMP)
+			if (Program[Idx].Mnemonic == MNEMONIC::CALL)
 			{
-				if (ExpectedLocationSize[label] == SIZE::BYTE)
+				Program[Idx].MachineCode.push_back((Byte)(Address & 0x00ff));
+				Program[Idx].MachineCode.push_back((Byte)((Address & 0xff00) >> 8));
+			}
+			else if (Program[Idx].Mnemonic == MNEMONIC::JMP)
+			{
+				if (AllocatedSize[label] == SIZE::BYTE)
 				{
 					//Short jmp
 					Program[Idx].MachineCode.push_back(0xEB);
@@ -325,7 +364,18 @@ void ProgramLoader::HandleForwardReferencing()
 			}
 			else
 			{
-
+				//JNC,JC...etc
+				if (AllocatedSize[label] == SIZE::BYTE)
+				{
+					//Short jmp
+					Program[Idx].MachineCode.push_back((Byte)(Address & 0x00ff));
+				}
+				else
+				{
+					//near jmp
+					Program[Idx].MachineCode.push_back((Byte)(Address & 0x00ff));
+					Program[Idx].MachineCode.push_back((Byte)((Address & 0xff00) >> 8));
+				}
 			}
 		}
 	}
@@ -356,7 +406,7 @@ void ProgramLoader::HandleForwardReferencing()
 		
 
 		std::string CODE;
-		CODE += "\t[" + Ins.Mnemonic;
+		CODE += "\t\t[" + Ins.Mnemonic;
 		if (!Ins.operand.first.empty())
 		{
 			CODE += ' ' + Ins.operand.first;
@@ -400,9 +450,26 @@ bool ProgramLoader::IsValidMnemonic(const std::string& s)
 	return CallBacks.count(s);
 }
 
-bool ProgramLoader::IsJumpCallInstruction(const std::string& s)
+bool ProgramLoader::IsJumpCallInstruction(const std::string& S)
 {
-	return s == "JMP" || s == "CALL";
+	bool OK = false;
+	OK |= (S == MNEMONIC::JMP);
+	OK |= (S == MNEMONIC::JC);
+	OK |= (S == MNEMONIC::JNC);
+	OK |= (S == MNEMONIC::JZ);
+	OK |= (S == MNEMONIC::JE);
+	OK |= (S == MNEMONIC::JNZ);
+	OK |= (S == MNEMONIC::JNE);
+	OK |= (S == MNEMONIC::JPE);
+	OK |= (S == MNEMONIC::JP);
+	OK |= (S == MNEMONIC::JPO);
+	OK |= (S == MNEMONIC::JNP);
+	OK |= (S == MNEMONIC::JS);
+	OK |= (S == MNEMONIC::JNS);
+	OK |= (S == MNEMONIC::JO);
+	OK |= (S == MNEMONIC::JNO);
+	OK |= (S == MNEMONIC::CALL);
+	return OK;
 }
 /*<-------------------------------------MOV-------------------------------------->*/
 
@@ -981,7 +1048,7 @@ bool ProgramLoader::MOV(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected 2 Operands @MOV\n");
+		return Error::LOG("Expected 2 Operands @MOV", Program[CurrInstructionIndex].LineNumber);
 	}
 
 	std::string OP1 = operand.first;
@@ -1878,7 +1945,7 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected 2 Operands @MOV\n");
+		return Error::LOG("Expected 2 Operands @AAACOSSX", Program[CurrInstructionIndex].LineNumber);
 	}
 
 	std::string OP1 = operand.first;
@@ -3677,13 +3744,228 @@ bool ProgramLoader::CMC(const Operand& operand)
 /*<----------------------------JMP------------------------------------------>*/
 bool ProgramLoader::JMP(const Operand& operand)
 {
-	//Machine code will be produce later(When handling forward referencing
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JMP\n");
+	}
+	//Machine code will be produce later(When forward referencing will be handled)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", CurrInstructionIndex);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JC(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JC\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x72);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JNC(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JNC\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x73);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JZ_JE(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JZ/JE\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x74);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JNZ_JNE(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JNZ/JNE\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x75);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+
+}
+
+bool ProgramLoader::JPE_JP(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JPE/JP\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x7A);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JPO_JNP(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JPO/JNP\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x7B);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JS(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JS\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x78);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JNS(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JNS\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x79);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JO(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JO\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x70);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::JNO(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @JNO\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0x71);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+	}
+}
+/*<--------------------------CALL-------------------------->*/
+
+bool ProgramLoader::CALL(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG("Expected No Operand @CALL\n");
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInstructionIndex].MachineCode.push_back(0xE8);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
 	}
 }

@@ -35,6 +35,22 @@ namespace MNEMONIC
 	const std::string CMC = "CMC";
 	const std::string XCHG = "XCHG";
 	const std::string JMP = "JMP";
+	const std::string JC = "JC";
+	const std::string JNC = "JNC";
+	const std::string JZ = "JZ";
+	const std::string JE = "JE";
+	const std::string JNZ = "JNZ";
+	const std::string JNE = "JNE";
+	const std::string JPE = "JPE";
+	const std::string JP = "JP";
+	const std::string JPO = "JPO";
+	const std::string JNP = "JNP";
+	const std::string JS = "JS";
+	const std::string JNS = "JNS";
+	const std::string JO = "JO";
+	const std::string JNO = "JNO";
+	const std::string CALL = "CALL";
+
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =

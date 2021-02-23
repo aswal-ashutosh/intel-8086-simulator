@@ -1,6 +1,8 @@
-0000: D0 C8 D0 C8 D0 C8 
-      D0 C8 D0 C8 D0 C8 
-      D0 C8 D0 C8 D0 C8 
-      D0 C8             	[ROR AL 0AH]
-0014: 8A C3             	[MOV AL BL]
-0016: 27                	[DAA]
+0000: 8A C3             		[MOV AL BL]
+0002: 27                		[DAA]
+0003: EB 07             		[JMP L1]
+0005: 3A C3             		[CMP AL BL]
+0007: F9                		[STC]
+0008: 73 03             		[JNC L2]
+000A: E8 0D 00          		[CALL WHAT]
+000D: 8B C3             		[MOV AX BX]
