@@ -21,6 +21,7 @@ int main()
 
 	ProgramExecutor::Execute();
 	Register::PrintAll();
-	Memory::DebugMem(0x0000, 0x500, 5);
+	Memory::DebugMem(0x8000, 0xFFFD, 1);
+	Memory::DebugMem(0x8000, 0xFFFE, 1);
 	return 0;
 }

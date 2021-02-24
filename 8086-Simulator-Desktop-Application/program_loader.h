@@ -171,6 +171,7 @@ public:
 	static bool JO(const Operand&);
 	static bool JNO(const Operand&);
 	static bool CALL(const Operand&);
+	static bool RET(const Operand&);
 	static bool HLT(const Operand&);
 };
 
@@ -200,6 +201,7 @@ std::vector<Instruction> ProgramLoader::GetProgram()
 void ProgramLoader::LoadCallBacks()
 {
 	CallBacks[MNEMONIC::MOV] = MOV;
+	CallBacks[MNEMONIC::XCHG] = XCHG;
 	CallBacks[MNEMONIC::ADD] = ADD;
 	CallBacks[MNEMONIC::ADC] = ADC;
 	CallBacks[MNEMONIC::SUB] = SUB;
@@ -228,7 +230,6 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::STC] = STC;
 	CallBacks[MNEMONIC::CLC] = CLC;
 	CallBacks[MNEMONIC::CMC] = CMC;
-	CallBacks[MNEMONIC::XCHG] = XCHG;
 	CallBacks[MNEMONIC::JMP] = JMP;
 	CallBacks[MNEMONIC::JC] = JC;
 	CallBacks[MNEMONIC::JNC] = JNC;
@@ -245,6 +246,7 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::JO] = JO;
 	CallBacks[MNEMONIC::JNO] = JNO;
 	CallBacks[MNEMONIC::CALL] = CALL;
+	CallBacks[MNEMONIC::RET] = RET;
 	CallBacks[MNEMONIC::HLT] = HLT;
 }
 
@@ -3969,6 +3971,17 @@ bool ProgramLoader::CALL(const Operand& operand)
 	{
 		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
 	}
+}
+
+/*<----------------------RET------------------------------>*/
+bool ProgramLoader::RET(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 0))
+	{
+		return Error::LOG("Expected No Operand @RET\n");
+	}
+	Program[CurrInstructionIndex].MachineCode.push_back(0xC3);
+	return true;
 }
 
 /*<-----------------------HLT----------------------------->*/

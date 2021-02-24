@@ -14,6 +14,7 @@ class ProgramExecutor
 	static bool HLT_STATE_REACHED;
 	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
 	static std::vector<Instruction> Program;
+	static std::vector<int> CallStack;
 
 	static bool MOV_CASE_1(const std::string&, const std::string&);
 	static bool MOV_CASE_2(const std::string&, const std::string&);
@@ -301,11 +302,14 @@ public:
 	static bool JNS(const Operand&);
 	static bool JO(const Operand&);
 	static bool JNO(const Operand&);
+	static bool CALL(const Operand&);
+	static bool RET(const Operand&);
 	static bool HLT(const Operand&);
 };
 
 int ProgramExecutor::CurrInsIndex = 0;
 bool ProgramExecutor::HLT_STATE_REACHED = false;
+std::vector<int> ProgramExecutor::CallStack;
 std::vector<Instruction> ProgramExecutor::Program;
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
 
@@ -356,6 +360,8 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::JNS] = JNS;
 	CallBacks[MNEMONIC::JO] = JO;
 	CallBacks[MNEMONIC::JNO] = JNO;
+	CallBacks[MNEMONIC::CALL] = CALL;
+	CallBacks[MNEMONIC::RET] = RET;
 	CallBacks[MNEMONIC::HLT] = HLT;
 }
 

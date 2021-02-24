@@ -135,6 +135,9 @@
     <ClInclude Include="jump.h">
       <Filter>Header Files\Instruction Set</Filter>
     </ClInclude>
+    <ClInclude Include="subroutine.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">

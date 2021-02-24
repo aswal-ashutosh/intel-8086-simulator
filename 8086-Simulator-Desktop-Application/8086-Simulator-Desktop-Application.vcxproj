@@ -54,6 +54,7 @@
     <ClInclude Include="register.h" />
     <ClInclude Include="hex_size.h" />
     <ClInclude Include="shl_sal.h" />
+    <ClInclude Include="subroutine.h" />
     <ClInclude Include="sub_sbb.h" />
     <ClInclude Include="typedef.h" />
     <ClInclude Include="utility.h" />

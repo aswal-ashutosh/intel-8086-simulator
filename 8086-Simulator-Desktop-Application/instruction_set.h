@@ -21,4 +21,5 @@
 #include"carry_manipulators.h"
 #include"xchg.h"
 #include"jump.h"
+#include"subroutine.h"
 #include"hlt.h"
