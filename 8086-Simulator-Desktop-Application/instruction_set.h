@@ -20,3 +20,4 @@
 #include"ror.h"
 #include"carry_manipulators.h"
 #include"xchg.h"
+#include"hlt.h"

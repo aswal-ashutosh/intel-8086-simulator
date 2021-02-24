@@ -132,54 +132,66 @@ bool ProgramExecutor::DIV(const Operand& operand)
 {
 	std::string OP = operand.first;
 
+	bool OK = false;
+
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
 		//Case-1: DIV []
-		return DIV_CASE_1(OP);
+		OK = DIV_CASE_1(OP);
 	}
 	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: DIV W[]
-		return DIV_CASE_2(OP);
+		OK = DIV_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
 		//Case-3: DIV REG8
-		return DIV_CASE_3(OP);
+		OK = DIV_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
 		//Case-4: DIV REG16
-		return DIV_CASE_4(OP);
+		OK = DIV_CASE_4(OP);
 	}
-
-	return Error::LOG("Execution Failed @DIV\n");
+	else
+	{
+		return Error::LOG("Unhandled Case @DIV");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }
 
 bool ProgramExecutor::IDIV(const Operand& operand)
 {
 	std::string OP = operand.first;
 
+	bool OK = false;
+
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
 		//Case-1: IDIV []
-		return IDIV_CASE_1(OP);
+		OK = IDIV_CASE_1(OP);
 	}
 	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: IDIV W[]
-		return IDIV_CASE_2(OP);
+		OK = IDIV_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
 		//Case-3: IDIV REG8
-		return IDIV_CASE_3(OP);
+		OK = IDIV_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
 		//Case-4: IDIV REG16
-		return IDIV_CASE_4(OP);
+		OK = IDIV_CASE_4(OP);
 	}
-
-	return Error::LOG("Execution Failed @IDIV\n");
+	else
+	{
+		Error::LOG("Unhandled Case @IDIV");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }

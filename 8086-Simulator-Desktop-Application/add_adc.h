@@ -356,67 +356,75 @@ bool ProgramExecutor::ADD(const Operand& operand)
 	const std::string& OP1 = operand.first;
 	const std::string& OP2 = operand.second;
 
+	bool OK = false;
+
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-1: REG8, REG8
-		return ADD_CASE_1(OP1, OP2);
+		OK = ADD_CASE_1(OP1, OP2);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2) && Utility::IsByteMemory(OP2))
 	{
 		//Case-2: REG8, []
-		return ADD_CASE_2(OP1, OP2);
+		OK = ADD_CASE_2(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-3: [], REG8
-		return ADD_CASE_3(OP1, OP2);
+		OK = ADD_CASE_3(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-4: REG16, REG16
-		return ADD_CASE_4(OP1, OP2);
+		OK = ADD_CASE_4(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
 	{
 		//Case-5: REG16, []/W[]
-		return ADD_CASE_5(OP1, OP2);
+		OK = ADD_CASE_5(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-6: []/W[], REG16
-		return ADD_CASE_6(OP1, OP2);
+		OK = ADD_CASE_6(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-7: [], IMMD8
-		return ADD_CASE_7(OP1, OP2);
+		OK = ADD_CASE_7(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
 		//Case-8: []/W[], IMMD16
-		return ADD_CASE_8(OP1, OP2);
+		OK = ADD_CASE_8(OP1, OP2);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-9: REG8, IMMD8
-		return ADD_CASE_9(OP1, OP2);
+		OK = ADD_CASE_9(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
 		//Case-10: REG16, IMMD16
-		return ADD_CASE_10(OP1, OP2);
+		OK = ADD_CASE_10(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-11: REG16, IMMD8
-		return ADD_CASE_11(OP1, OP2);
+		OK = ADD_CASE_11(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-12: W[], IMMD8
-		return ADD_CASE_12(OP1, OP2);
+		OK = ADD_CASE_12(OP1, OP2);
 	}
-	return Error::LOG("Execution Failed @ ADD\n");
+	else
+	{
+		//Remove In release version
+		return Error::LOG("Unhandled Case @ ADD\n");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }
 
 bool ProgramExecutor::ADC(const Operand& operand)
@@ -424,66 +432,73 @@ bool ProgramExecutor::ADC(const Operand& operand)
 	const std::string& OP1 = operand.first;
 	const std::string& OP2 = operand.second;
 
+	bool OK = false;
+
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-1: REG8, REG8
-		return ADD_CASE_1(OP1, OP2, true);
+		OK =  ADD_CASE_1(OP1, OP2, true);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2) && Utility::IsByteMemory(OP2))
 	{
 		//Case-2: REG8, []
-		return ADD_CASE_2(OP1, OP2, true);
+		OK = ADD_CASE_2(OP1, OP2, true);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-3: [], REG8
-		return ADD_CASE_3(OP1, OP2, true);
+		OK = ADD_CASE_3(OP1, OP2, true);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-4: REG16, REG16
-		return ADD_CASE_4(OP1, OP2, true);
+		OK = ADD_CASE_4(OP1, OP2, true);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
 	{
 		//Case-5: REG16, []/W[]
-		return ADD_CASE_5(OP1, OP2, true);
+		OK = ADD_CASE_5(OP1, OP2, true);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-6: []/W[], REG16
-		return ADD_CASE_6(OP1, OP2, true);
+		OK = ADD_CASE_6(OP1, OP2, true);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-7: [], IMMD8
-		return ADD_CASE_7(OP1, OP2, true);
+		OK = ADD_CASE_7(OP1, OP2, true);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
 		//Case-8: []/W[], IMMD16
-		return ADD_CASE_8(OP1, OP2, true);
+		OK = ADD_CASE_8(OP1, OP2, true);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-9: REG8, IMMD8
-		return ADD_CASE_9(OP1, OP2, true);
+		OK = ADD_CASE_9(OP1, OP2, true);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
 		//Case-10: REG16, IMMD16
-		return ADD_CASE_10(OP1, OP2, true);
+		OK = ADD_CASE_10(OP1, OP2, true);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-11: REG16, IMMD8
-		return ADD_CASE_11(OP1, OP2, true);
+		OK = ADD_CASE_11(OP1, OP2, true);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-12: W[], IMMD8
-		return ADD_CASE_12(OP1, OP2, true);
+		OK = ADD_CASE_12(OP1, OP2, true);
 	}
-
-	return Error::LOG("Execution Failed @ ADC\n");
+	else
+	{
+		//Remove In release version
+		return Error::LOG("Unhandled Case @ ADC\n");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }

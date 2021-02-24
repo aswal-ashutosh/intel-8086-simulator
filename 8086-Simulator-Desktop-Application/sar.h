@@ -178,48 +178,54 @@ bool ProgramExecutor::SAR(const Operand& operand)
 	std::string OP1 = operand.first;
 	std::string OP2 = operand.second;
 
+	bool OK = false;
+
 	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-1 REG8, IMMD8
-		return SAR_CASE_1(OP1, OP2);
+		OK = SAR_CASE_1(OP1, OP2);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-2 REG8, CL
-		return SAR_CASE_2(OP1);
+		OK = SAR_CASE_2(OP1);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-3 REG16, IMMD8
-		return SAR_CASE_3(OP1, OP2);
+		OK = SAR_CASE_3(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-4 REG16, CL
-		return SAR_CASE_4(OP1);
+		OK = SAR_CASE_4(OP1);
 
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-5 [], IMMD8
-		return SAR_CASE_5(OP1, OP2);
+		OK = SAR_CASE_5(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-6 [], CL
-		return SAR_CASE_6(OP1);
+		OK = SAR_CASE_6(OP1);
 
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-7 W[], IMMD8
-		return SAR_CASE_7(OP1, OP2);
+		OK = SAR_CASE_7(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-8 W[], CL
-		return SAR_CASE_8(OP1);
-
+		OK = SAR_CASE_8(OP1);
 	}
-	return Error::LOG("Execution Failed @SAR\n");
+	else
+	{
+		return Error::LOG("Unhandled Case @SAR");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }

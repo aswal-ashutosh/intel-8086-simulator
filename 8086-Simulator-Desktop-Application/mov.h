@@ -111,82 +111,87 @@ bool ProgramExecutor::MOV(const Operand& operand)
 	const std::string& OP1 = operand.first;
 	const std::string& OP2 = operand.second;
 
+	bool OK = false;
 
 	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-1:MOV REG8, immd8
-		return MOV_CASE_1(OP1, OP2);
+		OK = MOV_CASE_1(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-2:MOV REG16, immd16/immd8
-		return MOV_CASE_2(OP1, OP2);
+		OK = MOV_CASE_2(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-3:[], immd8
-		return MOV_CASE_3(OP1, OP2);
+		OK = MOV_CASE_3(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
 		//Case-4:[]/W[], immd16
-		return MOV_CASE_4(OP1, OP2);
+		OK = MOV_CASE_4(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-5:W[], immd8
-		return MOV_CASE_5(OP1, OP2);
+		OK = MOV_CASE_5(OP1, OP2);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-6: REG8, REG8
-		return MOV_CASE_6(OP1, OP2);
+		OK = MOV_CASE_6(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-7: REG16, REG16
-		return MOV_CASE_7(OP1, OP2);
+		OK = MOV_CASE_7(OP1, OP2);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2) && Utility::IsByteMemory(OP2))
 	{
 		//Case-8: REG8, []
-		return MOV_CASE_8(OP1, OP2);
+		OK = MOV_CASE_8(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
 	{
 		//Case-9: REG16, []/W[]
-		return MOV_CASE_9(OP1, OP2);
+		OK = MOV_CASE_9(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-10: [], REG8
-		return MOV_CASE_10(OP1, OP2);
+		OK = MOV_CASE_10(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-11: []/W[], REG16
-		return MOV_CASE_11(OP1, OP2);
+		OK = MOV_CASE_11(OP1, OP2);
 	}
 	else if (Utility::IsSegmentRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-12: SREG, REG16
-		return MOV_CASE_12(OP1, OP2);
+		OK = MOV_CASE_12(OP1, OP2);
 	}
 	else if (Utility::IsSegmentRegister(OP1) && Utility::IsValidMemory(OP2))
 	{
 		//Case-13: SREG, []/W[]
-		return MOV_CASE_13(OP1, OP2);
+		OK = MOV_CASE_13(OP1, OP2);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsSegmentRegister(OP2))
 	{
 		//Case-14: REG16, SREG
-		return MOV_CASE_14(OP1, OP2);
+		OK = MOV_CASE_14(OP1, OP2);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsSegmentRegister(OP2))
 	{
 		//Case-15: []/W[], SREG
-		return MOV_CASE_15(OP1, OP2);
+		OK = MOV_CASE_15(OP1, OP2);
 	}
-
-	return Error::LOG("Executon Failed @ MOV\n");
+	else
+	{
+		return Error::LOG("Unhandled Case @MOV");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }

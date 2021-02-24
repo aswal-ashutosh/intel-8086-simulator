@@ -126,8 +126,11 @@
     <ClInclude Include="xchg.h">
       <Filter>Header Files\Instruction Set</Filter>
     </ClInclude>
-    <ClInclude Include="labels.h">
+    <ClInclude Include="hlt.h">
       <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
+    <ClInclude Include="labels.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -50,7 +50,7 @@ namespace MNEMONIC
 	const std::string JO = "JO";
 	const std::string JNO = "JNO";
 	const std::string CALL = "CALL";
-
+	const std::string HLT = "HLT";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =

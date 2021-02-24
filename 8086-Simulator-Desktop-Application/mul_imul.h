@@ -123,53 +123,67 @@ bool ProgramExecutor::IMUL_CASE_4(const std::string& REG16)
 bool ProgramExecutor::MUL(const Operand& operand)
 {
 	std::string OP = operand.first;
+	
+	bool OK = false;
 
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
 		//Case-1: MUL []
-		return MUL_CASE_1(OP);
+		OK = MUL_CASE_1(OP);
 	}
 	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: MUL W[]
-		return MUL_CASE_2(OP);
+		OK = MUL_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
 		//Case-3: MUL REG8
-		return MUL_CASE_3(OP);
+		OK = MUL_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
 		//Case-4: MUL REG16
-		return MUL_CASE_4(OP);
+		OK = MUL_CASE_4(OP);
 	}
-	return Error::LOG("Execution Failed @MUL\n");
+	else
+	{
+		return Error::LOG("Unhandled Case @MUL");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }
 
 bool ProgramExecutor::IMUL(const Operand& operand)
 {
 	std::string OP = operand.first;
 
+	bool OK = false;
+
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
 		//Case-1: IMUL []
-		return IMUL_CASE_1(OP);
+		OK = IMUL_CASE_1(OP);
 	}
 	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: IMUL W[]
-		return IMUL_CASE_2(OP);
+		OK = IMUL_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
 		//Case-3: IMUL REG8
-		return IMUL_CASE_3(OP);
+		OK = IMUL_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
 		//Case-4: IMUL REG16
-		return IMUL_CASE_4(OP);
+		OK = IMUL_CASE_4(OP);
 	}
-	return Error::LOG("Execution Failed @IMUL\n");
+	else
+	{
+		return Error::LOG("Unhandled Case @IMUL");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }

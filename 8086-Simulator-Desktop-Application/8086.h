@@ -9,9 +9,11 @@
 
 class ProgramExecutor
 {
-	int CurrInstruction = 0;
-
+	static int CurrInsIndex;
+	static bool HLT_STATE_REACHED;
 	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
+	static std::vector<Instruction> Program;
+
 	static bool MOV_CASE_1(const std::string&, const std::string&);
 	static bool MOV_CASE_2(const std::string&, const std::string&);
 	static bool MOV_CASE_3(const std::string&, const std::string&);
@@ -250,9 +252,12 @@ class ProgramExecutor
 
 	static void UpdateFlags_ROR_8Bit(const Byte, int);
 	static void UpdateFlags_ROR_16Bit(const Word, int);
+
+	//Check if there is a instruction at index pointed by CurrentInsIndex and update the IP.
+	static bool NextInstructionExist();
 public:
 	static void LoadCallBacks();
-	static bool Execute(const std::vector<Instruction>&);
+	static bool Execute();
 
 
 	static bool MOV(const Operand&);
@@ -284,8 +289,12 @@ public:
 	static bool CLC(const Operand&);
 	static bool CMC(const Operand&);
 	static bool XCHG(const Operand&);
+	static bool HLT(const Operand&);
 };
 
+int ProgramExecutor::CurrInsIndex = 0;
+bool ProgramExecutor::HLT_STATE_REACHED = false;
+std::vector<Instruction> ProgramExecutor::Program;
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramExecutor::CallBacks;
 
 void ProgramExecutor::LoadCallBacks()
@@ -320,25 +329,41 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::CLC] = CLC;
 	CallBacks[MNEMONIC::CMC] = CMC;
 	CallBacks[MNEMONIC::XCHG] = XCHG;
+	CallBacks[MNEMONIC::HLT] = HLT;
 }
 
-bool ProgramExecutor::Execute(const std::vector<Instruction>& Program)
+bool ProgramExecutor::Execute()
 {
 	//[TODO:] Remove extra checking at release version
-	for (const Instruction& I : Program)
+	Program = ProgramLoader::GetProgram();
+	while(!HLT_STATE_REACHED)
 	{
-		if (CallBacks.count(I.Mnemonic))
+		const Instruction& Ins = Program[CurrInsIndex];
+		if (CallBacks.count(Ins.Mnemonic))
 		{
-			if (!CallBacks[I.Mnemonic](I.operand))
+			if (!CallBacks[Ins.Mnemonic](Ins.operand))
 			{
-				return Error::LOG("Execution Faild!\n");
+				return false;
 			}
 		}
 		else
 		{
-			return Error::LOG(I.Mnemonic + " is not implemented yet! @ Execute\n");
+			return Error::LOG(Ins.Mnemonic + " is not implemented yet! @ Execute\n");
 		}
 	}
-
 	return true;
+}
+
+
+bool ProgramExecutor::NextInstructionExist()
+{
+	if (CurrInsIndex < ProgramLoader::ProgramSize())
+	{
+		Register::IP(Program[CurrInsIndex].Offset);
+		return true;
+	}
+	else
+	{
+		return Error::LOG("HLT never reached!\n");
+	}
 }

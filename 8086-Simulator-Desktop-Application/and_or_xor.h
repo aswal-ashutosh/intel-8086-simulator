@@ -227,82 +227,89 @@ bool ProgramExecutor::LOGICAL_OPERATION(const Operand& operand, const LOGIC& OPE
 {
 	const std::string& OP1 = operand.first;
 	const std::string& OP2 = operand.second;
+	
+	bool OK = false;
 
 	if (Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-1: REG8, REG8
-		return LOGIC_CASE_1(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_1(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2) && Utility::IsByteMemory(OP2))
 	{
 		//Case-2: REG8, []
-		return LOGIC_CASE_2(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_2(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
 	{
 		//Case-3: [], REG8
-		return LOGIC_CASE_3(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_3(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-4: REG16, REG16
-		return LOGIC_CASE_4(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_4(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidMemory(OP2))
 	{
 		//Case-5: REG16, []/W[]
-		return LOGIC_CASE_5(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_5(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::Is16BitRegister(OP2))
 	{
 		//Case-6: []/W[], REG16
-		return LOGIC_CASE_6(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_6(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-7: [], IMMD8
-		return LOGIC_CASE_7(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_7(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
 		//Case-8: []/W[], IMMD16
-		return LOGIC_CASE_8(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_8(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-9: REG8, IMMD8
-		return LOGIC_CASE_9(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_9(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
 	{
 		//Case-10: REG16, IMMD16
-		return LOGIC_CASE_10(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_10(OP1, OP2, OPERATION);
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-11: REG16, IMMD8
-		return LOGIC_CASE_11(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_11(OP1, OP2, OPERATION);
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
 	{
 		//Case-12: W[], IMMD8
-		return LOGIC_CASE_12(OP1, OP2, OPERATION);
+		OK = LOGIC_CASE_12(OP1, OP2, OPERATION);
 	}
-
-	return Error::LOG("Execution Failed @ Logical Operation\n");
+	else
+	{
+		//[To Be Removed]
+		return Error::LOG("Unhandled Case @Logical OPeration");
+	}
+	++CurrInsIndex;
+	return OK;
 }
 
 bool ProgramExecutor::AND(const Operand& operand)
 {
-	return LOGICAL_OPERATION(operand, LOGIC::AND) ? true : Error::LOG("Execution Failed @ AND\n");
+	return LOGICAL_OPERATION(operand, LOGIC::AND) ? NextInstructionExist() : false;
 }
 
 bool ProgramExecutor::OR(const Operand& operand)
 {
-	return LOGICAL_OPERATION(operand, LOGIC::OR) ? true : Error::LOG("Execution Failed @ OR\n");
+	return LOGICAL_OPERATION(operand, LOGIC::OR) ? NextInstructionExist() : false;
 }
 
 bool ProgramExecutor::XOR(const Operand& operand)
 {
-	return LOGICAL_OPERATION(operand, LOGIC::XOR) ? true : Error::LOG("Execution Failed @ XOR\n");
+	return LOGICAL_OPERATION(operand, LOGIC::XOR) ? NextInstructionExist() : false;
 }

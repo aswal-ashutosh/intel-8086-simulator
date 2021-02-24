@@ -46,7 +46,7 @@ public:
 	static void REG8(const std::string&, const Byte);
 	static void REG16(const std::string&, const Word);
 
-	static void IP_INC(const Word&); /*Function to increment IP*/
+	//static void IP_INC(const Word&); /*Function to increment IP*/
 	static void IP(const Word&);
 
 	//Testing Functions
@@ -290,6 +290,6 @@ void Register::REG16(const std::string& R, const Word data)
 }
 
 //[TODO]::OVERFLOW CHECKER[May be required]
-void Register::IP_INC(const Word& data) { _IP += data; }/*Function to increment IP*/
+//void Register::IP_INC(const Word& data) { _IP += data; }/*Function to increment IP*/
 void Register::IP(const Word& data) { _IP = data; }
 

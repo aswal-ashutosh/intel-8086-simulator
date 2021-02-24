@@ -72,26 +72,32 @@ bool ProgramExecutor::NEG(const Operand& operand)
 {
 	std::string OP = operand.first;
 
+	bool OK = false;
+
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
 		//Case-1: NEG []
-		return NEG_CASE_1(OP);
+		OK = NEG_CASE_1(OP);
 	}
 	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: NEG W[]
-		return NEG_CASE_2(OP);
+		OK = NEG_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
 		//Case-3: NEG REG8
-		return NEG_CASE_3(OP);
+		OK = NEG_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
 		//Case-4: NEG REG16
-		return NEG_CASE_4(OP);
+		OK = NEG_CASE_4(OP);
 	}
-
-	return Error::LOG("Execution Failed @NEG\n");
+	else
+	{
+		return Error::LOG("Unhandled Case @NEG");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }

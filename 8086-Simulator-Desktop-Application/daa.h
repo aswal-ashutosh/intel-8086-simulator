@@ -25,7 +25,8 @@ bool ProgramExecutor::DAA(const Operand& operand)
 	Register::SetFlag(Register::FLAG::PF, !(Utility::SetBitCount(AL) & 1)); //Parity Flag
 	Register::SetFlag(Register::FLAG::SF, AL & (1 << 7)); //Sign Flag
 	Register::SetFlag(Register::FLAG::ZF, AL == 0x00); //Zero Flag
+	//Overflow Flag is undefined
 
-	//Overflow is undefined
-	return true;
+	++CurrInsIndex;
+	return NextInstructionExist();
 }

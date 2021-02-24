@@ -66,26 +66,32 @@ bool ProgramExecutor::INC(const Operand& operand)
 {
 	std::string OP = operand.first;
 
+	bool OK = false;
+
 	if (Utility::IsValidMemory(OP) && Utility::IsByteMemory(OP))
 	{
 		//Case-1: INC []
-		return INC_CASE_1(OP);
+		OK = INC_CASE_1(OP);
 	}
 	else if (Utility::IsValidMemory(OP) && Utility::IsWordMemory(OP))
 	{
 		//Case-2: INC W[]
-		return INC_CASE_2(OP);
+		OK = INC_CASE_2(OP);
 	}
 	else if (Utility::Is8BitRegister(OP))
 	{
 		//Case-3: INC REG8
-		return INC_CASE_3(OP);
+		OK = INC_CASE_3(OP);
 	}
 	else if (Utility::Is16BitRegister(OP))
 	{
 		//Case-4: INC REG16
-		return INC_CASE_4(OP);
+		OK = INC_CASE_4(OP);
 	}
-
-	return Error::LOG("Wrong Syntax @INC\n");
+	else
+	{
+		return Error::LOG("Unhandled Case @INC");
+	}
+	++CurrInsIndex;
+	return OK ? NextInstructionExist() : false;
 }

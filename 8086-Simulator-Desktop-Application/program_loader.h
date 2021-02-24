@@ -171,6 +171,7 @@ public:
 	static bool JO(const Operand&);
 	static bool JNO(const Operand&);
 	static bool CALL(const Operand&);
+	static bool HLT(const Operand&);
 };
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
@@ -244,8 +245,8 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::JO] = JO;
 	CallBacks[MNEMONIC::JNO] = JNO;
 	CallBacks[MNEMONIC::CALL] = CALL;
+	CallBacks[MNEMONIC::HLT] = HLT;
 }
-
 
 void ProgramLoader::HandleForwardReferencing()
 {
@@ -3968,4 +3969,15 @@ bool ProgramLoader::CALL(const Operand& operand)
 	{
 		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
 	}
+}
+
+/*<-----------------------HLT----------------------------->*/
+bool ProgramLoader::HLT(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 0))
+	{
+		return Error::LOG("Expected No Operand @HLT\n");
+	}
+	Program[CurrInstructionIndex].MachineCode.push_back(0xF4);
+	return true;
 }
