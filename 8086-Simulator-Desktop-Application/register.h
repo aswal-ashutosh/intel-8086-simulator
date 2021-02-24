@@ -87,8 +87,8 @@ std::unordered_map<std::string, Byte> Register::_REG8 =
 std::unordered_map<std::string, Word> Register::_REG16 =
 {
 	{REGISTER::CS, 0x0000},
-	{REGISTER::DS, 0x4000},
-	{REGISTER::SS, 0x8000},
+	{REGISTER::SS, 0x4000},
+	{REGISTER::DS, 0x8000},
 	{REGISTER::ES, 0xC000},
 
 	{REGISTER::AX, 0},
