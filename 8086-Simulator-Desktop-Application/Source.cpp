@@ -9,8 +9,18 @@ int main()
 	ProgramExecutor::LoadCallBacks();
 	Parser::Read("test.txt");
 	ProgramLoader::Load();
+
+	//
+	Memory::Set8Bit(0x00500, 0x04);
+	Memory::Set8Bit(0x00501, 0xF9);
+	Memory::Set8Bit(0x00502, 0xF2);
+	Memory::Set8Bit(0x00503, 0x39);
+	Memory::Set8Bit(0x00504, 0x05);
+	//
+
+
 	ProgramExecutor::Execute();
 	Register::PrintAll();
-	//Memory::DebugMem(0x0000, 0x1234, 2);
+	Memory::DebugMem(0x0000, 0x500, 5);
 	return 0;
 }

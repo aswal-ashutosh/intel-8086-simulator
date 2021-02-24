@@ -20,4 +20,5 @@
 #include"ror.h"
 #include"carry_manipulators.h"
 #include"xchg.h"
+#include"jump.h"
 #include"hlt.h"

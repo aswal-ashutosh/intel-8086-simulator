@@ -4,8 +4,9 @@
 #include"utility.h"
 #include"register.h"
 #include"memory.h"
-#include<unordered_map>
 #include"instruction.h"
+#include"labels.h"
+#include<unordered_map>
 
 class ProgramExecutor
 {
@@ -261,6 +262,7 @@ public:
 
 
 	static bool MOV(const Operand&);
+	static bool XCHG(const Operand&);
 	static bool ADD(const Operand&);
 	static bool ADC(const Operand&);
 	static bool SUB(const Operand&);
@@ -288,7 +290,17 @@ public:
 	static bool STC(const Operand&);
 	static bool CLC(const Operand&);
 	static bool CMC(const Operand&);
-	static bool XCHG(const Operand&);
+	static bool JMP(const Operand&);
+	static bool JC(const Operand&);
+	static bool JNC(const Operand&);
+	static bool JZ_JE(const Operand&);
+	static bool JNZ_JNE(const Operand&);
+	static bool JPE_JP(const Operand&);
+	static bool JPO_JNP(const Operand&);
+	static bool JS(const Operand&);
+	static bool JNS(const Operand&);
+	static bool JO(const Operand&);
+	static bool JNO(const Operand&);
 	static bool HLT(const Operand&);
 };
 
@@ -329,6 +341,21 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::CLC] = CLC;
 	CallBacks[MNEMONIC::CMC] = CMC;
 	CallBacks[MNEMONIC::XCHG] = XCHG;
+	CallBacks[MNEMONIC::JMP] = JMP;
+	CallBacks[MNEMONIC::JC] = JC;
+	CallBacks[MNEMONIC::JNC] = JNC;
+	CallBacks[MNEMONIC::JZ] = JZ_JE;
+	CallBacks[MNEMONIC::JE] = JZ_JE;
+	CallBacks[MNEMONIC::JNZ] = JNZ_JNE;
+	CallBacks[MNEMONIC::JNE] = JNZ_JNE;
+	CallBacks[MNEMONIC::JPE] = JPE_JP;
+	CallBacks[MNEMONIC::JP] = JPE_JP;
+	CallBacks[MNEMONIC::JPO] = JPO_JNP;
+	CallBacks[MNEMONIC::JNP] = JPO_JNP;
+	CallBacks[MNEMONIC::JS] = JS;
+	CallBacks[MNEMONIC::JNS] = JNS;
+	CallBacks[MNEMONIC::JO] = JO;
+	CallBacks[MNEMONIC::JNO] = JNO;
 	CallBacks[MNEMONIC::HLT] = HLT;
 }
 
@@ -353,7 +380,6 @@ bool ProgramExecutor::Execute()
 	}
 	return true;
 }
-
 
 bool ProgramExecutor::NextInstructionExist()
 {

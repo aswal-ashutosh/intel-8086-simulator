@@ -135,6 +135,8 @@ void Register::PrintAll()
 		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
 	}
 
+	std::cout << "IP:[\x1B[32m" << Converter::DecToHex(_IP, SIZE::WORD) << "\x1b[0m]\n";
+
 	std::cout << "OF:[" << (GetFlag(FLAG::OF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
 	std::cout << "DF:[" << (GetFlag(FLAG::DF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
 	std::cout << "SF:[" << (GetFlag(FLAG::SF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";

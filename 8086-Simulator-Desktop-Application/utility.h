@@ -73,7 +73,7 @@ Word Utility::HexToDec(const std::string& data)
 
 bool Utility::IsValidHex(const std::string& hex)
 {
-	if (hex.size() > 5)
+	if (hex.size() > 5 || hex.size() < 2)
 	{
 		return false;
 	}

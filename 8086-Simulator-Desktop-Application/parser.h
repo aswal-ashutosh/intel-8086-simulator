@@ -176,7 +176,7 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 			}
 			if (!end) { Error::LOG("Expected Memory @ Tokenize\n"); }
 		}
-		else if (x == '#')
+		else if (x == ';')
 		{
 			if (!token.empty())
 			{

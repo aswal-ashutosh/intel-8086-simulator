@@ -1131,7 +1131,7 @@ bool ProgramLoader::MOV(const Operand& operand)
 		//Case-15: []/W[], SREG
 		return MOV_CASE_15(OP1, OP2);
 	}
-	return Error::LOG("Wrong Syntax @ MOV\n");
+	return Error::LOG("Wrong Syntax @ MOV", Program[CurrInstructionIndex].LineNumber);
 }
 
 /*<------------------------XCHG------------------->*/
