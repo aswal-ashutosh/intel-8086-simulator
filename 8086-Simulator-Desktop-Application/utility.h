@@ -45,7 +45,7 @@ public:
 	static std::vector<std::string> SplitBy(const std::string&, const char&);
 
 	//Function to check whether the data is 8bit-hex or 16-bitHex
-	static const SIZE HexSize(const std::string&);
+	static const HEX_SIZE HexSize(const std::string&);
 
 	//Function to extract hex data from memory expression, it will return true if exp only contain hex data
 	static bool ExtractHexFromMemExp(const std::string&, std::string&);
@@ -224,17 +224,17 @@ std::vector<std::string> Utility::SplitBy(const std::string& s, const char& del 
 	return res;
 }
 
-const SIZE Utility::HexSize(const std::string& hex)
+const HEX_SIZE Utility::HexSize(const std::string& hex)
 {
 	Word data = HexToDec(hex);
 	if (data >= 0x00 && data <= 0xff)
 	{
-		return SIZE::BYTE;
+		return HEX_SIZE::BYTE;
 	}
 	else
 	{
 		//data > 0xff && data <= 0xffff
-		return SIZE::WORD;
+		return HEX_SIZE::WORD;
 	}
 	//[ToDo:REMOVE]
 	Error::LOG("Unexpected Case @HexSize\n");
@@ -280,7 +280,7 @@ std::string Utility::ExpressionForModRM(const std::string& mem)
 		{
 			if (res.empty())
 			{
-				if (Utility::HexSize(s) == SIZE::BYTE)
+				if (Utility::HexSize(s) == HEX_SIZE::BYTE)
 				{
 					res += "d8";
 				}
@@ -291,7 +291,7 @@ std::string Utility::ExpressionForModRM(const std::string& mem)
 			}
 			else
 			{
-				if (Utility::HexSize(s) == SIZE::BYTE)
+				if (Utility::HexSize(s) == HEX_SIZE::BYTE)
 				{
 					res += "+d8";
 				}

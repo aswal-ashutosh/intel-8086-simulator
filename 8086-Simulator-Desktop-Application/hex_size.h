@@ -1,5 +1,5 @@
 #pragma once
-enum class SIZE
+enum class HEX_SIZE
 {
 	BYTE,
 	WORD,

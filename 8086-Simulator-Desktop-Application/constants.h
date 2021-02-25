@@ -155,4 +155,45 @@ namespace REGISTER
 	const std::string BP = "BP";
 	const std::string SI = "SI";
 	const std::string DI = "DI";
+
+	const std::string IP = "IP";
 };
+
+namespace PATH
+{
+	const std::string ABOUT_HTML_FILE = "ABOUT.html";
+	const std::string HELP_HTML_FILE = "HELP.html";
+}
+
+namespace MESSAGE
+{
+	const std::string SUCCESSFUL_EXECUTION = "Program Executed Successfully.";
+	const std::string SUCCESSFUL_PROGRAM_LOADING = "Program Loaded Succesfully.";
+}
+
+namespace DIALOG
+{
+	const std::string ABOUT = "ABOUT";
+	const std::string HELP = "HELP";
+	const std::string EXECUTION_STOPPED = "EXECUTION STOPPED";
+	const std::string SUCCESS = "SUCCESS";
+}
+
+namespace PANEL
+{
+	const std::string REGISTER = "REGISTERS";
+	const std::string FLAG_REGISTER = "FLAG REGISTER";
+	const std::string MEMORY_INITIALIZER = "MEMORY INITIALIZER";
+	const std::string MEMORY_VIEWER = "MEMORY VIEWER";
+	const std::string DEBUGGER = "DEBUGGER";
+	const std::string SEGMENT_INITIALIZER = "SEGMENT INITIALIZER";
+} // namespace PANEL
+
+namespace BUTTON
+{
+	const std::string VIEW = "VIEW";
+	const std::string SET = "SET";
+	const std::string EXECUTE = "EXECUTE";
+	const std::string DEBUG = "DEBUG";
+	const std::string STOP = "STOP";
+} // namespace BUTTON

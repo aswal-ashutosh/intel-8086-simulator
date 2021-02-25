@@ -21,12 +21,12 @@ public:
 	
 	static void DebugMem(int s, int offset, int cnt)
 	{
-		std::string address = Converter::DecToHex(s, SIZE::WORD);
+		std::string address = Converter::DecToHex(s, HEX_SIZE::WORD);
 
 		for (int i = 0; i < cnt; ++i)
 		{
 			int physcialAddress = s * 0x10 + (offset + i);
-			std::string off = Converter::DecToHex(offset + i, SIZE::WORD);
+			std::string off = Converter::DecToHex(offset + i, HEX_SIZE::WORD);
 			std::cout << address << '-' << off << ":[" << "\x1B[32m" + Converter::DecToHex(mem[physcialAddress]) + "\x1B[0m]" << '\n';
 		}
 	}

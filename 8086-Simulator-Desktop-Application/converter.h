@@ -11,7 +11,7 @@ class Converter
 public:
 
 	//To convert Dec to Hex
-	static std::string DecToHex(const Word&, const SIZE&);
+	static std::string DecToHex(const Word&, const HEX_SIZE&);
 	
 	//To convert Hex to Dec
 	static Word HexToDec(const std::string&);
@@ -31,14 +31,14 @@ Byte Converter::Dec(const std::string& data)
 	return res;
 }
 
-std::string Converter::DecToHex(const Word& data, const SIZE& Size = SIZE::BYTE)
+std::string Converter::DecToHex(const Word& data, const HEX_SIZE& Size = HEX_SIZE::BYTE)
 {
 	std::stringstream ss;
 	ss << std::hex << data;
 	std::string res = ss.str() + 'H';
 	Utility::Capitalize(res);
 
-	if (Size == SIZE::BYTE)
+	if (Size == HEX_SIZE::BYTE)
 	{
 		Utility::Format8Bit(res);
 	}

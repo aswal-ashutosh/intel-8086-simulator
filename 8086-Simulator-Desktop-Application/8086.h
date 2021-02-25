@@ -7,6 +7,7 @@
 #include"instruction.h"
 #include"labels.h"
 #include<unordered_map>
+#include"program_loader.h"
 
 class ProgramExecutor
 {
@@ -258,6 +259,7 @@ class ProgramExecutor
 	//Check if there is a instruction at index pointed by CurrentInsIndex and update the IP.
 	static bool NextInstructionExist();
 public:
+	static void ClearProgram();
 	static void LoadCallBacks();
 	static bool Execute();
 
@@ -398,4 +400,11 @@ bool ProgramExecutor::NextInstructionExist()
 	{
 		return Error::LOG("HLT never reached!\n");
 	}
+}
+
+void ProgramExecutor::ClearProgram()
+{
+	ProgramExecutor::Program.clear();
+	ProgramExecutor::CurrInsIndex = 0;
+	ProgramExecutor::HLT_STATE_REACHED = false;
 }

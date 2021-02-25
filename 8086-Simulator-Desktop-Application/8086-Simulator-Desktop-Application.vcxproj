@@ -33,10 +33,12 @@
     <ClInclude Include="hlt.h" />
     <ClInclude Include="jump.h" />
     <ClInclude Include="labels.h" />
+    <ClInclude Include="MainFrame.h" />
     <ClInclude Include="rcl.h" />
     <ClInclude Include="rcr.h" />
     <ClInclude Include="rol.h" />
     <ClInclude Include="ror.h" />
+    <ClInclude Include="run.h" />
     <ClInclude Include="sar.h" />
     <ClInclude Include="shr.h" />
     <ClInclude Include="inc.h" />
@@ -54,6 +56,7 @@
     <ClInclude Include="register.h" />
     <ClInclude Include="hex_size.h" />
     <ClInclude Include="shl_sal.h" />
+    <ClInclude Include="Simulator.h" />
     <ClInclude Include="subroutine.h" />
     <ClInclude Include="sub_sbb.h" />
     <ClInclude Include="typedef.h" />
@@ -61,7 +64,8 @@
     <ClInclude Include="xchg.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="MainFrame.cpp" />
+    <ClCompile Include="Simulator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="machine_code.txt" />
@@ -137,10 +141,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(WXWID)\include;$(WXWID)\include\msvc;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(WXWID)\lib\vc_lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -151,12 +157,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(WXWID)\include;$(WXWID)\include\msvc;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(WXWID)\lib\vc_lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

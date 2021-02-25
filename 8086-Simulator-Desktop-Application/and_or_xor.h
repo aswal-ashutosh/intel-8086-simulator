@@ -260,32 +260,32 @@ bool ProgramExecutor::LOGICAL_OPERATION(const Operand& operand, const LOGIC& OPE
 		//Case-6: []/W[], REG16
 		OK = LOGIC_CASE_6(OP1, OP2, OPERATION);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-7: [], IMMD8
 		OK = LOGIC_CASE_7(OP1, OP2, OPERATION);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::WORD)
 	{
 		//Case-8: []/W[], IMMD16
 		OK = LOGIC_CASE_8(OP1, OP2, OPERATION);
 	}
-	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-9: REG8, IMMD8
 		OK = LOGIC_CASE_9(OP1, OP2, OPERATION);
 	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::WORD)
 	{
 		//Case-10: REG16, IMMD16
 		OK = LOGIC_CASE_10(OP1, OP2, OPERATION);
 	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-11: REG16, IMMD8
 		OK = LOGIC_CASE_11(OP1, OP2, OPERATION);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-12: W[], IMMD8
 		OK = LOGIC_CASE_12(OP1, OP2, OPERATION);

@@ -48,9 +48,12 @@ public:
 
 	//static void IP_INC(const Word&); /*Function to increment IP*/
 	static void IP(const Word&);
+	static Word IP();
 
 	//Testing Functions
 	static void PrintAll();
+
+	static void Clear();
 
 	/*<<<<<<<<<<<<<<<<<<<<<<<<<<FLAG REGISTER>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
@@ -131,11 +134,11 @@ void Register::PrintAll()
 
 	for (const std::pair<const std::string, Word>& R : _REG16)
 	{
-		const std::string& data = Converter::DecToHex(R.second, SIZE::WORD);
+		const std::string& data = Converter::DecToHex(R.second, HEX_SIZE::WORD);
 		std::cout << R.first << ":[" << "\x1B[32m" + data + "\x1B[0m" << "]\n";
 	}
 
-	std::cout << "IP:[\x1B[32m" << Converter::DecToHex(_IP, SIZE::WORD) << "\x1b[0m]\n";
+	std::cout << "IP:[\x1B[32m" << Converter::DecToHex(_IP, HEX_SIZE::WORD) << "\x1b[0m]\n";
 
 	std::cout << "OF:[" << (GetFlag(FLAG::OF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
 	std::cout << "DF:[" << (GetFlag(FLAG::DF)? "\x1B[31m1\x1B[0m" : "\x1B[32m0\x1B[0m") << "] ";
@@ -294,4 +297,26 @@ void Register::REG16(const std::string& R, const Word data)
 //[TODO]::OVERFLOW CHECKER[May be required]
 //void Register::IP_INC(const Word& data) { _IP += data; }/*Function to increment IP*/
 void Register::IP(const Word& data) { _IP = data; }
+
+Word Register::IP() { return _IP; }
+
+void Register::Clear()
+{
+	Flag = 0;//Flag Cleared
+	//8Bit-Reg Cleared
+	for (std::pair<const std::string, Byte>& R : _REG8)
+	{
+		R.second = 0x00;
+	}
+	//16-Bit Reg Cleared
+	for (std::pair<const std::string, Word>& R : _REG16)
+	{
+		if (!Utility::IsSegmentRegister(R.first))
+		{
+			R.second = 0x0000;
+		}
+	}
+	_IP = 0x0000;
+	_REG16[REGISTER::SP] = 0xFFFF;
+}
 

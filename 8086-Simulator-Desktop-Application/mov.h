@@ -113,7 +113,7 @@ bool ProgramExecutor::MOV(const Operand& operand)
 
 	bool OK = false;
 
-	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-1:MOV REG8, immd8
 		OK = MOV_CASE_1(OP1, OP2);
@@ -123,17 +123,17 @@ bool ProgramExecutor::MOV(const Operand& operand)
 		//Case-2:MOV REG16, immd16/immd8
 		OK = MOV_CASE_2(OP1, OP2);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-3:[], immd8
 		OK = MOV_CASE_3(OP1, OP2);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::WORD)
 	{
 		//Case-4:[]/W[], immd16
 		OK = MOV_CASE_4(OP1, OP2);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-5:W[], immd8
 		OK = MOV_CASE_5(OP1, OP2);

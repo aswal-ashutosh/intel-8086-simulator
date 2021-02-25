@@ -12,13 +12,13 @@
 #include<iomanip>
 
 
-std::fstream OUT("machine_code.txt", std::ios::out);
+std::fstream OUTPUT_MACHINE_CODE("machine_code.txt", std::ios::out);
 
 
 class ProgramLoader
 {
 	static std::vector<Instruction> Program;
-	static int CurrInstructionIndex;
+	static int CurrInsIndex;
 	//static int CurrentLoadingAddressOffset;
 
 	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
@@ -125,6 +125,7 @@ public:
 	static void AddInstruction(const Instruction&);
 	static int ProgramSize();
 	static std::vector<Instruction> GetProgram();
+	static void ClearProgram();
 
 	static void LoadCallBacks();
 	static bool Load();
@@ -179,7 +180,7 @@ std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBac
 
 std::vector<Instruction> ProgramLoader::Program;
 
-int ProgramLoader::CurrInstructionIndex = 0;
+int ProgramLoader::CurrInsIndex = 0;
 
 //int ProgramLoader::CurrentLoadingAddressOffset = 0;
 
@@ -196,6 +197,12 @@ int ProgramLoader::ProgramSize()
 std::vector<Instruction> ProgramLoader::GetProgram()
 {
 	return Program;
+}
+
+void ProgramLoader::ClearProgram()
+{
+	ProgramLoader::Program.clear();
+	ProgramLoader::CurrInsIndex = 0;
 }
 
 void ProgramLoader::LoadCallBacks()
@@ -283,29 +290,29 @@ void ProgramLoader::HandleForwardReferencing()
 
 	const std::unordered_map<std::string, int> Labels = Label::GetLabels();
 
-	std::unordered_map<std::string, SIZE> AllocatedSize;
+	std::unordered_map<std::string, HEX_SIZE> AllocatedSize;
 
 	for (const std::pair<std::string, int> x : Labels)
 	{
-		AllocatedSize[x.first] = SIZE::BYTE;
+		AllocatedSize[x.first] = HEX_SIZE::BYTE;
 	}
 
 	//Lamda to calculate the size of location
-	auto Size = [](const unsigned int Offset)->SIZE
+	auto Size = [](const unsigned int Offset)->HEX_SIZE
 	{
 		if (Offset >= 0x00 && Offset <= 0xff)
 		{
-			return SIZE::BYTE;
+			return HEX_SIZE::BYTE;
 		}
 		else if (Offset > 0xff && Offset <= 0xffff)
 		{
-			return SIZE::WORD;
+			return HEX_SIZE::WORD;
 		}
 		else
 		{
 			//ToDo[Remove in release]
 			Error::LOG("Lamda doesn't expect this size\n");
-			return SIZE::WORD;
+			return HEX_SIZE::WORD;
 		}
 	};
 
@@ -351,7 +358,7 @@ void ProgramLoader::HandleForwardReferencing()
 			}
 			else if (Program[Idx].Mnemonic == MNEMONIC::JMP)
 			{
-				if (AllocatedSize[label] == SIZE::BYTE)
+				if (AllocatedSize[label] == HEX_SIZE::BYTE)
 				{
 					//Short jmp
 					Program[Idx].MachineCode.push_back(0xEB);
@@ -368,7 +375,7 @@ void ProgramLoader::HandleForwardReferencing()
 			else
 			{
 				//JNC,JC...etc
-				if (AllocatedSize[label] == SIZE::BYTE)
+				if (AllocatedSize[label] == HEX_SIZE::BYTE)
 				{
 					//Short jmp
 					Program[Idx].MachineCode.push_back((Byte)(Address & 0x00ff));
@@ -385,7 +392,7 @@ void ProgramLoader::HandleForwardReferencing()
 
 	for (const Instruction& Ins : Program)
 	{
-		OUT << Converter::DecToHex(Ins.Offset, SIZE::WORD).substr(0, 4) << ": ";
+		OUTPUT_MACHINE_CODE << Converter::DecToHex(Ins.Offset, HEX_SIZE::WORD).substr(0, 4) << ": ";
 		std::string OPCODE;
 		for (int i = 0, k = 0; i < (int)Ins.MachineCode.size(); ++i)
 		{
@@ -393,18 +400,18 @@ void ProgramLoader::HandleForwardReferencing()
 			if (++k == 6)
 			{
 				k = 0;
-				OUT << std::left << std::setw(18) << OPCODE;
+				OUTPUT_MACHINE_CODE << std::left << std::setw(18) << OPCODE;
 				OPCODE.clear();
 				if (i + 1 < (int)Ins.MachineCode.size())
 				{
 					
-					OUT << "\n      ";
+					OUTPUT_MACHINE_CODE << "\n      ";
 				}
 			}
 		}
 		if (!OPCODE.empty())
 		{
-			OUT << std::left << std::setw(18) << OPCODE;
+			OUTPUT_MACHINE_CODE << std::left << std::setw(18) << OPCODE;
 		}
 		
 
@@ -420,7 +427,7 @@ void ProgramLoader::HandleForwardReferencing()
 			CODE += ' ' + Ins.operand.second;
 		}
 		CODE += "]\n";
-		OUT << CODE;
+		OUTPUT_MACHINE_CODE << CODE;
 	}
 }
 
@@ -428,9 +435,9 @@ bool ProgramLoader::Load()
 {
 	//[TODO:] Remove extra checking at release version
 	const int ProgramSize = Program.size();
-	for (ProgramLoader::CurrInstructionIndex = 0; ProgramLoader::CurrInstructionIndex < ProgramSize; ++ProgramLoader::CurrInstructionIndex)
+	for (ProgramLoader::CurrInsIndex = 0; ProgramLoader::CurrInsIndex < ProgramSize; ++ProgramLoader::CurrInsIndex)
 	{
-		const Instruction& CurrIns = Program[CurrInstructionIndex];
+		const Instruction& CurrIns = Program[CurrInsIndex];
 		if (CallBacks.count(CurrIns.Mnemonic))
 		{
 			if (!CallBacks[CurrIns.Mnemonic](CurrIns.operand))
@@ -484,8 +491,8 @@ bool ProgramLoader::MOV_CASE_1(std::string& REG8, std::string& IMMD8)
 	/*const std::string& OPCODE = Converter::DecToHex(0xB0 + REG_CODE.find(REG8)->second);*/
 	Utility::Format16Bit(IMMD8);
 	//OUT << OPCODE.substr(0, 2) << ' ' << IMMD8.substr(2, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xB0 + REG_CODE.find(REG8)->second);
-	Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+	Program[CurrInsIndex].MachineCode.push_back(0xB0 + REG_CODE.find(REG8)->second);
+	Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
 	return true;
 }
 
@@ -496,9 +503,9 @@ bool ProgramLoader::MOV_CASE_2(std::string& REG16, std::string& IMMD)
 	//const std::string& OPCODE = Converter::DecToHex(0xB8 + REG_CODE.find(REG16)->second);
 	Utility::Format16Bit(IMMD);
 	//OUT << OPCODE.substr(0, 2) << ' ' << IMMD.substr(2, 2) << ' ' << IMMD.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xB8 + REG_CODE.find(REG16)->second);
-	Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD.substr(2, 2)));
-	Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD.substr(0, 2)));
+	Program[CurrInsIndex].MachineCode.push_back(0xB8 + REG_CODE.find(REG16)->second);
+	Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD.substr(2, 2)));
+	Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD.substr(0, 2)));
 	return true;
 }
 
@@ -515,8 +522,8 @@ bool ProgramLoader::MOV_CASE_3(std::string& MEM8, std::string& IMMD8)
 		//std::string _2ndByteHex = Converter::DecToHex(B2);
 		
 		//OUT << "C6" << ' ' << _2ndByteHex.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xC9);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xC9);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -524,22 +531,22 @@ bool ProgramLoader::MOV_CASE_3(std::string& MEM8, std::string& IMMD8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2);
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//Next byte will contain immd
 		Utility::Format16Bit(IMMD8);
 		//OUT << ' ' << IMMD8.substr(2, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
 
 	}
 	else
@@ -563,8 +570,8 @@ bool ProgramLoader::MOV_CASE_4(std::string& MEM, std::string& IMMD16)
 		//std::string _2ndByteHex = Converter::DecToHex(B2);
 		
 		//OUT << "C7" << ' ' << _2ndByteHex.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xC7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xC7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
@@ -572,23 +579,23 @@ bool ProgramLoader::MOV_CASE_4(std::string& MEM, std::string& IMMD16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2);
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//Next byte will contain immd
 		Utility::Format16Bit(IMMD16);
 		//OUT << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
 	}
 	else
 	{
@@ -613,8 +620,8 @@ bool ProgramLoader::MOV_CASE_5(std::string& MEM16, std::string& IMMD8)
 		
 		//OUT << "C7" << ' ' << _2ndByteHex.substr(0, 2);
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0xC7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xC7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
@@ -622,23 +629,23 @@ bool ProgramLoader::MOV_CASE_5(std::string& MEM16, std::string& IMMD8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2);
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2);
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//Next byte will contain immd
 		Utility::Format16Bit(IMMD8);
 		//OUT << ' ' << IMMD8.substr(2, 2) << ' ' << IMMD8.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(0, 2)));
 	}
 	else
 	{
@@ -656,8 +663,8 @@ bool ProgramLoader::MOV_CASE_6(std::string& REG8_D, std::string& REG8_S)
 	Byte B2 = 0b11000000 | (REG_CODE.find(REG8_D)->second << 3) | REG_CODE.find(REG8_S)->second;
 	//const std::string& _2ndByteHex = Converter::DecToHex(B2);
 	//OUT << "8A" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0x8A);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0x8A);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -670,8 +677,8 @@ bool ProgramLoader::MOV_CASE_7(std::string& REG16_D, std::string& REG16_S)
 	Byte B2 = 0b11000000 | (REG_CODE.find(REG16_D)->second << 3) | REG_CODE.find(REG16_S)->second;
 	//const std::string& _2ndByteHex = Converter::DecToHex(B2);
 	//OUT << "8B" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0x8B);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0x8B);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -691,9 +698,9 @@ bool ProgramLoader::MOV_CASE_8(std::string& REG8, std::string& MEM8)
 		Utility::Format16Bit(displacement);
 		//OUT << "A0" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0xA0);
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(0xA0);
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 	}
 	else
 	{
@@ -706,22 +713,22 @@ bool ProgramLoader::MOV_CASE_8(std::string& REG8, std::string& MEM8)
 			//std::string HexB2 = Converter::DecToHex(B2);
 			//OUT << "8A" << ' ' << HexB2.substr(0, 2);
 
-			Program[CurrInstructionIndex].MachineCode.push_back(0x8A);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0x8A);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 			
 			if(!displacement.empty())
 			{
 				Utility::Format16Bit(displacement);
-				if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+				if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 				}
 				else
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 				}
 			}
 			//else
@@ -753,9 +760,9 @@ bool ProgramLoader::MOV_CASE_9(std::string& REG16, std::string& MEM)
 		//Special Cases
 		Utility::Format16Bit(displacement);
 		//OUT << "A1" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0xA1);
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(0xA1);
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 	}
 	else
 	{
@@ -767,21 +774,21 @@ bool ProgramLoader::MOV_CASE_9(std::string& REG16, std::string& MEM)
 			Byte B2 = (info.mod << 6) | (REG_CODE.find(REG16)->second << 3) | info.rm;
 			//std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
 			//OUT << "8B" << ' ' << _2ndByteHex.substr(0, 2);
-			Program[CurrInstructionIndex].MachineCode.push_back(0x8B);
+			Program[CurrInsIndex].MachineCode.push_back(0x8B);
 
 			if (!displacement.empty())
 			{
 				Utility::Format16Bit(displacement);
-				if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+				if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 				}
 				else
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 				}
 			}
 			/*else
@@ -812,9 +819,9 @@ bool ProgramLoader::MOV_CASE_10(std::string& MEM8, std::string& REG8)
 		//Special Cases
 		Utility::Format16Bit(displacement);
 		//OUT << "A2" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0xA2);
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(0xA2);
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 	}
 	else
 	{
@@ -830,23 +837,23 @@ bool ProgramLoader::MOV_CASE_10(std::string& MEM8, std::string& REG8)
 
 			//OUT << "88" << ' ' << _2ndByteHex.substr(0, 2);
 
-			Program[CurrInstructionIndex].MachineCode.push_back(0x88);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0x88);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 
 			
 			if (!displacement.empty())
 			{
 				Utility::Format16Bit(displacement);
-				if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+				if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 				}
 				else
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 				}
 			}
 			/*else
@@ -876,9 +883,9 @@ bool ProgramLoader::MOV_CASE_11(std::string& MEM, std::string& REG16)
 		//Special Cases
 		Utility::Format16Bit(displacement);
 		//OUT << "A3" << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0xA3);
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(0xA3);
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 	}
 	else
 	{
@@ -894,22 +901,22 @@ bool ProgramLoader::MOV_CASE_11(std::string& MEM, std::string& REG16)
 
 			//OUT << "89" << ' ' << _2ndByteHex.substr(0, 2);
 
-			Program[CurrInstructionIndex].MachineCode.push_back(0x89);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0x89);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 
 			if (!displacement.empty())
 			{
 				Utility::Format16Bit(displacement);
-				if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+				if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 				}
 				else
 				{
 					//OUT << ' ' << displacement.substr(2, 2) << '\n';
-					Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+					Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 				}
 			}
 			/*else
@@ -936,8 +943,8 @@ bool ProgramLoader::MOV_CASE_12(std::string& SREG, std::string& REG16)
 
 	//std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
 	//OUT << "8E" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0x8E);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0x8E);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -958,22 +965,22 @@ bool ProgramLoader::MOV_CASE_13(std::string& SREG, std::string& MEM)
 
 		//std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
 		//OUT << "8E" << ' ' << _2ndByteHex.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0x8E);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x8E);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -996,8 +1003,8 @@ bool ProgramLoader::MOV_CASE_14(std::string& REG16, std::string& SREG)
 	Byte B2 = (info.mod << 6) | (REG_CODE.find(SREG)->second << 3) | info.rm;
 	//std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
 	//OUT << "8C" << ' ' << _2ndByteHex.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0x8C);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0x8C);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -1016,22 +1023,22 @@ bool ProgramLoader::MOV_CASE_15(std::string& MEM, std::string& SREG)
 
 		//std::string _2ndByteHex = Converter::DecToHex(_2ndByte);
 		//OUT << "8C" << ' ' << _2ndByteHex.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0x8C);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x8C);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -1051,14 +1058,14 @@ bool ProgramLoader::MOV(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected 2 Operands @MOV", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Expected 2 Operands @MOV", Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP1 = operand.first;
 	std::string OP2 = operand.second;
 	
 	
-	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-1:MOV REG8, immd8
 		return MOV_CASE_1(OP1, OP2);
@@ -1068,17 +1075,17 @@ bool ProgramLoader::MOV(const Operand& operand)
 		//Case-2:MOV REG16, immd16/immd8
 		return MOV_CASE_2(OP1, OP2);
 	}
-	else if(Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if(Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-3:[], immd8
 		return MOV_CASE_3(OP1, OP2);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::WORD)
 	{
 		//Case-4:[]/W[], immd16
 		return MOV_CASE_4(OP1, OP2);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-5:W[], immd8
 		return MOV_CASE_5(OP1, OP2);
@@ -1133,7 +1140,7 @@ bool ProgramLoader::MOV(const Operand& operand)
 		//Case-15: []/W[], SREG
 		return MOV_CASE_15(OP1, OP2);
 	}
-	return Error::LOG("Wrong Syntax @ MOV", Program[CurrInstructionIndex].LineNumber);
+	return Error::LOG("Wrong Syntax @ MOV", Program[CurrInsIndex].LineNumber);
 }
 
 /*<------------------------XCHG------------------->*/
@@ -1146,8 +1153,8 @@ bool ProgramLoader::XCHG_CASE_1(std::string& REG8_D, std::string& REG8_S)
 	Byte B2 = (info.mod << 6) | (REG_CODE.find(REG8_D)->second << 3) | info.rm;
 	//const std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
 	//OUT << "86 " << HexB2 << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0x86);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0x86);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -1171,22 +1178,22 @@ bool ProgramLoader::XCHG_CASE_2(std::string& MEM8, std::string& REG8)
 
 		//OUT << "86 " << HexB2;
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0x86);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x86);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -1221,22 +1228,22 @@ bool ProgramLoader::XCHG_CASE_3(std::string& REG8, std::string& MEM8)
 
 		//OUT << "86 " << HexB2;
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0x86);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x86);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -1259,13 +1266,13 @@ bool ProgramLoader::XCHG_CASE_4(std::string& REG16_D, std::string& REG16_S)
 	{
 		//Byte B = 0x90 + REG_CODE.find(REG16_S)->second;
 		//OUT << Converter::DecToHex(B).substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0x90 + REG_CODE.find(REG16_S)->second);
+		Program[CurrInsIndex].MachineCode.push_back(0x90 + REG_CODE.find(REG16_S)->second);
 	}
 	else if (REG16_S == REGISTER::AX)
 	{
 		//Byte B = 0x90 + REG_CODE.find(REG16_D)->second;
 		//OUT << Converter::DecToHex(B).substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0x90 + REG_CODE.find(REG16_D)->second);
+		Program[CurrInsIndex].MachineCode.push_back(0x90 + REG_CODE.find(REG16_D)->second);
 	}
 	else
 	{
@@ -1274,8 +1281,8 @@ bool ProgramLoader::XCHG_CASE_4(std::string& REG16_D, std::string& REG16_S)
 		Byte B2 = (info.mod << 6) | (REG_CODE.find(REG16_D)->second << 3) | info.rm;
 		//const std::string HexB2 = Converter::DecToHex(B2).substr(0, 2);
 		//OUT << "87 " << HexB2 << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0x87);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x87);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 	}
 	return true;
 }
@@ -1299,22 +1306,22 @@ bool ProgramLoader::XCHG_CASE_5(std::string& REG16, std::string& MEM)
 
 		//OUT << "87 " << HexB2;
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0x87);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x87);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -1347,22 +1354,22 @@ bool ProgramLoader::XCHG_CASE_6(std::string& MEM, std::string& REG16)
 
 		//OUT << "87 " << HexB2;
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0x87);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x87);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -1446,8 +1453,8 @@ bool ProgramLoader::AAACOSSX_CASE_1(std::string& REG8_D, std::string& REG8_S, co
 	//const std::string& hB1 = Converter::DecToHex(B1);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(B1);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(B1);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -1467,24 +1474,24 @@ bool ProgramLoader::AAACOSSX_CASE_2(std::string& REG8, std::string& MEM8, const 
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
 		//OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(B1);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(B1);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -1515,8 +1522,8 @@ bool ProgramLoader::AAACOSSX_CASE_3(std::string& MEM8, std::string& REG8, const 
 		//const std::string& hB1 = Converter::DecToHex(B1);
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
-		Program[CurrInstructionIndex].MachineCode.push_back(B1);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(B1);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -1526,16 +1533,16 @@ bool ProgramLoader::AAACOSSX_CASE_3(std::string& MEM8, std::string& REG8, const 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -1561,8 +1568,8 @@ bool ProgramLoader::AAACOSSX_CASE_4(std::string& REG16_D, std::string& REG16_S, 
 	//const std::string& hB1 = Converter::DecToHex(B1);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << hB1.substr(0, 2) << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(B1);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(B1);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -1581,8 +1588,8 @@ bool ProgramLoader::AAACOSSX_CASE_5(std::string& REG16, std::string& MEM, const 
 		/*const std::string& hB1 = Converter::DecToHex(B1);
 		const std::string& hB2 = Converter::DecToHex(B2);*/
 
-		Program[CurrInstructionIndex].MachineCode.push_back(B1);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(B1);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
@@ -1592,16 +1599,16 @@ bool ProgramLoader::AAACOSSX_CASE_5(std::string& REG16, std::string& MEM, const 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//else
@@ -1640,16 +1647,16 @@ bool ProgramLoader::AAACOSSX_CASE_6(std::string& MEM, std::string& REG16, const 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//else
@@ -1678,8 +1685,8 @@ bool ProgramLoader::AAACOSSX_CASE_7(std::string& MEM8, std::string& IMMD8, const
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0x80);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x80);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -1689,23 +1696,23 @@ bool ProgramLoader::AAACOSSX_CASE_7(std::string& MEM8, std::string& IMMD8, const
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 
 		//Next byte will contain immd
 		Utility::Format16Bit(IMMD8);
 		/*OUT << ' ' << IMMD8.substr(2, 2) << '\n';*/
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
 
 	}
 	else
@@ -1733,30 +1740,30 @@ bool ProgramLoader::AAACOSSX_CASE_8(std::string& MEM, std::string& IMMD16, const
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM, displacement);
 
 		//OUT << "81" << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0x81);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x81);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 
 		//Next byte will contain immd
 		Utility::Format16Bit(IMMD16);
 		//OUT << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
 
 	}
 	else
@@ -1777,8 +1784,8 @@ bool ProgramLoader::AAACOSSX_CASE_9(std::string& REG8, std::string& IMMD8, const
 		//const std::string& hB1 = Converter::DecToHex(B1);
 		Utility::Format16Bit(IMMD8);
 		//OUT << hB1.substr(0, 2) << ' ' << IMMD8.substr(2, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(B1);
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(B1);
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
 	}
 	else
 	{
@@ -1792,13 +1799,13 @@ bool ProgramLoader::AAACOSSX_CASE_9(std::string& REG8, std::string& IMMD8, const
 			//const std::string& hB2 = Converter::DecToHex(B2);
 
 			//OUT << "80" << ' ' << hB2.substr(0, 2);
-			Program[CurrInstructionIndex].MachineCode.push_back(0x80);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0x80);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 
 			//Next byte will contain immd
 			Utility::Format16Bit(IMMD8);
 			//OUT << ' ' << IMMD8.substr(2, 2) << '\n';
-			Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+			Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
 
 		}
 		else 
@@ -1819,9 +1826,9 @@ bool ProgramLoader::AAACOSSX_CASE_10(std::string& REG16, std::string& IMMD16, co
 		//const std::string& hB1 = Converter::DecToHex(B1);
 		Utility::Format16Bit(IMMD16);
 		//OUT << hB1.substr(0, 2) << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(B1);
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(B1);
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
 	}
 	else
 	{
@@ -1835,14 +1842,14 @@ bool ProgramLoader::AAACOSSX_CASE_10(std::string& REG16, std::string& IMMD16, co
 			//const std::string& hB2 = Converter::DecToHex(B2);
 
 			//OUT << "81" << ' ' << hB2.substr(0, 2);
-			Program[CurrInstructionIndex].MachineCode.push_back(0x81);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0x81);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 
 			//Next byte will contain immd
 			Utility::Format16Bit(IMMD16);
 			//OUT << ' ' << IMMD16.substr(2, 2) << ' ' << IMMD16.substr(0, 2) << '\n';
-			Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
-			Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
+			Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(2, 2)));
+			Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD16.substr(0, 2)));
 		}
 		else
 		{
@@ -1862,9 +1869,9 @@ bool ProgramLoader::AAACOSSX_CASE_11(std::string& REG16, std::string& IMMD8, con
 		//const std::string& hB1 = Converter::DecToHex(B1);
 		Utility::Format16Bit(IMMD8);
 		//OUT << hB1.substr(0, 2) << ' ' << IMMD8.substr(2, 2) << ' ' << IMMD8.substr(0, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(B1);
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(0, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(B1);
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(0, 2)));
 	}
 	else
 	{
@@ -1879,13 +1886,13 @@ bool ProgramLoader::AAACOSSX_CASE_11(std::string& REG16, std::string& IMMD8, con
 
 			//OUT << "83" << ' ' << hB2.substr(0, 2);
 
-			Program[CurrInstructionIndex].MachineCode.push_back(0x83);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0x83);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 
 			//Next byte will contain immd
 			Utility::Format16Bit(IMMD8);
 			//OUT << ' ' << IMMD8.substr(2, 2) << '\n';
-			Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+			Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
 		}
 		else
 		{
@@ -1909,8 +1916,8 @@ bool ProgramLoader::AAACOSSX_CASE_12(std::string& MEM16, std::string& IMMD8, con
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
 		//OUT << "83" << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0x83);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0x83);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
@@ -1918,23 +1925,23 @@ bool ProgramLoader::AAACOSSX_CASE_12(std::string& MEM16, std::string& IMMD8, con
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 
 		//Next byte will contain immd
 		Utility::Format16Bit(IMMD8);
 		//OUT << ' ' << IMMD8.substr(2, 2) << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
+		Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(IMMD8.substr(2, 2)));
 	}
 	else
 	{
@@ -1948,7 +1955,7 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected 2 Operands @AAACOSSX", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Expected 2 Operands @AAACOSSX", Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP1 = operand.first;
@@ -1984,32 +1991,32 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 		//Case-6: []/W[], REG16
 		return AAACOSSX_CASE_6(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-7: [], IMMD8
 		return AAACOSSX_CASE_7(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::WORD)
 	{
 		//Case-8: []/W[], IMMD16
 		return AAACOSSX_CASE_8(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-9: REG8, IMMD8
 		return AAACOSSX_CASE_9(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::WORD)
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::WORD)
 	{
 		//Case-10: REG16, IMMD16
 		return AAACOSSX_CASE_10(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-11: REG16, IMMD8
 		return AAACOSSX_CASE_11(OP1, OP2, OFFSET, REG);
 	}
-	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == SIZE::BYTE)
+	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2) && Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 	{
 		//Case-12: W[], IMMD8
 		return AAACOSSX_CASE_12(OP1, OP2, OFFSET, REG);
@@ -2072,8 +2079,8 @@ bool ProgramLoader::MUL_CASE_1(std::string& MEM8)
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
 		//OUT << "F6" << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF6);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -2081,16 +2088,16 @@ bool ProgramLoader::MUL_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2117,8 +2124,8 @@ bool ProgramLoader::MUL_CASE_2(std::string& MEM16)
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
 		//OUT << "F7" << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
@@ -2126,16 +2133,16 @@ bool ProgramLoader::MUL_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2156,8 +2163,8 @@ bool ProgramLoader::MUL_CASE_3(std::string& REG8)
 	Byte B2 = 0b11100000 | REG_CODE.find(REG8)->second;
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF6);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2167,8 +2174,8 @@ bool ProgramLoader::MUL_CASE_4(std::string& REG16)
 	Byte B2 = 0b11100000 | REG_CODE.find(REG16)->second;
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF7);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2219,8 +2226,8 @@ bool ProgramLoader::IMUL_CASE_1(std::string& MEM8)
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
 		//OUT << "F6" << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF6);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -2228,16 +2235,16 @@ bool ProgramLoader::IMUL_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//else
@@ -2264,8 +2271,8 @@ bool ProgramLoader::IMUL_CASE_2(std::string& MEM16)
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
 		//OUT << "F7" << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
@@ -2273,16 +2280,16 @@ bool ProgramLoader::IMUL_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//else
@@ -2303,8 +2310,8 @@ bool ProgramLoader::IMUL_CASE_3(std::string& REG8)
 	Byte B2 = 0b11101000 | REG_CODE.find(REG8)->second;
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF6);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2314,8 +2321,8 @@ bool ProgramLoader::IMUL_CASE_4(std::string& REG16)
 	Byte B2 = 0b11101000 | REG_CODE.find(REG16)->second;
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF7);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2366,8 +2373,8 @@ bool ProgramLoader::DIV_CASE_1(std::string& MEM8)
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
 		//OUT << "F6" << ' ' << hB2.substr(0, 2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF6);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -2375,16 +2382,16 @@ bool ProgramLoader::DIV_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2411,8 +2418,8 @@ bool ProgramLoader::DIV_CASE_2(std::string& MEM16)
 
 		//OUT << "F7" << ' ' << hB2.substr(0, 2);
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
 
@@ -2420,16 +2427,16 @@ bool ProgramLoader::DIV_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2450,8 +2457,8 @@ bool ProgramLoader::DIV_CASE_3(std::string& REG8)
 	Byte B2 = 0b11110000 | (REG_CODE.find(REG8)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF6);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2461,8 +2468,8 @@ bool ProgramLoader::DIV_CASE_4(std::string& REG16)
 	Byte B2 = 0b11110000 | (REG_CODE.find(REG16)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF7);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2513,8 +2520,8 @@ bool ProgramLoader::IDIV_CASE_1(std::string& MEM8)
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF6);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -2524,16 +2531,16 @@ bool ProgramLoader::IDIV_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2558,8 +2565,8 @@ bool ProgramLoader::IDIV_CASE_2(std::string& MEM16)
 		Byte B2 = (info.mod << 6) | 0b00111000 | info.rm;
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
 
@@ -2568,16 +2575,16 @@ bool ProgramLoader::IDIV_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2598,8 +2605,8 @@ bool ProgramLoader::IDIV_CASE_3(std::string& REG8)
 	Byte B2 = 0b11111000 | (REG_CODE.find(REG8)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF6);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2609,8 +2616,8 @@ bool ProgramLoader::IDIV_CASE_4(std::string& REG16)
 	Byte B2 = 0b11111000 | (REG_CODE.find(REG16)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF7);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2659,8 +2666,8 @@ bool ProgramLoader::NEG_CASE_1(std::string& MEM8)
 		Byte B2 = (info.mod << 6) | 0b00011000 | info.rm;
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF6);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
 
@@ -2669,16 +2676,16 @@ bool ProgramLoader::NEG_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//else
@@ -2704,8 +2711,8 @@ bool ProgramLoader::NEG_CASE_2(std::string& MEM16)
 		Byte B2 = (info.mod << 6)| 0b00011000 | info.rm;
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
 
@@ -2714,16 +2721,16 @@ bool ProgramLoader::NEG_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2744,8 +2751,8 @@ bool ProgramLoader::NEG_CASE_3(std::string& REG8)
 	Byte B2 = 0b11011000 | (REG_CODE.find(REG8)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF6);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2755,8 +2762,8 @@ bool ProgramLoader::NEG_CASE_4(std::string& REG16)
 	Byte B2 = 0b11011000 | (REG_CODE.find(REG16)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF7);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2806,8 +2813,8 @@ bool ProgramLoader::NOT_CASE_1(std::string& MEM8)
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF6);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -2817,16 +2824,16 @@ bool ProgramLoader::NOT_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//else
@@ -2852,8 +2859,8 @@ bool ProgramLoader::NOT_CASE_2(std::string& MEM16)
 		Byte B2 = (info.mod << 6) | 0b00010000 | info.rm;
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xF7);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
 
@@ -2862,16 +2869,16 @@ bool ProgramLoader::NOT_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -2892,8 +2899,8 @@ bool ProgramLoader::NOT_CASE_3(std::string& REG8)
 	Byte B2 = 0b11010000 | (REG_CODE.find(REG8)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F6" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF6);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF6);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2903,8 +2910,8 @@ bool ProgramLoader::NOT_CASE_4(std::string& REG16)
 	Byte B2 = 0b11010000 | (REG_CODE.find(REG16)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "F7" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF7);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xF7);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -2955,8 +2962,8 @@ bool ProgramLoader::DEC_CASE_1(std::string& MEM8)
 
 		//const std::string& hB2 = Converter::DecToHex(B2);
 
-		Program[CurrInstructionIndex].MachineCode.push_back(0xFE);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xFE);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -2966,16 +2973,16 @@ bool ProgramLoader::DEC_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -3011,16 +3018,16 @@ bool ProgramLoader::DEC_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -3042,8 +3049,8 @@ bool ProgramLoader::DEC_CASE_3(std::string& REG8)
 	Byte B2 = 0b11001000 | (REG_CODE.find(REG8)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "FE" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xFE);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xFE);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -3051,7 +3058,7 @@ bool ProgramLoader::DEC_CASE_4(std::string& REG16)
 {
 	//Case-4: DEC REG16
 	//$48 + reg16 code
-	Program[CurrInstructionIndex].MachineCode.push_back(0x48 + REG_CODE.find(REG16)->second);
+	Program[CurrInsIndex].MachineCode.push_back(0x48 + REG_CODE.find(REG16)->second);
 	//const std::string& hB1 = Converter::DecToHex(B1);
 	//OUT << hB1.substr(0, 2) << '\n';
 	return true;
@@ -3102,8 +3109,8 @@ bool ProgramLoader::INC_CASE_1(std::string& MEM8)
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B2 = (info.mod << 6) | info.rm;
 		//const std::string& hB2 = Converter::DecToHex(B2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xFE);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xFE);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM8, displacement);
@@ -3113,16 +3120,16 @@ bool ProgramLoader::INC_CASE_1(std::string& MEM8)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		/*else
@@ -3148,8 +3155,8 @@ bool ProgramLoader::INC_CASE_2(std::string& MEM16)
 		const MOD_RM_INFO& info = MOD_RM.find(fExp)->second;
 		Byte B2 = (info.mod << 6) | info.rm;
 		//const std::string& hB2 = Converter::DecToHex(B2);
-		Program[CurrInstructionIndex].MachineCode.push_back(0xFF);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xFF);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 
 		std::string displacement = "";
 		bool onlyDisp = Utility::ExtractHexFromMemExp(MEM16, displacement);
@@ -3159,16 +3166,16 @@ bool ProgramLoader::INC_CASE_2(std::string& MEM16)
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 		//else
@@ -3190,8 +3197,8 @@ bool ProgramLoader::INC_CASE_3(std::string& REG8)
 	Byte B2 = 0b11000000 | (REG_CODE.find(REG8)->second);
 	//const std::string& hB2 = Converter::DecToHex(B2);
 	//OUT << "FE" << ' ' << hB2.substr(0, 2) << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xFE);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xFE);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -3199,7 +3206,7 @@ bool ProgramLoader::INC_CASE_4(std::string& REG16)
 {
 	//Case-4: INC REG16
 	//$40 + reg16 code
-	Program[CurrInstructionIndex].MachineCode.push_back(0x40 + REG_CODE.find(REG16)->second);
+	Program[CurrInsIndex].MachineCode.push_back(0x40 + REG_CODE.find(REG16)->second);
 	//const std::string& hB1 = Converter::DecToHex(B1);
 	//OUT << hB1.substr(0, 2) << '\n';
 	return true;
@@ -3247,7 +3254,7 @@ bool ProgramLoader::DAA(const Operand& operand)
 		return Error::LOG("Expected 1 Operand @DAA\n");
 	}
 	//OUT << "27\n";
-	Program[CurrInstructionIndex].MachineCode.push_back(0x27);
+	Program[CurrInsIndex].MachineCode.push_back(0x27);
 	return true;
 }
 
@@ -3264,8 +3271,8 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_1(std::string& REG8, std::string& IMMD8, B
 	while (count--)
 	{
 		//OUT << "D0 " << HexB2 << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0xD0);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xD0);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 	}
 	return true;
 }
@@ -3277,8 +3284,8 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_2(std::string& REG8, Byte REG)
 	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG8)->second;
 	//const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
 	//OUT << "D2 " << HexB2 << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xD2);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xD2);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -3293,8 +3300,8 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_3(std::string& REG16, std::string& IMMD8, 
 	while (count--)
 	{
 		//OUT << "D1 " << HexB2 << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0xD1);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xD1);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 	}
 	return true;
 }
@@ -3306,8 +3313,8 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_4(std::string& REG16, Byte REG)
 	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG16)->second;
 	//const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
 	//OUT << "D3 " << HexB2 << '\n';
-	Program[CurrInstructionIndex].MachineCode.push_back(0xD3);
-	Program[CurrInstructionIndex].MachineCode.push_back(B2);
+	Program[CurrInsIndex].MachineCode.push_back(0xD3);
+	Program[CurrInsIndex].MachineCode.push_back(B2);
 	return true;
 }
 
@@ -3349,7 +3356,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_5(std::string& MEM8, std::string& IMMD8, B
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				Dis.push_back(Converter::Dec(displacement.substr(2, 2)));
@@ -3365,13 +3372,13 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_5(std::string& MEM8, std::string& IMMD8, B
 		while (count--)
 		{
 			//OUT << "D0 " << HexB2 << ' ' << Dis << '\n';
-			Program[CurrInstructionIndex].MachineCode.push_back(0xD0);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0xD0);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 			if (!Dis.empty())
 			{
 				for (const Byte x : Dis)
 				{
-					Program[CurrInstructionIndex].MachineCode.push_back(x);
+					Program[CurrInsIndex].MachineCode.push_back(x);
 				}
 			}
 		}
@@ -3414,21 +3421,21 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_6(std::string& MEM8, Byte REG)
 		//	}
 		//}
 		//OUT << "D2 " << HexB2 << ' ' << Dis << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0xD2);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xD2);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 	}
@@ -3477,7 +3484,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_7(std::string& MEM16, std::string& IMMD8, 
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
 				Dis.push_back(Converter::Dec(displacement.substr(2, 2)));
@@ -3493,13 +3500,13 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_7(std::string& MEM16, std::string& IMMD8, 
 		while (count--)
 		{
 			//OUT << "D1 " << HexB2 << ' ' << Dis << '\n';
-			Program[CurrInstructionIndex].MachineCode.push_back(0xD1);
-			Program[CurrInstructionIndex].MachineCode.push_back(B2);
+			Program[CurrInsIndex].MachineCode.push_back(0xD1);
+			Program[CurrInsIndex].MachineCode.push_back(B2);
 			if (!Dis.empty())
 			{
 				for (const Byte x : Dis)
 				{
-					Program[CurrInstructionIndex].MachineCode.push_back(x);
+					Program[CurrInsIndex].MachineCode.push_back(x);
 				}
 			}
 		}
@@ -3542,21 +3549,21 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_8(std::string& MEM8, Byte REG)
 			}
 		}*/
 		//OUT << "D3 " << HexB2 << ' ' << Dis << '\n';
-		Program[CurrInstructionIndex].MachineCode.push_back(0xD3);
-		Program[CurrInstructionIndex].MachineCode.push_back(B2);
+		Program[CurrInsIndex].MachineCode.push_back(0xD3);
+		Program[CurrInsIndex].MachineCode.push_back(B2);
 		if (!displacement.empty())
 		{
 			Utility::Format16Bit(displacement);
-			if (onlyDisp || Utility::HexSize(displacement) == SIZE::WORD)
+			if (onlyDisp || Utility::HexSize(displacement) == HEX_SIZE::WORD)
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << ' ' << displacement.substr(0, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(0, 2)));
 			}
 			else
 			{
 				//OUT << ' ' << displacement.substr(2, 2) << '\n';
-				Program[CurrInstructionIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
+				Program[CurrInsIndex].MachineCode.push_back(Converter::Dec(displacement.substr(2, 2)));
 			}
 		}
 	}
@@ -3580,7 +3587,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 	if (Utility::Is8BitRegister(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-1 REG8, IMMD8
-		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		if (Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 		{
 			return ROTATE_SHIFT_CASE_1(OP1, OP2, REG);
 		}
@@ -3604,7 +3611,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-3 REG16, IMMD8
-		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		if (Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 		{
 			return ROTATE_SHIFT_CASE_3(OP1, OP2, REG);
 		}
@@ -3628,7 +3635,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-5 [], IMMD8
-		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		if (Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 		{
 			return ROTATE_SHIFT_CASE_5(OP1, OP2, REG);
 		}
@@ -3652,7 +3659,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2))
 	{
 		//Case-7 W[], IMMD8
-		if (Utility::HexSize(OP2) == SIZE::BYTE)
+		if (Utility::HexSize(OP2) == HEX_SIZE::BYTE)
 		{
 			return ROTATE_SHIFT_CASE_7(OP1, OP2, REG);
 		}
@@ -3718,7 +3725,7 @@ bool ProgramLoader::STC(const Operand& operand)
 		return Error::LOG("Expected No Operand @STC\n");
 	}
 	//OUT << "F9\n";
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF9);
+	Program[CurrInsIndex].MachineCode.push_back(0xF9);
 	return true;
 }
 
@@ -3729,7 +3736,7 @@ bool ProgramLoader::CLC(const Operand& operand)
 		return Error::LOG("Expected No Operand CLC\n");
 	}
 	//OUT << "F8\n";
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF8);
+	Program[CurrInsIndex].MachineCode.push_back(0xF8);
 	return true;
 }
 
@@ -3740,7 +3747,7 @@ bool ProgramLoader::CMC(const Operand& operand)
 		return Error::LOG("Expected No Operand @CMC\n");
 	}
 	//OUT << "F5\n";
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF5);
+	Program[CurrInsIndex].MachineCode.push_back(0xF5);
 	return true;
 }
 
@@ -3758,7 +3765,7 @@ bool ProgramLoader::JMP(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3771,13 +3778,13 @@ bool ProgramLoader::JC(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x72);
+		Program[CurrInsIndex].MachineCode.push_back(0x72);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3790,13 +3797,13 @@ bool ProgramLoader::JNC(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x73);
+		Program[CurrInsIndex].MachineCode.push_back(0x73);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3809,13 +3816,13 @@ bool ProgramLoader::JZ_JE(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x74);
+		Program[CurrInsIndex].MachineCode.push_back(0x74);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3828,13 +3835,13 @@ bool ProgramLoader::JNZ_JNE(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x75);
+		Program[CurrInsIndex].MachineCode.push_back(0x75);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 
 }
@@ -3848,13 +3855,13 @@ bool ProgramLoader::JPE_JP(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x7A);
+		Program[CurrInsIndex].MachineCode.push_back(0x7A);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3867,13 +3874,13 @@ bool ProgramLoader::JPO_JNP(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x7B);
+		Program[CurrInsIndex].MachineCode.push_back(0x7B);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3886,13 +3893,13 @@ bool ProgramLoader::JS(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x78);
+		Program[CurrInsIndex].MachineCode.push_back(0x78);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3905,13 +3912,13 @@ bool ProgramLoader::JNS(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x79);
+		Program[CurrInsIndex].MachineCode.push_back(0x79);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3924,13 +3931,13 @@ bool ProgramLoader::JO(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x70);
+		Program[CurrInsIndex].MachineCode.push_back(0x70);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3943,13 +3950,13 @@ bool ProgramLoader::JNO(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0x71);
+		Program[CurrInsIndex].MachineCode.push_back(0x71);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 /*<--------------------------CALL-------------------------->*/
@@ -3963,13 +3970,13 @@ bool ProgramLoader::CALL(const Operand& operand)
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
 	{
-		Program[CurrInstructionIndex].MachineCode.push_back(0xE8);
+		Program[CurrInsIndex].MachineCode.push_back(0xE8);
 		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
 		return true;
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInstructionIndex].LineNumber);
+		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3980,7 +3987,7 @@ bool ProgramLoader::RET(const Operand& operand)
 	{
 		return Error::LOG("Expected No Operand @RET\n");
 	}
-	Program[CurrInstructionIndex].MachineCode.push_back(0xC3);
+	Program[CurrInsIndex].MachineCode.push_back(0xC3);
 	return true;
 }
 
@@ -3991,6 +3998,6 @@ bool ProgramLoader::HLT(const Operand& operand)
 	{
 		return Error::LOG("Expected No Operand @HLT\n");
 	}
-	Program[CurrInstructionIndex].MachineCode.push_back(0xF4);
+	Program[CurrInsIndex].MachineCode.push_back(0xF4);
 	return true;
 }

@@ -17,6 +17,8 @@ public:
 	static int IndexOf(const std::string& label);
 
 	static const std::unordered_map<std::string, int>& GetLabels();
+
+	static void Clear();
 };
 
 std::unordered_map<std::string, int> Label::_Label;
@@ -45,4 +47,9 @@ int Label::IndexOf(const std::string& label)
 const std::unordered_map<std::string, int>& Label::GetLabels()
 {
 	return _Label;
+}
+
+void Label::Clear()
+{
+	_Label.clear();
 }
