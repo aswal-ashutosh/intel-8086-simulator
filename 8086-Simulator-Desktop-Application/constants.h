@@ -197,3 +197,29 @@ namespace BUTTON
 	const std::string DEBUG = "DEBUG";
 	const std::string STOP = "STOP";
 } // namespace BUTTON
+
+namespace ERROR_TYPE
+{
+	const std::string SYNTAX = "Syntax Error";
+	const std::string INVALID_OPERANDS = "Invalid Operand";
+	const std::string INVALID_MEMORY_LOCATION = "Invalid Memory Location";
+	const std::string INVALID_REGISTER = "Invalid Register";
+	const std::string INVALID_REGISTER_PAIR = "Invalid Register Pair";
+	const std::string EXPECTED_8BIT_DATA = "Expected 8 Bit Data";
+	const std::string EXPECTED_16BIT_DATA = "Expected 16 Bit Data";
+	const std::string NEVER_REACHED_HLT = "Program Control Flow Never Reached 'HLT'.";
+	const std::string INVALID_MNEMONIC = "Invalid Mnemonic";
+	const std::string INVALID_HEX = "Invalid Hexadecimal Value";
+	const std::string INVALID_DATA = "Invalid Data Provided";
+	const std::string EMPTY_FIELD = "Empty Field Is Not Allowed";
+	const std::string EMPTY_FILE = "Empty File Found";
+	const std::string NO_SUCH_LABEL = "No Such Label Exist";
+	const std::string INVALID_LABEL = "Invalid Label";
+	const std::string RETURN_WITHOUT_CALL = "'Return' Statement Found When There Exist No Subroutine Call";
+	const std::string INFINITE_LOOP_OR_RECURSIVE_CALL = "There May Be An Infinite Loop Or A Never Ending Recursion";
+	const std::string CAN_NOT_LOAD_INSTRUCTION = "Not Enough Space To Load Program From Provided Loading Location.";
+	const std::string PCHL_ERROR = "PCHL Throughs Program Counter At A Location Which Is Not Containg Any Valid Instruction.";
+
+	//New
+	const std::string INVALID_MEM_EXP = "Invalid Memory Expression.";
+} // namespace ERROR_TYPE

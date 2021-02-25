@@ -20,7 +20,7 @@ public:
 	static bool ValidateAndFormatMemoryExp(std::string&);
 
 	//Will convert the give line into tokens
-	static std::vector<std::string > Tokenize(const std::string&);
+	static bool Tokenize(const std::string&, std::vector<std::string>&, const int);
 
 	//Will Read, check & load the source code for further execution
 	static bool Read(const std::string&);
@@ -39,10 +39,8 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 	}
 
 	//ax+bx+ffffh
-
 	if (s.length() > 11 || s.length() < 2)
 	{
-		Error::LOG("Unexpected number of characters\n");
 		return false;
 	}
 
@@ -51,7 +49,6 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 	
 	if (afterSplit.size() > 3)
 	{
-		Error::LOG("More than 3 strings separated by '+'\n");
 		return false;
 	}
 
@@ -65,7 +62,7 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 		if (x.length() > 5 || x.length() < 2)
 		{
 			//error
-			Error::LOG("Unexected length of aftersplit content\n");
+			return false;
 		}
 
 		if (x == REGISTER::BX || x == REGISTER::BP)
@@ -73,7 +70,7 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 			if (!PSD[0].empty())
 			{
 				//error
-				Error::LOG("Primary is already found!\n");
+				return false;
 			}
 			else
 			{
@@ -85,7 +82,7 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 			if (!PSD[1].empty())
 			{
 				//error
-				Error::LOG("Secondary is already found!\n");
+				return false;
 			}
 			else
 			{
@@ -94,15 +91,10 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 		}
 		else if (Utility::IsValidHex(x))
 		{
-			if ((int)x.length() > 5)
-			{
-				Error::LOG("Unexpected length of hex data. @ValidateFromExp\n");
-			}
-
 			if (!PSD[2].empty())
 			{
 				//Error
-				Error::LOG("Data is already found!\n");
+				return false;
 			}
 			else
 			{
@@ -112,7 +104,7 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 		else
 		{
 			//error
-			Error::LOG("Unexpected symbols\\Characters\n In [] @ValidateAndFormatExp");
+			return false;
 		}
 	}
 
@@ -135,9 +127,8 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 	return true;
 }
 
-std::vector<std::string> Parser::Tokenize(const std::string &line)
+bool Parser::Tokenize(const std::string &line, std::vector<std::string>& TOKENS, const int lineNumber)
 {
-	std::vector<std::string> TOKENS;
 	std::string token;
 	for (int i = 0; i < (int)line.length(); ++i)
 	{
@@ -161,6 +152,16 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 
 			TOKENS.push_back(",");
 		}
+		else if (x == ':')
+		{
+			if (token.empty())
+			{
+				return Error::LOG(ERROR_TYPE::SYNTAX, lineNumber);
+			}
+			token.push_back(x);
+			TOKENS.push_back(token);
+			token.clear();
+		}
 		else if (x == '[')
 		{
 			bool end = false;
@@ -174,7 +175,7 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 					break;
 				}
 			}
-			if (!end) { Error::LOG("Expected Memory @ Tokenize\n"); }
+			if (!end) { return Error::LOG(ERROR_TYPE::SYNTAX, lineNumber); }
 		}
 		else if (x == ';')
 		{
@@ -210,7 +211,7 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 				}
 				else
 				{
-					Error::LOG("Invalid Memory Expression @Tokenization\n");
+					return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, lineNumber);
 				}
 			}
 			else
@@ -222,12 +223,12 @@ std::vector<std::string> Parser::Tokenize(const std::string &line)
 				}
 				else
 				{
-					Error::LOG("Invalid Memory Expression @Tokenization\n");
+					return Error::LOG("Invalid Memory Expression", lineNumber);
 				}
 			}
 		}
 	}
-	return TOKENS;
+	return true;
 }
 
 bool Parser::Read(const std::string& FILE_PATH)
@@ -244,7 +245,11 @@ bool Parser::Read(const std::string& FILE_PATH)
 		std::getline(file, line);
 		if (line.empty()) { continue; }
 
-		std::vector<std::string> TOKENS = Tokenize(line);
+		std::vector<std::string> TOKENS;
+		 if(!Tokenize(line, TOKENS, LineNumber))
+		 {
+			 return false;
+		 }
 
 		if (TOKENS.empty())//Lines with comment or white spaces or may be both
 		{

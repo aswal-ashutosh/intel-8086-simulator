@@ -11,6 +11,7 @@ class Utility
 {
 	static Word HexToDec(const std::string&);
 public:
+
 	//To check whether a string is representing a valid hex number or not
 	static bool IsValidHex(const std::string &);
 
@@ -62,6 +63,9 @@ public:
 
 	static int SetBitCount(uint32_t);
 };
+
+
+
 
 Word Utility::HexToDec(const std::string& data)
 {

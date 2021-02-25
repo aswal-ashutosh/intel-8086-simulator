@@ -185,10 +185,10 @@ MainFrame::MainFrame() :wxFrame(nullptr, wxID_ANY, "8086 Simulator", wxPoint(30,
 
 	MV_ViewButton = new wxButton(MV_PanelStaticBox, ButtonID::ON_VIEW_MEM, BUTTON::VIEW, wxPoint(320, 60));
 
-	m_MemoryViewList = new wxListView(MV_PanelStaticBox, wxID_ANY, wxPoint(5, 90), wxSize(240, 315));
-	m_MemoryViewList->AppendColumn("Segment");
-	m_MemoryViewList->AppendColumn("Offset");
-	m_MemoryViewList->AppendColumn("Data");
+	MemoryViewList = new wxListView(MV_PanelStaticBox, wxID_ANY, wxPoint(5, 90), wxSize(240, 315));
+	MemoryViewList->AppendColumn("Segment");
+	MemoryViewList->AppendColumn("Offset");
+	MemoryViewList->AppendColumn("Data");
 	MemoryViewPanel->SetSizer(MV_PanelStaticBoxSizer);
 
 	//Debug Panel
@@ -299,27 +299,52 @@ void MainFrame::OnRun(wxCommandEvent& event)
 
 void MainFrame::OnSetMemory(wxCommandEvent& envet)
 {
-	//if (m_MemoryAddressTextCtrl->IsEmpty() || m_DataTextCtrl->IsEmpty())
-	//{
-	//	Error::Throw(ERROR_TYPE::EMPTY_FIELD);
-	//	m_MemoryAddressTextCtrl->Clear();
-	//	m_DataTextCtrl->Clear();
-	//	m_MemoryAddressTextCtrl->AppendText("0000");
-	//	m_DataTextCtrl->AppendText("00");
-	//}
-	//else if (MemoryManager::SetMemory(ToString(m_MemoryAddressTextCtrl->GetValue()), ToString(m_DataTextCtrl->GetValue())))//No need to report error as SetMemory will report if any.
-	//{
-	//	m_MemoryAddressTextCtrl->Clear();
-	//	m_DataTextCtrl->Clear();
-	//	m_MemoryAddressTextCtrl->AppendText("0000");
-	//	m_DataTextCtrl->AppendText("00");
-	//	UpdateMemory();
-	//}
+	if (MI_SegmentAddressTextCtrl->IsEmpty() || MI_OffsetAddressTextCtrl->IsEmpty() || MI_DataTextCtrl->IsEmpty())
+	{
+		Error::LOG(ERROR_TYPE::EMPTY_FIELD);
+		MI_SegmentAddressTextCtrl->Clear();
+		MI_OffsetAddressTextCtrl->Clear();
+		MI_DataTextCtrl->Clear();
+		MI_SegmentAddressTextCtrl->AppendText("0000");
+		MI_OffsetAddressTextCtrl->AppendText("0000");
+		MI_DataTextCtrl->AppendText("0000");
+		return;
+	}
+
+	const std::string sSegment = ToString(MI_SegmentAddressTextCtrl->GetValue());
+	const std::string sOffset = ToString(MI_OffsetAddressTextCtrl->GetValue());
+	const std::string sData = ToString(MI_DataTextCtrl->GetValue());
+
+	if (IsValidHex(sSegment) && IsValidHex(sOffset) && IsValidHex(sData))
+	{
+		int nSegment = (int)HexToDec(sSegment) * 0x10;
+		Word nOffset = HexToDec(sOffset);
+		if (Utility::HexSize(sData + 'H') == HEX_SIZE::BYTE)
+		{
+			Memory::Set8Bit(nSegment + nOffset, (Byte)HexToDec(sData));
+		}
+		else
+		{
+			Memory::Set16Bit(nSegment + nOffset, HexToDec(sData));
+		}
+
+		//MI_SegmentAddressTextCtrl->Clear();//Not clearing segment address
+		MI_OffsetAddressTextCtrl->Clear();
+		MI_DataTextCtrl->Clear();
+		//MI_SegmentAddressTextCtrl->AppendText("0000");//Not reseting segment to 0000
+		MI_OffsetAddressTextCtrl->AppendText("0000");
+		MI_DataTextCtrl->AppendText("0000");
+		UpdateMemoryView();
+	}
+	else
+	{
+		Error::LOG(ERROR_TYPE::INVALID_DATA);
+	}
 }
 
 void MainFrame::OnViewMemory(wxCommandEvent& envet)
 {
-	UpdateMemory();
+	UpdateMemoryView();
 }
 
 
@@ -383,40 +408,47 @@ void MainFrame::UpdateRegisters()
 	RegisterTextCtrl[REGISTER::IP]->AppendText(ToWxString(Data));
 }
 
-
-void MainFrame::UpdateMemory()
+void MainFrame::UpdateMemoryView()
 {
-	/*if (m_FromMemoryAddressTextCtrl->IsEmpty() || m_CountTextCtrl->IsEmpty())
+	if (MV_SegmentAddressTextCtrl->IsEmpty() || MV_OffsetAddressTextCtrl->IsEmpty() || MV_CountTextCtrl->IsEmpty())
 	{
-		m_FromMemoryAddressTextCtrl->Clear();
-		m_CountTextCtrl->Clear();
-		m_FromMemoryAddressTextCtrl->AppendText("0000");
-		m_CountTextCtrl->AppendText("000");
+		MV_SegmentAddressTextCtrl->Clear();
+		MV_OffsetAddressTextCtrl->Clear();
+		MV_CountTextCtrl->Clear();
+		MV_SegmentAddressTextCtrl->AppendText("0000");
+		MV_OffsetAddressTextCtrl->AppendText("0000");
+		MV_CountTextCtrl->AppendText("000");
 	}
-
-	const std::string sFrom = ToString(m_FromMemoryAddressTextCtrl->GetValue());
-	const std::string sCount = ToString(m_CountTextCtrl->GetValue());
-	if (Validator::IsValidHex(sFrom) && Validator::IsValidInt(sCount))
+	const std::string sSegment = ToString(MV_SegmentAddressTextCtrl->GetValue());
+	const std::string sOffset = ToString(MV_OffsetAddressTextCtrl->GetValue());
+	const std::string sCount = ToString(MV_CountTextCtrl->GetValue());
+	if (IsValidHex(sSegment) && IsValidHex(sOffset) && IsValidInt(sCount))
 	{
-		m_MemoryViewList->ClearAll();
-		m_MemoryViewList->AppendColumn("Address");
-		m_MemoryViewList->AppendColumn("Data");
+		MemoryViewList->ClearAll();
+		MemoryViewList->AppendColumn("Segment");
+		MemoryViewList->AppendColumn("Offset");
+		MemoryViewList->AppendColumn("Data");
+		
+		std::string Seg = sSegment;
+		Utility::Capitalize(Seg);
 
-		int nFrom = Converter::HexToDec(sFrom);
+		int nSegment = (int)HexToDec(sSegment) * 0x10;
+		Word nOffset = HexToDec(sOffset);
 		int nCount = std::stoi(sCount);
 
-		for (int i = 0; i < nCount && (nFrom + i) <= 0xffff; ++i)
+		for (int i = 0; i < nCount && (nSegment + Word(nOffset + i)) <= 0xfffff; ++i)
 		{
-			std::string address = Converter::DecToHex(nFrom + i, 16);
-			std::string data = Converter::DecToHex(MemoryManager::Memory[nFrom + i]);
-			m_MemoryViewList->InsertItem(i, ToWxString(address));
-			m_MemoryViewList->SetItem(i, 1, ToWxString(data));
+			std::string offset = DecToHex(Word(nOffset + i), HEX_SIZE::WORD);
+			std::string data = DecToHex(Memory::Get8Bit(nSegment + Word(nOffset + i)), HEX_SIZE::BYTE);
+			MemoryViewList->InsertItem(i, ToWxString(Seg));
+			MemoryViewList->SetItem(i, 1, ToWxString(offset));
+			MemoryViewList->SetItem(i, 2, ToWxString(data));
 		}
 	}
 	else
 	{
-		Error::Throw(ERROR_TYPE::INVALID_DATA);
-	}*/
+		Error::LOG(ERROR_TYPE::INVALID_DATA);
+	}
 }
 
 void MainFrame::Clear()
@@ -473,7 +505,7 @@ void MainFrame::Run8086(const std::string& filePath)
 		{
 			UpdateFlagRegister();
 			UpdateRegisters();
-			UpdateMemory();
+			UpdateMemoryView();
 			wxMessageBox(MESSAGE::SUCCESSFUL_EXECUTION, DIALOG::SUCCESS);
 		}
 	}
@@ -609,4 +641,60 @@ void MainFrame::LoadProgram(const std::string& filePath)
 	//{
 	//	UpdateMemory();
 	//}
+}
+
+
+bool MainFrame::IsValidInt(const std::string& data)
+{
+	for (const char& x : data)
+	{
+		if (x >= '0' && x <= '9')
+		{
+			continue;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool MainFrame::IsValidHex(const std::string& hex)
+{
+	for (int i = 0; i < (int)hex.length() - 1; ++i)
+	{
+		const char& x = hex[i];
+		bool OK = false;
+		OK |= (x >= 'A' && x <= 'F') || (x >= 'a' && x <= 'f');
+		OK |= x >= '0' && x <= '9';
+		if (!OK) { return false; }
+	}
+	return true;
+}
+
+Word MainFrame::HexToDec(const std::string& data)
+{
+	std::stringstream ss(data);
+	Word res = 0;
+	ss >> std::hex >> res;
+	return res;
+}
+
+std::string MainFrame::DecToHex(const Word& data, const HEX_SIZE& Size = HEX_SIZE::BYTE)
+{
+	std::stringstream ss;
+	ss << std::hex << data;
+	std::string res = ss.str();
+	Utility::Capitalize(res);
+
+	if (Size == HEX_SIZE::BYTE)
+	{
+		res = std::string(2 - res.length(), '0') + res;
+	}
+	else
+	{
+		res = std::string(4 - res.length(), '0') + res;
+	}
+	return res;
 }

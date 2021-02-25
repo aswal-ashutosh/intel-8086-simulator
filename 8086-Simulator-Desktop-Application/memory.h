@@ -79,11 +79,11 @@ int Memory::PhysicalAddress(const std::string& mem)
 
 	if (first == REGISTER::BP)
 	{
-		physicalAddress = Register::REG16(REGISTER::SS) * 0x10;
+		physicalAddress = (int)Register::REG16(REGISTER::SS) * 0x10;
 	}
 	else//Either BX or something else
 	{
-		physicalAddress = Register::REG16(REGISTER::DS) * 0x10;
+		physicalAddress = (int)Register::REG16(REGISTER::DS) * 0x10;
 	}
 
 	for (const std::string& x : afterSplit)

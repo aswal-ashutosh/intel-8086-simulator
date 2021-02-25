@@ -10,10 +10,8 @@
 #include"hex_size.h"
 #include"labels.h"
 #include<iomanip>
-
-
-std::fstream OUTPUT_MACHINE_CODE("machine_code.txt", std::ios::out);
-
+#include"register.h"
+#include"memory.h"
 
 class ProgramLoader
 {
@@ -22,6 +20,7 @@ class ProgramLoader
 	//static int CurrentLoadingAddressOffset;
 
 	static std::unordered_map<std::string, bool (*)(const Operand&)> CallBacks;
+	static std::fstream MACHINE_CODE;
 
 	static bool MOV_CASE_1(std::string&, std::string&);
 	static bool MOV_CASE_2(std::string&, std::string&);
@@ -175,6 +174,8 @@ public:
 	static bool RET(const Operand&);
 	static bool HLT(const Operand&);
 };
+
+std::fstream ProgramLoader::MACHINE_CODE;
 
 std::unordered_map<std::string, bool (*)(const Operand&)> ProgramLoader::CallBacks;
 
@@ -390,28 +391,35 @@ void ProgramLoader::HandleForwardReferencing()
 		}
 	}
 
+	MACHINE_CODE.open("machine_code.txt", std::ios::out);
+
 	for (const Instruction& Ins : Program)
 	{
-		OUTPUT_MACHINE_CODE << Converter::DecToHex(Ins.Offset, HEX_SIZE::WORD).substr(0, 4) << ": ";
+		MACHINE_CODE << Converter::DecToHex(Ins.Offset, HEX_SIZE::WORD).substr(0, 4) << ": ";
 		std::string OPCODE;
 		for (int i = 0, k = 0; i < (int)Ins.MachineCode.size(); ++i)
 		{
+			//Start-Load in memory
+			int Padd = (int)Register::REG16(REGISTER::CS) * 0x10 + (Ins.Offset + i);
+			Memory::Set8Bit(Padd, Ins.MachineCode[i]);
+			//End-Load in memory
+
 			OPCODE += Converter::DecToHex(Ins.MachineCode[i]).substr(0, 2) + ' ';
 			if (++k == 6)
 			{
 				k = 0;
-				OUTPUT_MACHINE_CODE << std::left << std::setw(18) << OPCODE;
+				MACHINE_CODE << std::left << std::setw(18) << OPCODE;
 				OPCODE.clear();
 				if (i + 1 < (int)Ins.MachineCode.size())
 				{
 					
-					OUTPUT_MACHINE_CODE << "\n      ";
+					MACHINE_CODE << "\n      ";
 				}
 			}
 		}
 		if (!OPCODE.empty())
 		{
-			OUTPUT_MACHINE_CODE << std::left << std::setw(18) << OPCODE;
+			MACHINE_CODE << std::left << std::setw(18) << OPCODE;
 		}
 		
 
@@ -427,8 +435,10 @@ void ProgramLoader::HandleForwardReferencing()
 			CODE += ' ' + Ins.operand.second;
 		}
 		CODE += "]\n";
-		OUTPUT_MACHINE_CODE << CODE;
+		MACHINE_CODE << CODE;
 	}
+	MACHINE_CODE << std::flush;
+	MACHINE_CODE.close();
 }
 
 bool ProgramLoader::Load()
@@ -442,7 +452,7 @@ bool ProgramLoader::Load()
 		{
 			if (!CallBacks[CurrIns.Mnemonic](CurrIns.operand))
 			{
-				return Error::LOG("Execution Faild!\n");
+				return false;
 			}
 		}
 		else

@@ -6,18 +6,18 @@
 class Error
 {
 public:
-	static bool LOG(const std::string& e, const int linenNumber = -1)
+	static bool LOG(const std::string& e, const int lineNumber = -1)
 	{
-		if (linenNumber != -1)
+		std::string error;
+		if (lineNumber != -1)
 		{
-			std::cout << "\x1B[31mERROR\x1B[0m::" + e + " Line: " + std::to_string(linenNumber);
+			error = "Error: " + e + " [Line Number: " + std::to_string(lineNumber) + "]";
 		}
 		else
 		{
-			std::cout << "\x1B[31mERROR\x1B[0m::" + e;
+			error = "Error: " + e;
 		}
-		
-		exit(0);//To be removed
+		wxMessageBox(error, DIALOG::EXECUTION_STOPPED);
 		return false;
 	}
 

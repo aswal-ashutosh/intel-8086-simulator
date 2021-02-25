@@ -6,6 +6,7 @@
 #include"wx/html/htmlwin.h"
 #include<map>
 #include"constants.h"
+#include"hex_size.h"
 
 
 class MainFrame : public wxFrame
@@ -95,7 +96,7 @@ private:
 	wxTextCtrl* MV_OffsetAddressTextCtrl = nullptr;
 	wxTextCtrl* MV_CountTextCtrl = nullptr;
 	wxStaticText* MV_CountLabel = nullptr;
-	wxListView* m_MemoryViewList = nullptr;
+	wxListView* MemoryViewList = nullptr;
 
 	//Debug Panel
 	wxPanel* DebugPanel = nullptr;
@@ -142,6 +143,12 @@ public:
 	MainFrame();
 	~MainFrame();
 
+	//Helper function
+	bool IsValidHex(const std::string&);
+	bool IsValidInt(const std::string&);
+	Word HexToDec(const std::string& data);
+	std::string DecToHex(const Word&, const HEX_SIZE&);
+
 	//FileHandling
 	void OnOpen(wxCommandEvent& event);
 	void OnSave(wxCommandEvent& event);
@@ -163,7 +170,7 @@ public:
 	void OnViewMemory(wxCommandEvent& envet);
 	void UpdateFlagRegister();
 	void UpdateRegisters();
-	void UpdateMemory();
+	void UpdateMemoryView();
 	
 	
 	void OnAbout(wxCommandEvent& event);
