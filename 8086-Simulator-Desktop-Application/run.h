@@ -10,6 +10,7 @@ bool LOAD_PROGRAM(const std::string &FILE_PATH)
 	Label::Clear();
 	ProgramLoader::ClearProgram();
 	ProgramExecutor::ClearProgram();
+
 	if (!Parser::Read(FILE_PATH))
 	{
 		return false;
@@ -19,6 +20,8 @@ bool LOAD_PROGRAM(const std::string &FILE_PATH)
 	{
 		return false;
 	}
+
+	ProgramExecutor::GetProgramFromLoader();//Will Fetch the Program from Loader
 
 	return true;
 }

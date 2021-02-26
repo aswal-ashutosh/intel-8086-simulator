@@ -1,7 +1,5 @@
 #pragma once
 #include<string>
-#include<iostream>
-#include<bitset>
 
 class Error
 {
@@ -19,16 +17,5 @@ public:
 		}
 		wxMessageBox(error, DIALOG::EXECUTION_STOPPED);
 		return false;
-	}
-
-	static void Debug(const std::string& e)
-	{
-		std::cout << e << '\n';
-		std::cin.get();
-	}
-
-	static void DebugBit(std::bitset<8> b)
-	{
-		std::cout << b << '\n';
 	}
 };

@@ -14,7 +14,7 @@
 
 class Parser
 {
-	
+
 public:
 	//Will format the memroy expression and also check for possible error.
 	static bool ValidateAndFormatMemoryExp(std::string&);
@@ -45,8 +45,8 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 	}
 
 	//split by '+'
-	const std::vector<std::string> &afterSplit = Utility::SplitBy(s, '+');
-	
+	const std::vector<std::string>& afterSplit = Utility::SplitBy(s, '+');
+
 	if (afterSplit.size() > 3)
 	{
 		return false;
@@ -127,7 +127,7 @@ bool Parser::ValidateAndFormatMemoryExp(std::string& exp)
 	return true;
 }
 
-bool Parser::Tokenize(const std::string &line, std::vector<std::string>& TOKENS, const int lineNumber)
+bool Parser::Tokenize(const std::string& line, std::vector<std::string>& TOKENS, const int lineNumber)
 {
 	std::string token;
 	for (int i = 0; i < (int)line.length(); ++i)
@@ -223,7 +223,7 @@ bool Parser::Tokenize(const std::string &line, std::vector<std::string>& TOKENS,
 				}
 				else
 				{
-					return Error::LOG("Invalid Memory Expression", lineNumber);
+					return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, lineNumber);
 				}
 			}
 		}
@@ -233,8 +233,6 @@ bool Parser::Tokenize(const std::string &line, std::vector<std::string>& TOKENS,
 
 bool Parser::Read(const std::string& FILE_PATH)
 {
-	/*ProgramManager::Clear();
-	Register::Clear();*/
 	std::fstream file;
 	file.open(FILE_PATH, std::ios::in);
 	int LineNumber = 0;
@@ -246,22 +244,14 @@ bool Parser::Read(const std::string& FILE_PATH)
 		if (line.empty()) { continue; }
 
 		std::vector<std::string> TOKENS;
-		 if(!Tokenize(line, TOKENS, LineNumber))
-		 {
-			 return false;
-		 }
+		if (!Tokenize(line, TOKENS, LineNumber))
+		{
+			return false;
+		}
 
 		if (TOKENS.empty())//Lines with comment or white spaces or may be both
 		{
 			continue;
-		}
-		else
-		{
-			for (const std::string& s : TOKENS)
-			{
-				std::cout << s << ' ';
-			}
-			std::cout << '\n';
 		}
 
 		const int TotalTokens = TOKENS.size();
@@ -269,7 +259,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 
 		if (TotalTokens > 5)//we can have at max 5 token in a line
 		{
-			return Error::LOG("Syntax Error", LineNumber);
+			return Error::LOG(ERROR_TYPE::SYNTAX, LineNumber);
 		}
 
 		if (TOKENS[CurrToken].back() == ':')
@@ -290,7 +280,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 			}
 			else
 			{
-				return Error::LOG("'" + TOKENS[CurrToken] + "' is not a valid label name", LineNumber);
+				return Error::LOG("'" + TOKENS[CurrToken] + "' is not a valid label name.", LineNumber);
 			}
 		}
 
@@ -309,7 +299,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 			}
 			else
 			{
-				return Error::LOG("Expected a Mnemonic", LineNumber);
+				return Error::LOG(ERROR_TYPE::INVALID_MNEMONIC, LineNumber);
 			}
 		}
 
@@ -339,7 +329,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 			}
 			else
 			{
-				return Error::LOG("Syntax Error", LineNumber);
+				return Error::LOG(ERROR_TYPE::SYNTAX, LineNumber);
 			}
 		}
 
@@ -354,13 +344,9 @@ bool Parser::Read(const std::string& FILE_PATH)
 		else if (bComma)
 		{
 			//There must be an opeands after comma
-			return Error::LOG("Syntax Error", LineNumber);
+			return Error::LOG(ERROR_TYPE::SYNTAX, LineNumber);
 		}
-		//if (CurrToken < TotalTokens) //If there are still token left (after second operands), it must be a syntax error
-		//{
-		//	return Error::Throw(ERROR_TYPE::SYNTAX);
-		//}
 		ProgramLoader::AddInstruction(instruction);
 	}
-	return ProgramLoader::ProgramSize() == 0 ? Error::LOG("Empty File\n") : true;
+	return ProgramLoader::ProgramSize() == 0 ? Error::LOG(ERROR_TYPE::EMPTY_FILE) : true;
 }

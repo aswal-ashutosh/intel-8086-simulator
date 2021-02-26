@@ -28,7 +28,7 @@ bool Label::Add(const std::string& Label_String, const int index)
 	//If Label is already taken
 	if (_Label.count(Label_String))
 	{
-		return Error::LOG("There is already lable with name '" + Label_String + "'\n");
+		return Error::LOG("There is already lable with name '" + Label_String + "'");
 	}
 	_Label[Label_String] = index;
 	return true;

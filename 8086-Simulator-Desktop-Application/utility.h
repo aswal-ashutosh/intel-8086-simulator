@@ -95,8 +95,8 @@ bool Utility::IsValidHex(const std::string& hex)
 	{
 		const char& x = hex[i];
 		bool OK = false;
-		OK |= x >= 'A' && x <= 'F';
-		OK |= x >= '0' && x <= '9';
+		OK |= (x >= 'A' && x <= 'F');
+		OK |= (x >= '0' && x <= '9');
 		if (!OK) { return false; }
 	}
 	return true;
@@ -114,12 +114,12 @@ bool Utility::IsValidMemory(const std::string& s)
 {
 	if (s.size() < 4) { return false; }
 
-	return (s.front() == '[' && s.back() == ']') || (s.substr(0, 2) == "W[" && s.back() == ']');
+	return (s.front() == '[' && s.back() == ']') || (s.substr(0, 2) == "W[" && s.back() == ']') || (s.substr(0, 2) == "w[" && s.back() == ']');
 }
 
 bool Utility::IsWordMemory(const std::string& s)
 {
-	return (s.substr(0, 2) == "W[" && s.back() == ']');
+	return (s.substr(0, 2) == "W[" && s.back() == ']') || (s.substr(0, 2) == "w[" && s.back() == ']');
 }
 
 bool Utility::IsByteMemory(const std::string& s)
@@ -240,8 +240,6 @@ const HEX_SIZE Utility::HexSize(const std::string& hex)
 		//data > 0xff && data <= 0xffff
 		return HEX_SIZE::WORD;
 	}
-	//[ToDo:REMOVE]
-	Error::LOG("Unexpected Case @HexSize\n");
 }
 
 

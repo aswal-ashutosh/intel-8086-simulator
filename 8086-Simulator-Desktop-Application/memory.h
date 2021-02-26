@@ -19,52 +19,48 @@ public:
 	static Byte Get8Bit(const int);
 	static Word Get16Bit(const int);
 	
-	static void DebugMem(int s, int offset, int cnt)
-	{
-		std::string address = Converter::DecToHex(s, HEX_SIZE::WORD);
-
-		for (int i = 0; i < cnt; ++i)
-		{
-			int physcialAddress = s * 0x10 + (offset + i);
-			std::string off = Converter::DecToHex(offset + i, HEX_SIZE::WORD);
-			std::cout << address << '-' << off << ":[" << "\x1B[32m" + Converter::DecToHex(mem[physcialAddress]) + "\x1B[0m]" << '\n';
-		}
-	}
-
 	//Function to get physical address from [exp]
 	static int PhysicalAddress(const std::string&);
+
+	//Whenever the provided location is greater than fffff it will truncate all the extra bits
+	static int NormalizeLocation(int loc);
 };
 
 Byte Memory::mem[1 << 20] = { 0 };
 
+int Memory::NormalizeLocation(int loc)
+{
+	for (int i = 20; i < 32; ++i)
+	{
+		loc &= ~(1 << i);
+	}
+	return loc;
+}
+
 void Memory::Set8Bit(const int loc, const Byte data)
 {
-	if (loc < 0x00000 || loc > 0xfffff){ Error::Debug("Address out of range @Set8Bit\n"); }
-	mem[loc] = data;
+	mem[NormalizeLocation(loc)] = data;
 }
 
 void Memory::Set16Bit(const int loc, const Word data)
 {
-	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Set16Bit\n"); }
 	Byte Lbyte = data & 0x00ff;
 	Byte Hbyte = (data & 0xff00) >> 8;
-	int pAddressL = loc;
-	int pAddressH = loc + 1 > 0xfffff ? 0x00000 : loc + 1;	//Address should be in range[00000H-FFFFFH]
+	int pAddressL = NormalizeLocation(loc);
+	int pAddressH = pAddressL + 1 > 0xfffff ? 0x00000 : pAddressL + 1;	//Address should be in range[00000H-FFFFFH]
 	mem[pAddressL] = Lbyte;
 	mem[pAddressH] = Hbyte;
 }
 
 Byte Memory::Get8Bit(const int loc)
 {
-	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Get8Bit\n"); }
-	return mem[loc];
+	return mem[NormalizeLocation(loc)];
 }
 
 Word Memory::Get16Bit(const int loc)
 {
-	if (loc < 0x00000 || loc > 0xfffff) { Error::Debug("Address out of range @Get16Bit\n"); }
-	int pAddressL = loc;
-	int pAddressH = loc + 1 > 0xfffff ? 0x00000 : loc + 1;	//Address should be in range[00000H-FFFFFH]
+	int pAddressL = NormalizeLocation(loc);
+	int pAddressH = pAddressL + 1 > 0xfffff ? 0x00000 : pAddressL + 1;	//Address should be in range[00000H-FFFFFH]
 	Word HigherData = mem[pAddressH];
 	Word LowerData = mem[pAddressL];
 	return (HigherData << 8) | LowerData;
@@ -98,5 +94,5 @@ int Memory::PhysicalAddress(const std::string& mem)
 		}
 	}
 
-	return physicalAddress;
+	return NormalizeLocation(physicalAddress);
 }

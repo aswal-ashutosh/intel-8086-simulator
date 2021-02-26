@@ -68,8 +68,11 @@
     <ClCompile Include="Simulator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="machine_code.txt" />
+    <Text Include="MACHINE_CODE.txt" />
     <Text Include="test.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ABOUT.html" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

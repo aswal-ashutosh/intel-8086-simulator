@@ -391,7 +391,7 @@ void ProgramLoader::HandleForwardReferencing()
 		}
 	}
 
-	MACHINE_CODE.open("machine_code.txt", std::ios::out);
+	MACHINE_CODE.open(PATH::MACHINE_CODE_FILE, std::ios::out);
 
 	for (const Instruction& Ins : Program)
 	{
@@ -448,16 +448,9 @@ bool ProgramLoader::Load()
 	for (ProgramLoader::CurrInsIndex = 0; ProgramLoader::CurrInsIndex < ProgramSize; ++ProgramLoader::CurrInsIndex)
 	{
 		const Instruction& CurrIns = Program[CurrInsIndex];
-		if (CallBacks.count(CurrIns.Mnemonic))
+		if (!CallBacks[CurrIns.Mnemonic](CurrIns.operand))
 		{
-			if (!CallBacks[CurrIns.Mnemonic](CurrIns.operand))
-			{
-				return false;
-			}
-		}
-		else
-		{
-			return Error::LOG(CurrIns.Mnemonic + " is not implemented yet! @ Load\n");
+			return false;
 		}
 	}
 	HandleForwardReferencing();
@@ -561,7 +554,7 @@ bool ProgramLoader::MOV_CASE_3(std::string& MEM8, std::string& IMMD8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @MOV_CASE_3\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -609,7 +602,7 @@ bool ProgramLoader::MOV_CASE_4(std::string& MEM, std::string& IMMD16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @MOV_CASE_4\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -659,7 +652,7 @@ bool ProgramLoader::MOV_CASE_5(std::string& MEM16, std::string& IMMD8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @MOV_CASE_5\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -748,7 +741,7 @@ bool ProgramLoader::MOV_CASE_8(std::string& REG8, std::string& MEM8)
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP] @MOV_CASE_8\n");
+			return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 		}
 	}
 
@@ -808,7 +801,7 @@ bool ProgramLoader::MOV_CASE_9(std::string& REG16, std::string& MEM)
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP] @MOV_CASE_9\n");
+			return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 		}
 	}
 
@@ -873,7 +866,7 @@ bool ProgramLoader::MOV_CASE_10(std::string& MEM8, std::string& REG8)
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP] @MOV_CASE_10\n");
+			return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	return true;
@@ -936,7 +929,7 @@ bool ProgramLoader::MOV_CASE_11(std::string& MEM, std::string& REG16)
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP] @MOV_CASE_11\n");
+			return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 		}
 	}
 
@@ -946,7 +939,7 @@ bool ProgramLoader::MOV_CASE_11(std::string& MEM, std::string& REG16)
 bool ProgramLoader::MOV_CASE_12(std::string& SREG, std::string& REG16)
 {
 	//Case-12: SREG, REG16
-	if (SREG == REGISTER::CS) { return Error::LOG("Cs can't be modified directly\n"); }
+	if (SREG == REGISTER::CS) { return Error::LOG(ERROR_TYPE::CS_MODIFICATION, Program[CurrInsIndex].LineNumber); }
 	//Second Byte => xx0sregxxx =>mod(2)-0-sreg(2)-rm(3)
 	const MOD_RM_INFO& info = MOD_RM.find(REG16)->second;
 	Byte B2 = (info.mod << 6) | (REG_CODE.find(SREG)->second << 3) | info.rm;
@@ -962,7 +955,7 @@ bool ProgramLoader::MOV_CASE_13(std::string& SREG, std::string& MEM)
 {
 	//Case-13: SREG, []/W[]
 
-	if (SREG == REGISTER::CS) { return Error::LOG("Cs can't be modified directly\n"); }
+	if (SREG == REGISTER::CS) { return Error::LOG(ERROR_TYPE::CS_MODIFICATION, Program[CurrInsIndex].LineNumber); }
 
 	//Second Byte => xx0sregxxx =>mod(2)-0-sreg(2)-rm(3)
 	const std::string& fExp = Utility::ExpressionForModRM(MEM);
@@ -1000,7 +993,7 @@ bool ProgramLoader::MOV_CASE_13(std::string& SREG, std::string& MEM)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @MOV_CASE_13\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -1058,7 +1051,7 @@ bool ProgramLoader::MOV_CASE_15(std::string& MEM, std::string& SREG)
 	}
 	else
 	{
-		return Error::LOG("Invalid[EXP] @MOV_CASE_15\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 
@@ -1068,7 +1061,7 @@ bool ProgramLoader::MOV(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected 2 Operands @MOV", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP1 = operand.first;
@@ -1150,7 +1143,7 @@ bool ProgramLoader::MOV(const Operand& operand)
 		//Case-15: []/W[], SREG
 		return MOV_CASE_15(OP1, OP2);
 	}
-	return Error::LOG("Wrong Syntax @ MOV", Program[CurrInsIndex].LineNumber);
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 /*<------------------------XCHG------------------->*/
@@ -1213,7 +1206,7 @@ bool ProgramLoader::XCHG_CASE_2(std::string& MEM8, std::string& REG8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @XCHG_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -1263,7 +1256,7 @@ bool ProgramLoader::XCHG_CASE_3(std::string& REG8, std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @XCHG_CASE_3\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -1341,7 +1334,7 @@ bool ProgramLoader::XCHG_CASE_5(std::string& REG16, std::string& MEM)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @XCHG_CASE_5\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -1389,7 +1382,7 @@ bool ProgramLoader::XCHG_CASE_6(std::string& MEM, std::string& REG16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @XCHG_CASE_6\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -1398,7 +1391,7 @@ bool ProgramLoader::XCHG(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected No Operand @XCHG\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	std::string OP1 = operand.first;
 	std::string OP2 = operand.second;
@@ -1417,7 +1410,7 @@ bool ProgramLoader::XCHG(const Operand& operand)
 		}
 		else
 		{
-			return Error::LOG("Both operand must be of same size\n");
+			return Error::LOG(ERROR_TYPE::MISMATCH_OPERAND_SIZE, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::Is8BitRegister(OP1) && Utility::IsValidMemory(OP2))
@@ -1429,7 +1422,7 @@ bool ProgramLoader::XCHG(const Operand& operand)
 		}
 		else
 		{
-			return Error::LOG("Both operand must be of same size\n");
+			return Error::LOG(ERROR_TYPE::MISMATCH_OPERAND_SIZE, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is16BitRegister(OP2))
@@ -1449,7 +1442,7 @@ bool ProgramLoader::XCHG(const Operand& operand)
 		return XCHG_CASE_6(OP1, OP2);
 	}
 
-	return Error::LOG("Invalid Syntax @XCHG\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 /*<-------------------------------------AAACOSSX-------------------------------------->*/
 
@@ -1511,7 +1504,7 @@ bool ProgramLoader::AAACOSSX_CASE_2(std::string& REG8, std::string& MEM8, const 
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 
 	return true;
@@ -1562,7 +1555,7 @@ bool ProgramLoader::AAACOSSX_CASE_3(std::string& MEM8, std::string& REG8, const 
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_3\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 
 	return true;
@@ -1628,7 +1621,7 @@ bool ProgramLoader::AAACOSSX_CASE_5(std::string& REG16, std::string& MEM, const 
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_5\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 
 	return true;
@@ -1676,7 +1669,7 @@ bool ProgramLoader::AAACOSSX_CASE_6(std::string& MEM, std::string& REG16, const 
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_6\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 
 	return true;
@@ -1727,7 +1720,7 @@ bool ProgramLoader::AAACOSSX_CASE_7(std::string& MEM8, std::string& IMMD8, const
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_7\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 
 	return true;
@@ -1778,7 +1771,7 @@ bool ProgramLoader::AAACOSSX_CASE_8(std::string& MEM, std::string& IMMD16, const
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_8\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 
 	return true;
@@ -1820,7 +1813,7 @@ bool ProgramLoader::AAACOSSX_CASE_9(std::string& REG8, std::string& IMMD8, const
 		}
 		else 
 		{
-			return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_9\n");
+			return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	return true;
@@ -1863,7 +1856,7 @@ bool ProgramLoader::AAACOSSX_CASE_10(std::string& REG16, std::string& IMMD16, co
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_10\n");
+			return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	return true;
@@ -1906,7 +1899,7 @@ bool ProgramLoader::AAACOSSX_CASE_11(std::string& REG16, std::string& IMMD8, con
 		}
 		else
 		{
-			return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_11\n");
+			return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	return true;
@@ -1955,7 +1948,7 @@ bool ProgramLoader::AAACOSSX_CASE_12(std::string& MEM16, std::string& IMMD8, con
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @ AAACOSSX_CASE_11\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -1965,7 +1958,7 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected 2 Operands @AAACOSSX", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP1 = operand.first;
@@ -2032,47 +2025,47 @@ bool ProgramLoader::AAACOSSX(const Operand& operand, const Byte OFFSET, const By
 		return AAACOSSX_CASE_12(OP1, OP2, OFFSET, REG);
 	}
 	
-	return Error::LOG("Wrong Syntax @ AAACOSSX\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 bool ProgramLoader::ADD(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x00, 0b00000000) ? true : Error::LOG("Execution Failed @ ADD\n");
+	return AAACOSSX(operand, 0x00, 0b00000000);
 }
 
 bool ProgramLoader::ADC(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x10, 0b00010000) ? true : Error::LOG("Execution Failed @ ADC\n");
+	return AAACOSSX(operand, 0x10, 0b00010000);
 }
 
 bool ProgramLoader::AND(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x20, 0b00100000) ? true : Error::LOG("Execution Failed @ AND\n");
+	return AAACOSSX(operand, 0x20, 0b00100000);
 }
 
 bool ProgramLoader::CMP(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x38, 0b00111000) ? true : Error::LOG("Execution Failed @ CMP\n");
+	return AAACOSSX(operand, 0x38, 0b00111000);
 }
 
 bool ProgramLoader::OR(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x08, 0b00001000) ? true : Error::LOG("Execution Failed @ OR\n");
+	return AAACOSSX(operand, 0x08, 0b00001000);
 }
 
 bool ProgramLoader::SBB(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x18, 0b00011000) ? true : Error::LOG("Execution Failed @ SBB\n");
+	return AAACOSSX(operand, 0x18, 0b00011000);
 }
 
 bool ProgramLoader::SUB(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x28, 0b00101000) ? true : Error::LOG("Execution Failed @ SUB\n");
+	return AAACOSSX(operand, 0x28, 0b00101000);
 }
 
 bool ProgramLoader::XOR(const Operand& operand)
 {
-	return AAACOSSX(operand, 0x30, 0b00110000) ? true : Error::LOG("Execution Failed @ XOR\n");
+	return AAACOSSX(operand, 0x30, 0b00110000);
 }
 
 /*<-------------------------------------MUL-------------------------------------->*/
@@ -2117,7 +2110,7 @@ bool ProgramLoader::MUL_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @MUL_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2162,7 +2155,7 @@ bool ProgramLoader::MUL_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @MUL_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2193,7 +2186,7 @@ bool ProgramLoader::MUL(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @MUL\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -2219,7 +2212,7 @@ bool ProgramLoader::MUL(const Operand& operand)
 		return MUL_CASE_4(OP);
 	}
 
-	return Error::LOG("Syntax Error @MUL\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 
@@ -2264,7 +2257,7 @@ bool ProgramLoader::IMUL_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @IMUL_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2309,7 +2302,7 @@ bool ProgramLoader::IMUL_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @MUL_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2340,7 +2333,7 @@ bool ProgramLoader::IMUL(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @IMUL\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -2366,7 +2359,7 @@ bool ProgramLoader::IMUL(const Operand& operand)
 		return IMUL_CASE_4(OP);
 	}
 
-	return Error::LOG("Syntax Error @IMUL\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 
@@ -2411,7 +2404,7 @@ bool ProgramLoader::DIV_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @DIV_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2456,7 +2449,7 @@ bool ProgramLoader::DIV_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @DIV_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2487,7 +2480,7 @@ bool ProgramLoader::DIV(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @DIV\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -2512,8 +2505,7 @@ bool ProgramLoader::DIV(const Operand& operand)
 		//Case-4: DIV REG16
 		return DIV_CASE_4(OP);
 	}
-
-	return Error::LOG("Syntax Error @DIV\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 
@@ -2560,7 +2552,7 @@ bool ProgramLoader::IDIV_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @IDIV_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2604,7 +2596,7 @@ bool ProgramLoader::IDIV_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @IDIV_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2635,7 +2627,7 @@ bool ProgramLoader::IDIV(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @IDIV\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -2661,7 +2653,7 @@ bool ProgramLoader::IDIV(const Operand& operand)
 		return IDIV_CASE_4(OP);
 	}
 
-	return Error::LOG("Syntax Error @IDIV\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 /*<------------------------------NEG---------------------------------------------------->*/
@@ -2705,7 +2697,7 @@ bool ProgramLoader::NEG_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 
@@ -2750,7 +2742,7 @@ bool ProgramLoader::NEG_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2781,7 +2773,7 @@ bool ProgramLoader::NEG(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @NEG\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -2807,7 +2799,7 @@ bool ProgramLoader::NEG(const Operand& operand)
 		return NEG_CASE_4(OP);
 	}
 
-	return Error::LOG("Syntax Error @NEG\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 /*<-------------------------------NOT-------------------------------------------------->*/
@@ -2853,7 +2845,7 @@ bool ProgramLoader::NOT_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 
@@ -2898,7 +2890,7 @@ bool ProgramLoader::NOT_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -2929,7 +2921,7 @@ bool ProgramLoader::NOT(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @NOT\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -2955,7 +2947,7 @@ bool ProgramLoader::NOT(const Operand& operand)
 		return NOT_CASE_4(OP);
 	}
 
-	return Error::LOG("Syntax Error @NOT\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 /*<-------------------------------------------DEC------------------------------->*/
@@ -3002,7 +2994,7 @@ bool ProgramLoader::DEC_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 
@@ -3047,7 +3039,7 @@ bool ProgramLoader::DEC_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -3078,7 +3070,7 @@ bool ProgramLoader::DEC(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @DEC\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -3104,7 +3096,7 @@ bool ProgramLoader::DEC(const Operand& operand)
 		return DEC_CASE_4(OP);
 	}
 
-	return Error::LOG("Wrong Syntax @DEC\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 /*<-------------------------------INC------------------------------>*/
@@ -3149,7 +3141,7 @@ bool ProgramLoader::INC_CASE_1(std::string& MEM8)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_1\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 
@@ -3195,7 +3187,7 @@ bool ProgramLoader::INC_CASE_2(std::string& MEM16)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @NEG_CASE_2\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -3226,7 +3218,7 @@ bool ProgramLoader::INC(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected 1 Operand @INC\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP = operand.first;
@@ -3252,7 +3244,7 @@ bool ProgramLoader::INC(const Operand& operand)
 		return INC_CASE_4(OP);
 	}
 
-	return Error::LOG("Wrong Syntax @INC\n");
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 /*<-------------------------DAA------------------------------->*/
@@ -3261,7 +3253,7 @@ bool ProgramLoader::DAA(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 0))
 	{
-		return Error::LOG("Expected 1 Operand @DAA\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//OUT << "27\n";
 	Program[CurrInsIndex].MachineCode.push_back(0x27);
@@ -3277,7 +3269,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_1(std::string& REG8, std::string& IMMD8, B
 	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG8)->second;
 	//const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
 	int count = Converter::HexToDec(IMMD8);
-	if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+	if (count == 0) { return Error::LOG(ERROR_TYPE::IMMD_ZERO_IN_ROTATE_SHIFT, Program[CurrInsIndex].LineNumber); }
 	while (count--)
 	{
 		//OUT << "D0 " << HexB2 << '\n';
@@ -3306,7 +3298,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_3(std::string& REG16, std::string& IMMD8, 
 	Byte B2 = 0b11000000 | REG | REG_CODE.find(REG16)->second;
 	//const std::string& HexB2 = (Converter::DecToHex(B2)).substr(0, 2);
 	int count = Converter::HexToDec(IMMD8);
-	if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+	if (count == 0) { return Error::LOG(ERROR_TYPE::IMMD_ZERO_IN_ROTATE_SHIFT, Program[CurrInsIndex].LineNumber); }
 	while (count--)
 	{
 		//OUT << "D1 " << HexB2 << '\n';
@@ -3360,7 +3352,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_5(std::string& MEM8, std::string& IMMD8, B
 		//}
 
 		int count = Converter::HexToDec(IMMD8);
-		if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+		if (count == 0) { return Error::LOG(ERROR_TYPE::IMMD_ZERO_IN_ROTATE_SHIFT, Program[CurrInsIndex].LineNumber); }
 
 		std::vector<Byte> Dis;
 		if (!displacement.empty())
@@ -3396,7 +3388,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_5(std::string& MEM8, std::string& IMMD8, B
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @SHIFT_CASE_5\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -3451,7 +3443,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_6(std::string& MEM8, Byte REG)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @SHIFT_CASE_6\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -3488,7 +3480,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_7(std::string& MEM16, std::string& IMMD8, 
 		}*/
 
 		int count = Converter::HexToDec(IMMD8);
-		if (count == 0) { return Error::LOG("IMMD8 can't be 00H\n"); }
+		if (count == 0) { return Error::LOG(ERROR_TYPE::IMMD_ZERO_IN_ROTATE_SHIFT, Program[CurrInsIndex].LineNumber); }
 
 		std::vector<Byte> Dis;
 		if (!displacement.empty())
@@ -3524,7 +3516,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_7(std::string& MEM16, std::string& IMMD8, 
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @SHIFT_CASE_5\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -3579,7 +3571,7 @@ bool ProgramLoader::ROTATE_SHIFT_CASE_8(std::string& MEM8, Byte REG)
 	}
 	else
 	{
-		return Error::LOG("Invalid [EXP] @SHIFT_CASE_6\n");
+		return Error::LOG(ERROR_TYPE::INVALID_MEM_EXP, Program[CurrInsIndex].LineNumber);
 	}
 	return true;
 }
@@ -3588,7 +3580,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 {
 	if (!Utility::IsValidOperandCount(operand, 2))
 	{
-		return Error::LOG("Expected 1 Operand @Roation/Shift\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 
 	std::string OP1 = operand.first;
@@ -3603,7 +3595,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only 8 Bit data allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_8BIT_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if(Utility::Is8BitRegister(OP1) && Utility::Is8BitRegister(OP2))
@@ -3615,7 +3607,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only CL is allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_CL_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::IsValidHex(OP2))
@@ -3627,7 +3619,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only 8 Bit data allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_8BIT_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::Is16BitRegister(OP1) && Utility::Is8BitRegister(OP2))
@@ -3639,7 +3631,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only CL is allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_CL_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::IsValidHex(OP2))
@@ -3651,7 +3643,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only 8 Bit data allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_8BIT_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsByteMemory(OP1) && Utility::Is8BitRegister(OP2))
@@ -3663,7 +3655,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only CL is allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_CL_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::IsValidHex(OP2))
@@ -3675,7 +3667,7 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only 8 Bit data allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_8BIT_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
 	else if (Utility::IsValidMemory(OP1) && Utility::IsWordMemory(OP1) && Utility::Is8BitRegister(OP2))
@@ -3687,44 +3679,44 @@ bool ProgramLoader::ROTATE_SHIFT(const Operand& operand, Byte REG)
 		}
 		else
 		{
-			return Error::LOG("Only CL is allowed!\n");
+			return Error::LOG(ERROR_TYPE::ONLY_CL_ALLLOWED, Program[CurrInsIndex].LineNumber);
 		}
 	}
-	return false;
+	return Error::LOG(ERROR_TYPE::SYNTAX, Program[CurrInsIndex].LineNumber);
 }
 
 bool ProgramLoader::SHL(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00100000) ? true : Error::LOG("Wrong Syntax @SHL\n");
+	return ROTATE_SHIFT(operand, 0b00100000);
 }
 bool ProgramLoader::SAL(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00100000) ? true : Error::LOG("Wrong Syntax @SAL\n");
+	return ROTATE_SHIFT(operand, 0b00100000);
 }
 bool ProgramLoader::SHR(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00101000) ? true : Error::LOG("Wrong Syntax @SHR\n");
+	return ROTATE_SHIFT(operand, 0b00101000);
 }
 bool ProgramLoader::SAR(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00111000) ? true : Error::LOG("Wrong Syntax @SAR\n");
+	return ROTATE_SHIFT(operand, 0b00111000);
 }
 
 bool ProgramLoader::RCL(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00010000) ? true : Error::LOG("Wrong Syntax @RCL\n");
+	return ROTATE_SHIFT(operand, 0b00010000);
 }
 bool ProgramLoader::RCR(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00011000) ? true : Error::LOG("Wrong Syntax @RCR\n");
+	return ROTATE_SHIFT(operand, 0b00011000);
 }
 bool ProgramLoader::ROL(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00000000) ? true : Error::LOG("Wrong Syntax @ROL\n");
+	return ROTATE_SHIFT(operand, 0b00000000);
 }
 bool ProgramLoader::ROR(const Operand& operand)
 {
-	return ROTATE_SHIFT(operand, 0b00001000) ? true : Error::LOG("Wrong Syntax @ROR\n");
+	return ROTATE_SHIFT(operand, 0b00001000);
 }
 
 /*<------------------------Carry Flag Manuplators------------------------------->*/
@@ -3732,7 +3724,7 @@ bool ProgramLoader::STC(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 0))
 	{
-		return Error::LOG("Expected No Operand @STC\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//OUT << "F9\n";
 	Program[CurrInsIndex].MachineCode.push_back(0xF9);
@@ -3743,7 +3735,7 @@ bool ProgramLoader::CLC(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 0))
 	{
-		return Error::LOG("Expected No Operand CLC\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//OUT << "F8\n";
 	Program[CurrInsIndex].MachineCode.push_back(0xF8);
@@ -3754,7 +3746,7 @@ bool ProgramLoader::CMC(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 0))
 	{
-		return Error::LOG("Expected No Operand @CMC\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//OUT << "F5\n";
 	Program[CurrInsIndex].MachineCode.push_back(0xF5);
@@ -3766,7 +3758,7 @@ bool ProgramLoader::JMP(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JMP\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When forward referencing will be handled)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3775,7 +3767,7 @@ bool ProgramLoader::JMP(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3783,7 +3775,7 @@ bool ProgramLoader::JC(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JC\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3794,7 +3786,7 @@ bool ProgramLoader::JC(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3802,7 +3794,7 @@ bool ProgramLoader::JNC(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JNC\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3813,7 +3805,7 @@ bool ProgramLoader::JNC(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3821,7 +3813,7 @@ bool ProgramLoader::JZ_JE(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JZ/JE\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3832,7 +3824,7 @@ bool ProgramLoader::JZ_JE(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3840,7 +3832,7 @@ bool ProgramLoader::JNZ_JNE(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JNZ/JNE\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3851,7 +3843,7 @@ bool ProgramLoader::JNZ_JNE(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 
 }
@@ -3860,7 +3852,7 @@ bool ProgramLoader::JPE_JP(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JPE/JP\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3871,7 +3863,7 @@ bool ProgramLoader::JPE_JP(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3879,7 +3871,7 @@ bool ProgramLoader::JPO_JNP(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JPO/JNP\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3890,7 +3882,7 @@ bool ProgramLoader::JPO_JNP(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3898,7 +3890,7 @@ bool ProgramLoader::JS(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JS\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3909,7 +3901,7 @@ bool ProgramLoader::JS(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3917,7 +3909,7 @@ bool ProgramLoader::JNS(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JNS\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3928,7 +3920,7 @@ bool ProgramLoader::JNS(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3936,7 +3928,7 @@ bool ProgramLoader::JO(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JO\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3947,7 +3939,7 @@ bool ProgramLoader::JO(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3955,7 +3947,7 @@ bool ProgramLoader::JNO(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @JNO\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3966,7 +3958,7 @@ bool ProgramLoader::JNO(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 /*<--------------------------CALL-------------------------->*/
@@ -3975,7 +3967,7 @@ bool ProgramLoader::CALL(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 1))
 	{
-		return Error::LOG("Expected No Operand @CALL\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	//Machine code will be produce later(When handling forward referencing)
 	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
@@ -3986,7 +3978,7 @@ bool ProgramLoader::CALL(const Operand& operand)
 	}
 	else
 	{
-		return Error::LOG("Invalid Label OR Label with no definition.", Program[CurrInsIndex].LineNumber);
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
 
@@ -3995,7 +3987,7 @@ bool ProgramLoader::RET(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 0))
 	{
-		return Error::LOG("Expected No Operand @RET\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	Program[CurrInsIndex].MachineCode.push_back(0xC3);
 	return true;
@@ -4006,7 +3998,7 @@ bool ProgramLoader::HLT(const Operand& operand)
 {
 	if (!Utility::IsValidOperandCount(operand, 0))
 	{
-		return Error::LOG("Expected No Operand @HLT\n");
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
 	}
 	Program[CurrInsIndex].MachineCode.push_back(0xF4);
 	return true;

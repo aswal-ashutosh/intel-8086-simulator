@@ -6,7 +6,7 @@ bool ProgramExecutor::CALL(const Operand& operand)
 	CallStack.push_back(CurrInsIndex);
 
 	Word ReturnAddress = Program[CurrInsIndex].Offset;
-	int CurrentStackTop = Register::REG16(REGISTER::SS) * 0x10 + Register::REG16(REGISTER::SP);
+	int CurrentStackTop = (int)Register::REG16(REGISTER::SS) * 0x10 + (int)Register::REG16(REGISTER::SP);
 	Memory::Set16Bit(CurrentStackTop - 2, ReturnAddress);
 	Register::REG16(REGISTER::SP, Register::REG16(REGISTER::SP) - 2);
 

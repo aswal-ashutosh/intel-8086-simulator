@@ -162,12 +162,17 @@ public:
 	void OnStopDebug(wxCommandEvent& event);
 	void Run8086(const std::string& filePath);
 	void Debug8086(const std::string& filePath);
-
-	void OnSetMemory(wxCommandEvent& envet);
-	void OnSetLoadingLocation(wxCommandEvent& envet);
 	void OnLoadProgram(wxCommandEvent& event);
 	void LoadProgram(const std::string&);
+
+	void OnSetMemory(wxCommandEvent& envet);
+	void OnSetCS(wxCommandEvent& envet);
+	void OnSetSS(wxCommandEvent& envet);
+	void OnSetDS(wxCommandEvent& envet);
+	void OnSetES(wxCommandEvent& envet);
 	void OnViewMemory(wxCommandEvent& envet);
+	void OnViewMacineCode(wxCommandEvent& envet);
+
 	void UpdateFlagRegister();
 	void UpdateRegisters();
 	void UpdateMemoryView();
@@ -181,7 +186,7 @@ public:
 	DECLARE_EVENT_TABLE();
 };
 
-enum ButtonID
+enum EventID
 {
 	ON_SET_CS,
 	ON_SET_DS,
@@ -193,4 +198,5 @@ enum ButtonID
 	DEBUG_BUTTON,
 	STOP_DB_BUTTON,
 	ON_LOAD,
+	ON_VIEW_MACHINE_CODE,
 };

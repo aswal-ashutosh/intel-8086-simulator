@@ -237,65 +237,31 @@ bool Register::Order(const std::string& R)
 /*GETTERS*/
 Byte Register::REG8(const std::string& R)
 {
-	if (_REG8.count(R))
-	{
-		return _REG8[R];
-	}
-	else
-	{
-		//[TODO]::REMOVE DEBUG In final version
-		Error::Debug(R + " is not 8-Bit Register @ Getter\n");
-		return -1;
-	}
+	return _REG8[R];
 }
 
 Word Register::REG16(const std::string& R)
 {
-	if (_REG16.count(R))
-	{
-		return _REG16[R];
-	}
-	else
-	{
-		//[TODO]::REMOVE DEBUG In final version
-		Error::Debug(R + " is not 16-Bit Register @ Getter\n");
-		return -1;
-	}
+	return _REG16[R];
 }
 
 /*SETTERS*/
 void Register::REG8(const std::string& R, const Byte data)
 {
-	if (_REG8.count(R))
-	{
-		_REG8[R] = data;
-		Sync16BitWith8Bit(_REG16[ParentRegister(R)], _REG8[R], Order(R));
-	}
-	else
-	{
-		Error::Debug(R + "is not 8-Bit Register @ Setter\n");
-	}
+	_REG8[R] = data;
+	Sync16BitWith8Bit(_REG16[ParentRegister(R)], _REG8[R], Order(R));
 }
 
 
 void Register::REG16(const std::string& R, const Word data)
 {
-	if (_REG16.count(R))
+	_REG16[R] = data;
+	if (IsGenReg16(R))
 	{
-		_REG16[R] = data;
-		if (IsGenReg16(R))
-		{
-			Sync8BitWith16Bit(_REG16[R], _REG8[HigherChild(R)], _REG8[LowerChild(R)]);
-		}
-	}
-	else
-	{
-		Error::Debug(R + "is not 16-Bit Register @ Setter\n");
+		Sync8BitWith16Bit(_REG16[R], _REG8[HigherChild(R)], _REG8[LowerChild(R)]);
 	}
 }
 
-//[TODO]::OVERFLOW CHECKER[May be required]
-//void Register::IP_INC(const Word& data) { _IP += data; }/*Function to increment IP*/
 void Register::IP(const Word& data) { _IP = data; }
 
 Word Register::IP() { return _IP; }

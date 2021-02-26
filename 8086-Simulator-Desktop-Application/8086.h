@@ -262,6 +262,10 @@ public:
 	static void ClearProgram();
 	static void LoadCallBacks();
 	static bool Execute();
+	static bool ExecuteOne();
+	static int GetCurrInsLineNumber();
+	static bool ReachedHLT();
+	static bool GetProgramFromLoader();
 
 
 	static bool MOV(const Operand&);
@@ -367,26 +371,39 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::HLT] = HLT;
 }
 
+bool ProgramExecutor::GetProgramFromLoader()
+{
+	ProgramExecutor::Program = ProgramLoader::GetProgram();
+}
+
 bool ProgramExecutor::Execute()
 {
 	//[TODO:] Remove extra checking at release version
-	Program = ProgramLoader::GetProgram();
 	while(!HLT_STATE_REACHED)
 	{
 		const Instruction& Ins = Program[CurrInsIndex];
-		if (CallBacks.count(Ins.Mnemonic))
+		if (!CallBacks[Ins.Mnemonic](Ins.operand))
 		{
-			if (!CallBacks[Ins.Mnemonic](Ins.operand))
-			{
-				return false;
-			}
-		}
-		else
-		{
-			return Error::LOG(Ins.Mnemonic + " is not implemented yet! @ Execute\n");
+			return false;
 		}
 	}
 	return true;
+}
+
+bool ProgramExecutor::ExecuteOne()
+{
+	const Instruction& Ins = Program[CurrInsIndex];
+	return CallBacks[Ins.Mnemonic](Ins.operand);
+}
+
+int ProgramExecutor::GetCurrInsLineNumber()
+{
+	return Program[CurrInsIndex].LineNumber;
+}
+
+bool ProgramExecutor::ReachedHLT()
+{
+	return HLT_STATE_REACHED;
 }
 
 bool ProgramExecutor::NextInstructionExist()
@@ -398,7 +415,7 @@ bool ProgramExecutor::NextInstructionExist()
 	}
 	else
 	{
-		return Error::LOG("HLT never reached!\n");
+		return Error::LOG(ERROR_TYPE::NEVER_REACHED_HLT);
 	}
 }
 

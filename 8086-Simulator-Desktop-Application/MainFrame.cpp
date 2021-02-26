@@ -20,12 +20,17 @@ EVT_MENU(wxID_EXIT, MainFrame::OnExit)
 EVT_MENU(wxID_EXECUTE, MainFrame::OnRun)
 EVT_MENU(wxID_ABOUT, MainFrame::OnAbout)
 EVT_MENU(wxID_HELP, MainFrame::OnHelp)
-EVT_MENU(ON_LOAD, MainFrame::OnLoadProgram)
-EVT_BUTTON(ButtonID::ON_SET_MEM, MainFrame::OnSetMemory)
-EVT_BUTTON(ButtonID::ON_VIEW_MEM, MainFrame::OnViewMemory)
-EVT_BUTTON(ButtonID::DEBUG_BUTTON, MainFrame::OnDebug)
-EVT_BUTTON(ButtonID::EXECUTE_BUTTON, MainFrame::OnExecute)
-EVT_BUTTON(ButtonID::STOP_DB_BUTTON, MainFrame::OnStopDebug)
+EVT_MENU(EventID::ON_LOAD, MainFrame::OnLoadProgram)
+EVT_MENU(EventID::ON_VIEW_MACHINE_CODE, MainFrame::OnViewMacineCode)
+EVT_BUTTON(EventID::ON_SET_MEM, MainFrame::OnSetMemory)
+EVT_BUTTON(EventID::ON_VIEW_MEM, MainFrame::OnViewMemory)
+EVT_BUTTON(EventID::DEBUG_BUTTON, MainFrame::OnDebug)
+EVT_BUTTON(EventID::EXECUTE_BUTTON, MainFrame::OnExecute)
+EVT_BUTTON(EventID::STOP_DB_BUTTON, MainFrame::OnStopDebug)
+EVT_BUTTON(EventID::ON_SET_CS, MainFrame::OnSetCS)
+EVT_BUTTON(EventID::ON_SET_SS, MainFrame::OnSetSS)
+EVT_BUTTON(EventID::ON_SET_DS, MainFrame::OnSetDS)
+EVT_BUTTON(EventID::ON_SET_ES, MainFrame::OnSetES)
 END_EVENT_TABLE()
 
 MainFrame::MainFrame() :wxFrame(nullptr, wxID_ANY, "8086 Simulator", wxPoint(30, 30), wxSize(800, 800))
@@ -59,6 +64,7 @@ MainFrame::MainFrame() :wxFrame(nullptr, wxID_ANY, "8086 Simulator", wxPoint(30,
 	ToolBar->AddTool(wxID_SAVE, _("Save"), wxArtProvider::GetBitmap("wxART_FLOPPY", wxART_OTHER, wxSize(16, 16)), _("Save"));
 	ToolBar->AddTool(ON_LOAD, _("Load"), wxArtProvider::GetBitmap("wxART_FILE_SAVE", wxART_OTHER, wxSize(16, 16)), _("Load Program"));
 	ToolBar->AddTool(wxID_EXECUTE, _("Execute"), wxArtProvider::GetBitmap("wxART_GO_FORWARD", wxART_OTHER, wxSize(16, 16)), _("Load + Run"));
+	ToolBar->AddTool(ON_VIEW_MACHINE_CODE, _("Machine Code"), wxArtProvider::GetBitmap("wxART_REPORT_VIEW", wxART_OTHER, wxSize(16, 16)), _("View Machine Code"));
 	ToolBar->Realize();
 
 
@@ -84,32 +90,23 @@ MainFrame::MainFrame() :wxFrame(nullptr, wxID_ANY, "8086 Simulator", wxPoint(30,
 	CS_Text_Label = new wxStaticText(SI_PanelStaticBox, wxID_ANY, REGISTER::CS + ":", wxPoint(5, 23));
 	CS_TextCtrl = new wxTextCtrl(SI_PanelStaticBox, wxID_ANY, "0000", wxPoint(30, 20), wxSize(50, 20));
 	CS_TextCtrl->SetMaxLength(4);
-	CS_SET_Button = new wxButton(SI_PanelStaticBox, ButtonID::ON_SET_CS, BUTTON::SET, wxPoint(100, 20), wxSize(60, 22));
+	CS_SET_Button = new wxButton(SI_PanelStaticBox, EventID::ON_SET_CS, BUTTON::SET, wxPoint(100, 20), wxSize(60, 22));
 
 	SS_Text_Label = new wxStaticText(SI_PanelStaticBox, wxID_ANY, REGISTER::SS + ":", wxPoint(5, 48));
 	SS_TextCtrl = new wxTextCtrl(SI_PanelStaticBox, wxID_ANY, "0000", wxPoint(30, 45), wxSize(50, 20));
 	SS_TextCtrl->SetMaxLength(4);
-	SS_SET_Button = new wxButton(SI_PanelStaticBox, ButtonID::ON_SET_SS, BUTTON::SET, wxPoint(100, 45), wxSize(60, 22));
+	SS_SET_Button = new wxButton(SI_PanelStaticBox, EventID::ON_SET_SS, BUTTON::SET, wxPoint(100, 45), wxSize(60, 22));
 
 	DS_Text_Label = new wxStaticText(SI_PanelStaticBox, wxID_ANY, REGISTER::DS + ":", wxPoint(5, 73));
 	DS_TextCtrl = new wxTextCtrl(SI_PanelStaticBox, wxID_ANY, "0000", wxPoint(30, 70), wxSize(50, 20));
 	DS_TextCtrl->SetMaxLength(4);
-	DS_SET_Button = new wxButton(SI_PanelStaticBox, ButtonID::ON_SET_DS, BUTTON::SET, wxPoint(100, 70), wxSize(60, 22));
+	DS_SET_Button = new wxButton(SI_PanelStaticBox, EventID::ON_SET_DS, BUTTON::SET, wxPoint(100, 70), wxSize(60, 22));
 
 	ES_Text_Label = new wxStaticText(SI_PanelStaticBox, wxID_ANY, REGISTER::ES + ":", wxPoint(5, 98));
 	ES_TextCtrl = new wxTextCtrl(SI_PanelStaticBox, wxID_ANY, "0000", wxPoint(30, 95), wxSize(50, 20));
 	ES_TextCtrl->SetMaxLength(4);
-	ES_SET_Button = new wxButton(SI_PanelStaticBox, ButtonID::ON_SET_ES, BUTTON::SET, wxPoint(100, 95), wxSize(60, 22));
+	ES_SET_Button = new wxButton(SI_PanelStaticBox, EventID::ON_SET_ES, BUTTON::SET, wxPoint(100, 95), wxSize(60, 22));
 
-	/*DS_Text_Label = new wxStaticText(SI_PanelStaticBox, wxID_ANY, REGISTER::CS + ":", wxPoint(5, 23));
-	DS_TextCtrl = new wxTextCtrl(SI_PanelStaticBox, wxID_ANY, "0000", wxPoint(30, 20), wxSize(50, 20));
-	DS_TextCtrl->SetMaxLength(4);
-	DS_SET_Button = new wxButton(SI_PanelStaticBox, ButtonID::ON_SET_CS, BUTTON::SET, wxPoint(100, 20), wxSize(60, 22));
-
-	ES_Text_Label = new wxStaticText(SI_PanelStaticBox, wxID_ANY, REGISTER::CS + ":", wxPoint(5, 23));
-	ES_TextCtrl = new wxTextCtrl(SI_PanelStaticBox, wxID_ANY, "0000", wxPoint(30, 20), wxSize(50, 20));
-	ES_TextCtrl->SetMaxLength(4);
-	ES_SET_Button = new wxButton(SI_PanelStaticBox, ButtonID::ON_SET_CS, BUTTON::SET, wxPoint(100, 20), wxSize(60, 22));*/
 	SegmentInitializerPanel->SetSizer(SI_PanelStaticBoxSizer);
 
 
@@ -163,7 +160,7 @@ MainFrame::MainFrame() :wxFrame(nullptr, wxID_ANY, "8086 Simulator", wxPoint(30,
 	MI_DataLabel = new wxStaticText(MI_PanelStaticBox, wxID_ANY, "Data(HEX) :", wxPoint(210, 63));
 	MI_DataTextCtrl = new wxTextCtrl(MI_PanelStaticBox, wxID_ANY, "0000", wxPoint(280, 60), wxSize(50, 20));
 	MI_DataTextCtrl->SetMaxLength(4);
-	MI_SET_BUTTON = new wxButton(MI_PanelStaticBox, ButtonID::ON_SET_MEM, BUTTON::SET, wxPoint(340, 60), wxSize(50, 22));
+	MI_SET_BUTTON = new wxButton(MI_PanelStaticBox, EventID::ON_SET_MEM, BUTTON::SET, wxPoint(340, 60), wxSize(50, 22));
 	MemoryInitPanel->SetSizer(MI_PanelStaticBoxSizer);
 
 	//Memory View Panel
@@ -183,7 +180,7 @@ MainFrame::MainFrame() :wxFrame(nullptr, wxID_ANY, "8086 Simulator", wxPoint(30,
 	MV_CountTextCtrl = new wxTextCtrl(MV_PanelStaticBox, wxID_ANY, "000", wxPoint(280, 60), wxSize(30, 20));
 	MV_CountTextCtrl->SetMaxLength(3);
 
-	MV_ViewButton = new wxButton(MV_PanelStaticBox, ButtonID::ON_VIEW_MEM, BUTTON::VIEW, wxPoint(320, 60));
+	MV_ViewButton = new wxButton(MV_PanelStaticBox, EventID::ON_VIEW_MEM, BUTTON::VIEW, wxPoint(320, 60));
 
 	MemoryViewList = new wxListView(MV_PanelStaticBox, wxID_ANY, wxPoint(5, 90), wxSize(240, 315));
 	MemoryViewList->AppendColumn("Segment");
@@ -197,9 +194,9 @@ MainFrame::MainFrame() :wxFrame(nullptr, wxID_ANY, "8086 Simulator", wxPoint(30,
 	DB_StaticBoxSizer = new wxStaticBoxSizer(DB_StaticBox, wxVERTICAL);
 	DB_CurrentLineLabel = new wxStaticText(DB_StaticBox, wxID_ANY, "Current Line Number : ", wxPoint(30, 35));
 	DB_CurrentLineTextCtrl = new wxTextCtrl(DB_StaticBox, wxID_ANY, "---", wxPoint(150, 30), wxSize(20, 20), wxTE_READONLY);
-	DB_ExecuteButton = new wxButton(DB_StaticBox, ButtonID::EXECUTE_BUTTON, BUTTON::EXECUTE, wxPoint(65, 55));
-	DB_DebugButton = new wxButton(DB_StaticBox, ButtonID::DEBUG_BUTTON, BUTTON::DEBUG, wxPoint(25, 100));
-	DB_StopButton = new wxButton(DB_StaticBox, ButtonID::STOP_DB_BUTTON, BUTTON::STOP, wxPoint(105, 100));
+	DB_ExecuteButton = new wxButton(DB_StaticBox, EventID::EXECUTE_BUTTON, BUTTON::EXECUTE, wxPoint(65, 55));
+	DB_DebugButton = new wxButton(DB_StaticBox, EventID::DEBUG_BUTTON, BUTTON::DEBUG, wxPoint(25, 100));
+	DB_StopButton = new wxButton(DB_StaticBox, EventID::STOP_DB_BUTTON, BUTTON::STOP, wxPoint(105, 100));
 	DB_ExecuteButton->Disable();
 	DB_StopButton->Disable();
 	DebugPanel->SetSizer(DB_StaticBoxSizer);
@@ -297,6 +294,224 @@ void MainFrame::OnRun(wxCommandEvent& event)
 	}
 }
 
+void MainFrame::Run8086(const std::string& filePath)
+{
+	Clear();//Clearing Frontend
+	if (LOAD_PROGRAM(filePath))//Read & Load
+	{
+		if (ProgramExecutor::Execute())
+		{
+			wxMessageBox(MESSAGE::SUCCESSFUL_EXECUTION, DIALOG::SUCCESS);
+		}
+		UpdateFlagRegister();
+		UpdateRegisters();
+		UpdateMemoryView();
+	}
+}
+
+void MainFrame::OnDebug(wxCommandEvent& event)
+{
+	if (CurrFilePath.empty())
+	{
+		OnSaveAs(event);
+		if (!CurrFilePath.empty())
+		{
+			Debug8086(ToString(CurrFilePath));
+		}
+	}
+	else
+	{
+		Editor->SaveFile(CurrFilePath);
+		Debug8086(ToString(CurrFilePath));
+	}
+}
+
+void MainFrame::Debug8086(const std::string& filePath)
+{
+	Clear();//Clearing Frontend
+	if (LOAD_PROGRAM(filePath))// Read & Load
+	{
+		UpdateMemoryView();
+		UpdateRegisters();
+		DB_ExecuteButton->Enable();
+		DB_DebugButton->Disable();
+		DB_StopButton->Enable();
+		DB_CurrentLineTextCtrl->Clear();
+		DB_CurrentLineTextCtrl->AppendText(ToWxString(std::to_string(ProgramExecutor::GetCurrInsLineNumber())));
+		Editor->SetEditable(false);//Disabling Editor
+		ToolBar->Disable();//Disabling the toolbar
+		Editor->MarkerAdd(ProgramExecutor::GetCurrInsLineNumber() - 1, 0);
+		Editor->MarkerSetBackground(0, *wxRED);
+	}
+}
+
+void MainFrame::OnExecute(wxCommandEvent& event)
+{
+	if (ProgramExecutor::ExecuteOne())//Successful execution of a instruction
+	{
+		UpdateFlagRegister();
+		UpdateRegisters();
+		UpdateMemoryView();
+		if (ProgramExecutor::ReachedHLT())
+		{
+			wxMessageBox(MESSAGE::SUCCESSFUL_EXECUTION, DIALOG::SUCCESS);
+			OnStopDebug(event);
+		}
+		else
+		{
+			DB_CurrentLineTextCtrl->Clear();
+			DB_CurrentLineTextCtrl->AppendText(ToWxString(std::to_string(ProgramExecutor::GetCurrInsLineNumber())));
+			Editor->MarkerDeleteAll(0);
+			Editor->MarkerAdd(ProgramExecutor::GetCurrInsLineNumber() - 1, 0);
+			Editor->MarkerSetBackground(0, *wxRED);
+		}
+	}
+	else//Error
+	{
+		UpdateFlagRegister();
+		UpdateRegisters();
+		UpdateMemoryView();
+		OnStopDebug(event);
+	}
+}
+
+void MainFrame::OnStopDebug(wxCommandEvent& event)
+{
+	DB_ExecuteButton->Disable();
+	DB_StopButton->Disable();
+	DB_DebugButton->Enable();
+	DB_CurrentLineTextCtrl->Clear();
+	DB_CurrentLineTextCtrl->AppendText("---");
+	ToolBar->Enable();
+	Editor->SetEditable(true);
+	Editor->MarkerDeleteAll(0);
+}
+
+void MainFrame::OnLoadProgram(wxCommandEvent& event)
+{
+	if (CurrFilePath.empty())
+	{
+		OnSaveAs(event);
+		if (!CurrFilePath.empty())
+		{
+			LoadProgram(ToString(CurrFilePath));
+		}
+	}
+	else
+	{
+		Editor->SaveFile(CurrFilePath);
+		LoadProgram(ToString(CurrFilePath));
+	}
+}
+
+void MainFrame::LoadProgram(const std::string& filePath)
+{
+	Clear();//Clearing Front End
+	if (LOAD_PROGRAM(filePath))//Read & Load
+	{
+		UpdateFlagRegister();
+		UpdateRegisters();
+		UpdateMemoryView();
+		wxMessageBox(MESSAGE::SUCCESSFUL_PROGRAM_LOADING, DIALOG::SUCCESS);
+	}
+}
+
+void MainFrame::OnSetCS(wxCommandEvent& event)
+{
+	if (CS_TextCtrl->IsEmpty())
+	{
+		Error::LOG(ERROR_TYPE::EMPTY_FIELD);
+		CS_TextCtrl->AppendText("0000");
+	}
+	else
+	{
+		std::string address = ToString(CS_TextCtrl->GetValue());
+		if (IsValidHex(address))
+		{
+			Register::REG16(REGISTER::CS, HexToDec(address));
+			UpdateRegisters();
+			CS_TextCtrl->Clear();
+			CS_TextCtrl->AppendText("0000");
+		}
+		else
+		{
+			Error::LOG(ERROR_TYPE::INVALID_DATA);
+		}
+	}
+}
+
+void MainFrame::OnSetSS(wxCommandEvent& event)
+{
+	if (SS_TextCtrl->IsEmpty())
+	{
+		Error::LOG(ERROR_TYPE::EMPTY_FIELD);
+		SS_TextCtrl->AppendText("0000");
+	}
+	else
+	{
+		std::string address = ToString(SS_TextCtrl->GetValue());
+		if (IsValidHex(address))
+		{
+			Register::REG16(REGISTER::SS, HexToDec(address));
+			UpdateRegisters();
+			SS_TextCtrl->Clear();
+			SS_TextCtrl->AppendText("0000");
+		}
+		else
+		{
+			Error::LOG(ERROR_TYPE::INVALID_DATA);
+		}
+	}
+}
+
+void MainFrame::OnSetDS(wxCommandEvent& event)
+{
+	if (DS_TextCtrl->IsEmpty())
+	{
+		Error::LOG(ERROR_TYPE::EMPTY_FIELD);
+		DS_TextCtrl->AppendText("0000");
+	}
+	else
+	{
+		std::string address = ToString(DS_TextCtrl->GetValue());
+		if (IsValidHex(address))
+		{
+			Register::REG16(REGISTER::DS, HexToDec(address));
+			UpdateRegisters();
+			DS_TextCtrl->Clear();
+			DS_TextCtrl->AppendText("0000");
+		}
+		else
+		{
+			Error::LOG(ERROR_TYPE::INVALID_DATA);
+		}
+	}
+}
+
+void MainFrame::OnSetES(wxCommandEvent& event)
+{
+	if (ES_TextCtrl->IsEmpty())
+	{
+		Error::LOG(ERROR_TYPE::EMPTY_FIELD);
+		ES_TextCtrl->AppendText("0000");
+	}
+	else
+	{
+		std::string address = ToString(ES_TextCtrl->GetValue());
+		if (IsValidHex(address))
+		{
+			Register::REG16(REGISTER::ES, HexToDec(address));
+			UpdateRegisters();
+			ES_TextCtrl->Clear();
+			ES_TextCtrl->AppendText("0000");
+		}
+		else
+		{
+			Error::LOG(ERROR_TYPE::INVALID_DATA);
+		}
+	}
+}
+
 void MainFrame::OnSetMemory(wxCommandEvent& envet)
 {
 	if (MI_SegmentAddressTextCtrl->IsEmpty() || MI_OffsetAddressTextCtrl->IsEmpty() || MI_DataTextCtrl->IsEmpty())
@@ -345,35 +560,6 @@ void MainFrame::OnSetMemory(wxCommandEvent& envet)
 void MainFrame::OnViewMemory(wxCommandEvent& envet)
 {
 	UpdateMemoryView();
-}
-
-
-void MainFrame::OnSetLoadingLocation(wxCommandEvent& envet)
-{
-	//if (m_ProgramLoadingPanelTextCtrl->IsEmpty())
-	//{
-	//	Error::Throw(ERROR_TYPE::EMPTY_FIELD);
-	//	m_ProgramLoadingPanelTextCtrl->AppendText("0000");
-	//}
-	//else
-	//{
-	//	std::string address = ToString(m_ProgramLoadingPanelTextCtrl->GetValue());
-	//	if (Validator::IsValidHex(address))
-	//	{
-	//		//No need to check for overflow as user can't put more than 4 characters in this text field.
-	//		m_nLoadingLocation = Converter::HexToDec(address);
-	//		Converter::ToUpperString(address);
-	//		Utility::_16Bit(address);
-	//		m_ProgramLoadingPanelCurrentLocationTextCtrl->Clear();
-	//		m_ProgramLoadingPanelCurrentLocationTextCtrl->AppendText(address);
-	//		m_ProgramLoadingPanelTextCtrl->Clear();
-	//		m_ProgramLoadingPanelTextCtrl->AppendText("0000");
-	//	}
-	//	else
-	//	{
-	//		Error::Throw(ERROR_TYPE::INVALID_DATA);
-	//	}
-	//}
 }
 
 void MainFrame::UpdateFlagRegister()
@@ -478,102 +664,20 @@ void MainFrame::Clear()
 	FlagRegCheckList->Check(FlagRegCheckList->FindString("OF"), false);
 }
 
-void MainFrame::OnDebug(wxCommandEvent& event)
+void MainFrame::OnViewMacineCode(wxCommandEvent& event)
 {
-	/*if (CurrFilePath.empty())
-	{
-		OnSaveAs(event);
-		if (!CurrFilePath.empty())
-		{
-			Debug8085(ToString(CurrFilePath));
-		}
-	}
-	else
-	{
-		Editor->SaveFile(CurrFilePath);
-		Debug8085(ToString(CurrFilePath));
-	}*/
-}
-
-void MainFrame::Run8086(const std::string& filePath)
-{
-	Clear();
-	//Clearing Frontend
-	if (LOAD_PROGRAM(filePath))//Read & Load
-	{
-		if (ProgramExecutor::Execute())
-		{
-			UpdateFlagRegister();
-			UpdateRegisters();
-			UpdateMemoryView();
-			wxMessageBox(MESSAGE::SUCCESSFUL_EXECUTION, DIALOG::SUCCESS);
-		}
-	}
-}
-
-void MainFrame::Debug8086(const std::string& filePath)
-{
-	Clear();//Clearing Front End
-	//if (ProgramManager::LoadProgramInMemory(filePath, m_nLoadingLocation))//Read function int LoadProgramInMemory is responsible for clearing the backend
-	//{
-	//	UpdateMemory();
-	//	UpdateRegisters();//Updating all register but we just need to update PC at this time
-	//	m_ExecuteButton->Enable();
-	//	m_DebugButton->Disable();
-	//	m_StopButton->Enable();
-	//	m_CurrentLineTextCtrl->Clear();
-	//	m_CurrentLineTextCtrl->AppendText(ToWxString(std::to_string(ProgramManager::Program[Register::iPC].line_number)));
-	//	m_EditBox->SetEditable(false);//Disabling Editor
-	//	m_ToolBar->Disable();//Disabling the toolbar
-	//	m_EditBox->MarkerAdd(ProgramManager::Program[Register::iPC].line_number - 1, 0);
-	//	m_EditBox->MarkerSetBackground(0, *wxRED);
-	//}
-}
-
-void MainFrame::OnExecute(wxCommandEvent& event)
-{
-	//const Instruction& instruction = ProgramManager::Program[Register::iPC];
-
-	//if (Mnemonic::Execute[instruction.mnemonic](instruction.operands))//Successful execution of a instruction
-	//{
-	//	UpdateFlagRegister();
-	//	UpdateRegisters();
-	//	UpdateMemory();
-	//	m_CurrentLineTextCtrl->Clear();
-	//	m_CurrentLineTextCtrl->AppendText(ToWxString(std::to_string(ProgramManager::Program[Register::iPC].line_number)));
-	//	m_EditBox->MarkerDeleteAll(0);
-	//	m_EditBox->MarkerAdd(ProgramManager::Program[Register::iPC].line_number - 1, 0);
-	//	m_EditBox->MarkerSetBackground(0, *wxRED);
-	//}
-	//else if (ProgramManager::_HLT)//HLT get executed
-	//{
-	//	UpdateFlagRegister();
-	//	UpdateRegisters();
-	//	UpdateMemory();
-	//	wxMessageBox(MESSAGE::SUCCESSFUL_EXECUTION, DIALOG::SUCCESS);
-	//	OnStopDebug(event);
-	//}
-	//else//Error
-	//{
-	//	UpdateFlagRegister();
-	//	UpdateRegisters();
-	//	UpdateMemory();
-	//	OnStopDebug(event);
-	//}
-}
-
-
-void MainFrame::OnStopDebug(wxCommandEvent& event)
-{
-	DB_ExecuteButton->Disable();
-	DB_StopButton->Disable();
-	DB_DebugButton->Enable();
-	DB_CurrentLineTextCtrl->Clear();
-	DB_CurrentLineTextCtrl->AppendText("---");
-	ToolBar->Enable();
-	Editor->SetEditable(true);
-	Editor->MarkerDeleteAll(0);
-
+	wxDialog machineCodeDialog(this, wxID_ANY, DIALOG::MACHINE_CODE);
+	wxBoxSizer* dialogSizer = new wxBoxSizer(wxVERTICAL);
+	wxStyledTextCtrl* MachineCodeViewer = new wxStyledTextCtrl(&machineCodeDialog, wxID_ANY, wxPoint(0, 20), wxSize(400, 500));
+	MachineCodeViewer->LoadFile(PATH::MACHINE_CODE_FILE);
+	MachineCodeViewer->SetEditable(false);
+	dialogSizer->Add(MachineCodeViewer, 1, wxALL, 10);
+	wxButton* OKButton = new wxButton(&machineCodeDialog, wxID_OK, _("OK"));
+	OKButton->SetDefault();
+	dialogSizer->Add(OKButton, 0, wxALIGN_CENTER | wxALL, 10);
+	machineCodeDialog.SetSizer(dialogSizer);
+	dialogSizer->Fit(&machineCodeDialog);
+	machineCodeDialog.ShowModal();
 }
 
 void MainFrame::OnAbout(wxCommandEvent& event)
@@ -610,40 +714,6 @@ void MainFrame::OnHelp(wxCommandEvent& event)
 	helpDialog.ShowModal();
 }
 
-void MainFrame::OnLoadProgram(wxCommandEvent& event)
-{
-	if (CurrFilePath.empty())
-	{
-		OnSaveAs(event);
-		if (!CurrFilePath.empty())
-		{
-			LoadProgram(ToString(CurrFilePath));
-		}
-	}
-	else
-	{
-		Editor->SaveFile(CurrFilePath);
-		LoadProgram(ToString(CurrFilePath));
-	}
-}
-
-void MainFrame::LoadProgram(const std::string& filePath)
-{
-	Clear();//Clearing Front End
-	//if (ProgramManager::LoadProgramInMemory(filePath, m_nLoadingLocation))//Read function in LoadProgramInMemory is responsible for clearing the backend
-	//{
-	//	UpdateFlagRegister();
-	//	UpdateRegisters();
-	//	UpdateMemory();
-	//	wxMessageBox(MESSAGE::SUCCESSFUL_PROGRAM_LOADING, DIALOG::SUCCESS);
-	//}
-	//else
-	//{
-	//	UpdateMemory();
-	//}
-}
-
-
 bool MainFrame::IsValidInt(const std::string& data)
 {
 	for (const char& x : data)
@@ -662,12 +732,12 @@ bool MainFrame::IsValidInt(const std::string& data)
 
 bool MainFrame::IsValidHex(const std::string& hex)
 {
-	for (int i = 0; i < (int)hex.length() - 1; ++i)
+	for (int i = 0; i < (int)hex.length(); ++i)
 	{
 		const char& x = hex[i];
 		bool OK = false;
-		OK |= (x >= 'A' && x <= 'F') || (x >= 'a' && x <= 'f');
-		OK |= x >= '0' && x <= '9';
+		OK |= ((x >= 'A' && x <= 'F') || (x >= 'a' && x <= 'f'));
+		OK |= (x >= '0' && x <= '9');
 		if (!OK) { return false; }
 	}
 	return true;

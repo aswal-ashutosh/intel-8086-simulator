@@ -160,8 +160,13 @@
     <Text Include="test.txt">
       <Filter>Resource Files</Filter>
     </Text>
-    <Text Include="machine_code.txt">
+    <Text Include="MACHINE_CODE.txt">
       <Filter>Resource Files</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ABOUT.html">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

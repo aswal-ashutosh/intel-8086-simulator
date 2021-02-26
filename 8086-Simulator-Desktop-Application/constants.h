@@ -163,6 +163,7 @@ namespace PATH
 {
 	const std::string ABOUT_HTML_FILE = "ABOUT.html";
 	const std::string HELP_HTML_FILE = "HELP.html";
+	const std::string MACHINE_CODE_FILE = "MACHINE_CODE.txt";
 }
 
 namespace MESSAGE
@@ -175,6 +176,7 @@ namespace DIALOG
 {
 	const std::string ABOUT = "ABOUT";
 	const std::string HELP = "HELP";
+	const std::string MACHINE_CODE = "MACHINE CODE";
 	const std::string EXECUTION_STOPPED = "EXECUTION STOPPED";
 	const std::string SUCCESS = "SUCCESS";
 }
@@ -200,8 +202,6 @@ namespace BUTTON
 
 namespace ERROR_TYPE
 {
-	const std::string SYNTAX = "Syntax Error";
-	const std::string INVALID_OPERANDS = "Invalid Operand";
 	const std::string INVALID_MEMORY_LOCATION = "Invalid Memory Location";
 	const std::string INVALID_REGISTER = "Invalid Register";
 	const std::string INVALID_REGISTER_PAIR = "Invalid Register Pair";
@@ -214,12 +214,19 @@ namespace ERROR_TYPE
 	const std::string EMPTY_FIELD = "Empty Field Is Not Allowed";
 	const std::string EMPTY_FILE = "Empty File Found";
 	const std::string NO_SUCH_LABEL = "No Such Label Exist";
-	const std::string INVALID_LABEL = "Invalid Label";
 	const std::string RETURN_WITHOUT_CALL = "'Return' Statement Found When There Exist No Subroutine Call";
 	const std::string INFINITE_LOOP_OR_RECURSIVE_CALL = "There May Be An Infinite Loop Or A Never Ending Recursion";
 	const std::string CAN_NOT_LOAD_INSTRUCTION = "Not Enough Space To Load Program From Provided Loading Location.";
 	const std::string PCHL_ERROR = "PCHL Throughs Program Counter At A Location Which Is Not Containg Any Valid Instruction.";
 
 	//New
+	const std::string SYNTAX = "Syntax Error";
 	const std::string INVALID_MEM_EXP = "Invalid Memory Expression.";
+	const std::string CS_MODIFICATION = "CS can't be modified directly.";
+	const std::string MISMATCH_OPERAND_SIZE = "Both operand must be of same size.";
+	const std::string INVALID_OPERNAD_COUNT = "Invalid number of operands.";
+	const std::string IMMD_ZERO_IN_ROTATE_SHIFT = "Immediate data can't be 00H in Rotate and Shift instructions.";
+	const std::string ONLY_8BIT_ALLLOWED = "Only 8 Bit data is allowed.";
+	const std::string ONLY_CL_ALLLOWED = "Only CL Register is allowed.";
+	const std::string INVALID_LABEL = "Invalid Label OR Label with empty definition.";
 } // namespace ERROR_TYPE
