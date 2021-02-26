@@ -265,7 +265,7 @@ public:
 	static bool ExecuteOne();
 	static int GetCurrInsLineNumber();
 	static bool ReachedHLT();
-	static bool GetProgramFromLoader();
+	static void GetProgramFromLoader();
 
 
 	static bool MOV(const Operand&);
@@ -371,7 +371,7 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::HLT] = HLT;
 }
 
-bool ProgramExecutor::GetProgramFromLoader()
+void ProgramExecutor::GetProgramFromLoader()
 {
 	ProgramExecutor::Program = ProgramLoader::GetProgram();
 }
