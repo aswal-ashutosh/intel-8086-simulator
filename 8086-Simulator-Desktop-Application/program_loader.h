@@ -117,8 +117,9 @@ public:
 	static void HandleForwardReferencing();
 
 	//Function to check wether a string is Mnemonic or not
-	static bool IsValidMnemonic(const std::string& s);
-	static bool IsJumpCallInstruction(const std::string& s);
+	static bool IsValidMnemonic(const std::string&);
+	static bool IsJumpInstruction(const std::string&);
+	static bool IsLoopInstruction(const std::string&);
 	
 	//Program
 	static void AddInstruction(const Instruction&);
@@ -172,6 +173,9 @@ public:
 	static bool JNO(const Operand&);
 	static bool CALL(const Operand&);
 	static bool RET(const Operand&);
+	static bool LOOP(const Operand&);
+	static bool LOOPE_LOOPZ(const Operand&);
+	static bool LOOPNE_LOOPNZ(const Operand&);
 	static bool HLT(const Operand&);
 };
 
@@ -255,6 +259,11 @@ void ProgramLoader::LoadCallBacks()
 	CallBacks[MNEMONIC::JNO] = JNO;
 	CallBacks[MNEMONIC::CALL] = CALL;
 	CallBacks[MNEMONIC::RET] = RET;
+	CallBacks[MNEMONIC::LOOP] = LOOP;
+	CallBacks[MNEMONIC::LOOPE] = LOOPE_LOOPZ;
+	CallBacks[MNEMONIC::LOOPZ] = LOOPE_LOOPZ;
+	CallBacks[MNEMONIC::LOOPNE] = LOOPNE_LOOPNZ;
+	CallBacks[MNEMONIC::LOOPNZ] = LOOPNE_LOOPNZ;
 	CallBacks[MNEMONIC::HLT] = HLT;
 }
 
@@ -272,12 +281,12 @@ void ProgramLoader::HandleForwardReferencing()
 			instruction will be 2 byte. It this assumption is found wrong it will be updated later.
 			For Call label address will always take 2 Byte which means the total size of instruction will be 3 bytes.
 		*/
-		if (ins.Mnemonic == MNEMONIC::CALL)
+		if (ins.Mnemonic == MNEMONIC::CALL || IsLoopInstruction(ins.Mnemonic))
 		{
 			Offset += 3;
 			Pos[ins.operand.first].push_back(i);
 		}
-		else if (IsJumpCallInstruction(ins.Mnemonic)) //JUMP instructions
+		else if (IsJumpInstruction(ins.Mnemonic)) //JUMP instructions
 		{
 			Offset += 2;
 
@@ -352,7 +361,7 @@ void ProgramLoader::HandleForwardReferencing()
 		for (int Idx : Pos[label])
 		{
 			//Add more
-			if (Program[Idx].Mnemonic == MNEMONIC::CALL)
+			if (Program[Idx].Mnemonic == MNEMONIC::CALL || IsLoopInstruction(Program[Idx].Mnemonic))
 			{
 				Program[Idx].MachineCode.push_back((Byte)(Address & 0x00ff));
 				Program[Idx].MachineCode.push_back((Byte)((Address & 0xff00) >> 8));
@@ -463,7 +472,7 @@ bool ProgramLoader::IsValidMnemonic(const std::string& s)
 	return CallBacks.count(s);
 }
 
-bool ProgramLoader::IsJumpCallInstruction(const std::string& S)
+bool ProgramLoader::IsJumpInstruction(const std::string& S)
 {
 	bool OK = false;
 	OK |= (S == MNEMONIC::JMP);
@@ -482,6 +491,17 @@ bool ProgramLoader::IsJumpCallInstruction(const std::string& S)
 	OK |= (S == MNEMONIC::JO);
 	OK |= (S == MNEMONIC::JNO);
 	OK |= (S == MNEMONIC::CALL);
+	return OK;
+}
+
+bool ProgramLoader::IsLoopInstruction(const std::string& S)
+{
+	bool OK = false;
+	OK |= (S == MNEMONIC::LOOP);
+	OK |= (S == MNEMONIC::LOOPE);
+	OK |= (S == MNEMONIC::LOOPZ);
+	OK |= (S == MNEMONIC::LOOPNZ);
+	OK |= (S == MNEMONIC::LOOPNE);
 	return OK;
 }
 /*<-------------------------------------MOV-------------------------------------->*/
@@ -3961,6 +3981,66 @@ bool ProgramLoader::JNO(const Operand& operand)
 		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
 	}
 }
+
+/*<---------------------LOOP-------------------------->*/
+
+bool ProgramLoader::LOOP(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInsIndex].MachineCode.push_back(0xE2);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::LOOPE_LOOPZ(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInsIndex].MachineCode.push_back(0xE1);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
+	}
+}
+
+bool ProgramLoader::LOOPNE_LOOPNZ(const Operand& operand)
+{
+	if (!Utility::IsValidOperandCount(operand, 1))
+	{
+		return Error::LOG(ERROR_TYPE::INVALID_OPERNAD_COUNT, Program[CurrInsIndex].LineNumber);
+	}
+	//Machine code will be produce later(When handling forward referencing)
+	if (Label::IsValidLabel(operand.first) && (Label::IndexOf(operand.first) < (int)Program.size()))
+	{
+		Program[CurrInsIndex].MachineCode.push_back(0xE0);
+		//Just Adding 1st Byte of Machine code (Rest will be produced when forward referencing will be handled)
+		return true;
+	}
+	else
+	{
+		return Error::LOG(ERROR_TYPE::INVALID_LABEL, Program[CurrInsIndex].LineNumber);
+	}
+}
+
 /*<--------------------------CALL-------------------------->*/
 
 bool ProgramLoader::CALL(const Operand& operand)

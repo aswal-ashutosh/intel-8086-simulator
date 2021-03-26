@@ -309,6 +309,9 @@ public:
 	static bool JO(const Operand&);
 	static bool JNO(const Operand&);
 	static bool CALL(const Operand&);
+	static bool LOOP(const Operand&);
+	static bool LOOPE_LOOPZ(const Operand&);
+	static bool LOOPNE_LOOPNZ(const Operand&);
 	static bool RET(const Operand&);
 	static bool HLT(const Operand&);
 };
@@ -368,6 +371,11 @@ void ProgramExecutor::LoadCallBacks()
 	CallBacks[MNEMONIC::JNO] = JNO;
 	CallBacks[MNEMONIC::CALL] = CALL;
 	CallBacks[MNEMONIC::RET] = RET;
+	CallBacks[MNEMONIC::LOOP] = LOOP;
+	CallBacks[MNEMONIC::LOOPE] = LOOPE_LOOPZ;
+	CallBacks[MNEMONIC::LOOPZ] = LOOPE_LOOPZ;
+	CallBacks[MNEMONIC::LOOPNE] = LOOPNE_LOOPNZ;
+	CallBacks[MNEMONIC::LOOPNZ] = LOOPNE_LOOPNZ;
 	CallBacks[MNEMONIC::HLT] = HLT;
 }
 

@@ -147,6 +147,9 @@
     <ClInclude Include="run.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="loops.h">
+      <Filter>Header Files\Instruction Set</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Simulator.cpp">

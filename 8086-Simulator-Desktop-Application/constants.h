@@ -52,6 +52,11 @@ namespace MNEMONIC
 	const std::string CALL = "CALL";
 	const std::string HLT = "HLT";
 	const std::string RET = "RET";
+	const std::string LOOP = "LOOP";
+	const std::string LOOPE = "LOOPE";
+	const std::string LOOPZ = "LOOPZ";
+	const std::string LOOPNE = "LOOPNE";
+	const std::string LOOPNZ = "LOOPNZ";
 }
 
 const std::unordered_map<std::string, MOD_RM_INFO>  MOD_RM =

@@ -33,6 +33,7 @@
     <ClInclude Include="hlt.h" />
     <ClInclude Include="jump.h" />
     <ClInclude Include="labels.h" />
+    <ClInclude Include="loops.h" />
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="rcl.h" />
     <ClInclude Include="rcr.h" />

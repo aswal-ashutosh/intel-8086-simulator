@@ -309,7 +309,7 @@ bool Parser::Read(const std::string& FILE_PATH)
 			std::string& s = TOKENS[CurrToken];
 			/*First operand can be a label name.
 			So we don't have to change it into upper case form as labels are case sensitive.*/
-			if (!ProgramLoader::IsJumpCallInstruction(instruction.Mnemonic))
+			if (!ProgramLoader::IsJumpInstruction(instruction.Mnemonic) && !ProgramLoader::IsLoopInstruction(instruction.Mnemonic))
 			{
 				Utility::Capitalize(s);
 			}
