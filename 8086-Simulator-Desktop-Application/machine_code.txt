@@ -1,4 +1,2 @@
-0000: B9 30 30          		[MOV CX 02H]
-0003: B8 46 46          		[MOV AX FFFFH]
-0006: E0 03 00          		[LOOPNZ SKIP]
-0009: F4                		[HLT]
+0000: B8 46 30          		[MOV AX 00FFH]
+0003: F4                		[HLT]

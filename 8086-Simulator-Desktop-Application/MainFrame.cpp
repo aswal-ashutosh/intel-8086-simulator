@@ -301,11 +301,17 @@ void MainFrame::Run8086(const std::string& filePath)
 	{
 		if (ProgramExecutor::Execute())
 		{
+			UpdateFlagRegister();
+			UpdateRegisters();
+			UpdateMemoryView();
 			wxMessageBox(MESSAGE::SUCCESSFUL_EXECUTION, DIALOG::SUCCESS);
 		}
-		UpdateFlagRegister();
-		UpdateRegisters();
-		UpdateMemoryView();
+		else
+		{
+			UpdateFlagRegister();
+			UpdateRegisters();
+			UpdateMemoryView();
+		}
 	}
 }
 
