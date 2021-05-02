@@ -30,6 +30,7 @@
     <ClInclude Include="dec.h" />
     <ClInclude Include="div_idiv.h" />
     <ClInclude Include="error_handler.h" />
+    <ClInclude Include="time_manager.h" />
     <ClInclude Include="hlt.h" />
     <ClInclude Include="jump.h" />
     <ClInclude Include="labels.h" />

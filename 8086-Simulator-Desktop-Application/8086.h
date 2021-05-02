@@ -8,6 +8,7 @@
 #include"labels.h"
 #include<unordered_map>
 #include"program_loader.h"
+#include"time_manager.h"
 
 class ProgramExecutor
 {
@@ -387,12 +388,18 @@ void ProgramExecutor::GetProgramFromLoader()
 bool ProgramExecutor::Execute()
 {
 	//[TODO:] Remove extra checking at release version
+	TimeManager::Reset();
 	while(!HLT_STATE_REACHED)
 	{
 		const Instruction& Ins = Program[CurrInsIndex];
 		if (!CallBacks[Ins.Mnemonic](Ins.operand))
 		{
 			return false;
+		}
+
+		if (TimeManager::TLE())
+		{
+			return Error::LOG(ERROR_TYPE::INFINITE_LOOP_OR_RECURSIVE_CALL);
 		}
 	}
 	return true;

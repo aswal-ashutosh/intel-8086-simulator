@@ -1,2 +1,3 @@
-0000: B8 46 30          		[MOV AX 00FFH]
-0003: F4                		[HLT]
+0000: EB 02             		[JMP HELLO]
+0002: EB 00             		[JMP BYE]
+0004: F4                		[HLT]
