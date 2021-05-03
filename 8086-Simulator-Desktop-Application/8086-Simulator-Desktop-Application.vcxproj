@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ABOUT.html" />
+    <None Include="HELP.html" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

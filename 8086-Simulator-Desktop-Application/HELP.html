@@ -1,0 +1,191 @@
+<HTML>
+<HEAD>
+</HEAD>
+<BODY>
+    <center><h1><u>COMPONENTS</u></h1></center>
+    <ol>
+        <li>
+            <p>
+                <h3>SEGMENT INITIALIZER PANEL</h3>
+                <em>This panel is used to change the values of segment registers(CS, SS, DS, ES).</em>
+                <br>
+            </p>
+        </li>
+
+        <li>
+            <p>
+                <h3>FLAG REGISTER PANEL</h3>
+                <em>It display the status of <strong>Flag Register</strong>.</em>
+                <br />
+            </p>
+        </li>
+
+
+
+        <li>
+            <p>
+                <h3>REGISTER PANEL</h3>
+                <em>
+                    It display the content of all registers.
+                </em>
+                <br />
+            </p>
+        </li>
+
+
+        <li>
+            <p>
+                <h3>MEMORY INITIALIZER PANEL</h3><br>
+                <em>
+                    It is used to feed data in memory location ranging from [00000 - FFFFF].<br><br>
+                    <strong>Direction To Use:</strong> Provide the segment address, offset and data in the corresponding text box and click on <strong>SET</strong> button.
+                </em>
+            </p><br>
+        </li>
+
+        <li>
+            <h3>MEMORY VIEWER PANEL</h3>
+            <p>
+                <em>
+                    It is used to view the data in the memory.<br><br>
+                    <strong>Direction To Use:</strong> Provide the segment address, offset and the count(number of locations to be accessed from the given segment address and offset) in the corresponding text box and click on the <strong>VIEW</strong> button.<br>
+                </em>
+            </p><br>
+        </li>
+
+
+
+        <li>
+            <p>
+                <h3>DEBUGGER PANEL</h3>
+                <em>It provide mechanism to debug the code.</em><br><br>
+                <strong>Direction To Use</strong><br>
+                <ol>
+                    <li><em>Write the code.</em></li>
+                    <li><em>Make sure to save the file.</em></li>
+                    <li><em>Hit Debug button which will enable the Execute and STOP button.</em></li>
+                    <li><em>Hit the execute button to execute/run the line number shown in the Debugger Panel.</em></li>
+                    <li><em>Hit the STOP button to stop debugging.</em></li>
+                </ol>
+                <br>
+                <strong><em>Note:</em></strong>
+                <ul>
+                    <li><em>Debugger will stop automatically after executing HLT instruction.</em></li>
+                    <li><em>Use STOP button to stop debugging in between.</em></li>
+                </ul>
+            </p><br>
+        </li>
+    </ol>
+
+    <center><h1><u>KEY POINTS</u></h1></center>
+
+    <ol>
+        <li>
+            <p>
+                <h3>Hexadecimal Values</h3>
+                <em>All hexadecimal values must end with 'h' or 'H'</em><br>
+                <em><strong>Note:</strong> In order to use AH, BH, CH, DH as hexadecimal values put a '0' in the prefix(0AH, 0BH, 0CH,0DH) else they will be considered as registers.</em>
+            </p><br>
+        </li>
+
+        <li>
+            <p>
+                <h3>Loop/Jump/Call</h3>
+                <em>
+                    In order to jump/call to a specific line of code create a <strong>label</strong>.<br>
+                    <strong>Label</strong> is any string(alpha-numeric) ending with <strong>':'</strong>,
+                    for example: "LOOP:", "HERE:" etc.<br><br>
+                    <strong><u>Example of a program using label</u></strong><br><br>
+                </em>
+                MOV AX, 2050h<br>
+                JMP <strong>STOP</strong><br>
+                <strong>STOP:</strong> HLT<br>
+            </p><br>
+        </li>
+
+
+        <li>
+            <p>
+                <h3>How to use comments in code</h3>
+                <em>
+                    Every thing after <strong>';'</strong> symbol will be considered as comment in the code.<br><br>
+                    <strong><u>Example</u></strong><br><br>
+                </em>
+                MOV AH, 00H <strong>;</strong>Move 00H to AH<br>
+                MVI BH, 11H <strong>;</strong>Move 11H to BH<br>
+                ADD AH, BH  <strong>;</strong>AH = AH + BH<br>
+                HLT <strong>;</strong>Stop<br><br>
+            </p><br>
+        </li>
+
+        <li>
+            <p>
+                <h3>Empty lines</h3>
+                <em>
+                    All empty lines in between the codes will be <strong>ignored</strong>.<br><br>
+                </em>
+            </p><br>
+        </li>
+
+    </ol><br>
+    <hr>
+    <center><h3><u>SUPPORTED INSTRUCTION SET</u></h3></center>
+    <ol>
+    <li><strong>   MOV</strong></li>
+    <li><strong>  XCHG</strong></li>
+    <li><strong>   ADD</strong></li>
+    <li><strong>   ADC</strong></li>
+    <li><strong>   SUB</strong></li>
+    <li><strong>   SBB</strong></li>
+    <li><strong>   MUL</strong></li>
+    <li><strong>  IMUL</strong></li>
+    <li><strong>   DIV</strong></li>
+    <li><strong>  IDIV</strong></li>
+    <li><strong>   AND</strong></li>
+    <li><strong>    OR</strong></li>
+    <li><strong>   XOR</strong></li>
+    <li><strong>   CMP</strong></li>
+    <li><strong>   NEG</strong></li>
+    <li><strong>   NOT</strong></li>
+    <li><strong>   DEC</strong></li>
+    <li><strong>   INC</strong></li>
+    <li><strong>   DAA</strong></li>
+    <li><strong>   SHL</strong></li>
+    <li><strong>   SAL</strong></li>
+    <li><strong>   SHR</strong></li>
+    <li><strong>   SAR</strong></li>
+    <li><strong>   RCL</strong></li>
+    <li><strong>   RCR</strong></li>
+    <li><strong>   ROL</strong></li>
+    <li><strong>   ROR</strong></li>
+    <li><strong>   STC</strong></li>
+    <li><strong>   CLC</strong></li>
+    <li><strong>   CMC</strong></li>
+    <li><strong>   JMP</strong></li>
+    <li><strong>    JC</strong></li>
+    <li><strong>   JNC</strong></li>
+    <li><strong>    JZ</strong></li>
+    <li><strong>    JE</strong></li>
+    <li><strong>   JNZ</strong></li>
+    <li><strong>   JNE</strong></li>
+    <li><strong>   JPE</strong></li>
+    <li><strong>    JP</strong></li>
+    <li><strong>   JPO</strong></li>
+    <li><strong>   JNP</strong></li>
+    <li><strong>    JS</strong></li>
+    <li><strong>   JNS</strong></li>
+    <li><strong>    JO</strong></li>
+    <li><strong>   JNO</strong></li>
+    <li><strong>  CALL</strong></li>
+    <li><strong>   RET</strong></li>
+    <li><strong>  LOOP</strong></li>
+    <li><strong> LOOPE</strong></li>
+    <li><strong> LOOPZ</strong></li>
+    <li><strong>LOOPNE</strong></li>
+    <li><strong>LOOPNZ</strong></li>
+    <li><strong>   HLT</strong></li>
+    </ol>
+    <br>
+    <hr>
+</BODY>
+</HTML>

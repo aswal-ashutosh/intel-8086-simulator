@@ -1,3 +1,5 @@
-0000: EB 02             		[JMP HELLO]
-0002: EB 00             		[JMP BYE]
-0004: F4                		[HLT]
+0000: C3                		[RET]
+0001: B7 35             		[MOV BH 50H]
+0003: B4 30             		[MOV AH 0BH]
+0005: 02 E7             		[ADD AH BH]
+0007: F4                		[HLT]
