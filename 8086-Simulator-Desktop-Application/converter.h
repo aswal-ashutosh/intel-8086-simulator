@@ -26,9 +26,9 @@ public:
 Byte Converter::Dec(const std::string& data)
 {
 	std::stringstream ss(data);
-	Byte res = 0;
+	Word res = 0;
 	ss >> std::hex >> res;
-	return res;
+	return (Byte)res;
 }
 
 std::string Converter::DecToHex(const Word& data, const HEX_SIZE& Size = HEX_SIZE::BYTE)
